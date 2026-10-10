@@ -1,10 +1,9 @@
 // Ilha interativa pura HTML+ES (executada diretamente no navegador sem compilação nem bundle)
 import { html } from "htm/preact";
-import { signal } from "@preact/signals";
+import { signal, useSignal } from "@preact/signals";
 
 export function DemoWidget({ title = "Ilha Dinâmica HTML+ES", step = 1 }) {
-  const count = signal(0);
-  const visible = signal(true);
+  const count = typeof useSignal === "function" ? useSignal(0) : signal(0);
 
   return html`
     <article class="border round medium-padding surface-container margin-bottom">

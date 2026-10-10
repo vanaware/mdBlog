@@ -1,4 +1,4 @@
-import { type ComponentType, h, hydrate } from "preact";
+import { type ComponentType, h, hydrate, render } from "preact";
 
 export interface HydrateOptions {
   root?: HTMLElement;
@@ -8,6 +8,24 @@ export interface HydrateOptions {
  * Registry em memória de componentes de ilhas importadas dinamicamente.
  */
 const dynamicIslandsCache: Record<string, ComponentType<any>> = {};
+
+function mountIsland(
+  comp: ComponentType<any>,
+  props: Record<string, any>,
+  el: HTMLElement,
+) {
+  // Se o elemento estiver vazio ou a hidratação falhar, monta via render
+  if (el.childNodes.length === 0) {
+    render(h(comp, props), el);
+    return;
+  }
+  try {
+    hydrate(h(comp, props), el);
+  } catch {
+    el.innerHTML = "";
+    render(h(comp, props), el);
+  }
+}
 
 /**
  * Rotina PRINCIPAL de hidratação de ilhas dinâmicas sob demanda.
@@ -52,7 +70,7 @@ export async function hydrateIslands(
       try {
         el.dataset.islandHydrated = "true";
         delete el.dataset.islandMissing;
-        hydrate(h(cachedComp, dynamicProps), el);
+        mountIsland(cachedComp, dynamicProps, el);
         hydratedCount++;
         continue;
       } catch (err) {
@@ -79,10 +97,10 @@ export async function hydrateIslands(
           el.dataset.islandHydrated = "true";
           delete el.dataset.islandMissing;
           try {
-            hydrate(h(dynamicComp, dynamicProps), el);
+            mountIsland(dynamicComp, dynamicProps, el);
             hydratedCount++;
           } catch (err) {
-            console.error(`[hydrate] Falha na hidratação de "${name}":`, err);
+            console.error(`[hydrate] Falha na montagem de "${name}":`, err);
             el.dataset.islandError = "true";
           }
         } else {

@@ -1,9 +1,11 @@
 // Ilha Counter em formato puro HTML+ES (execução direta no navegador)
 import { html } from "htm/preact";
-import { signal } from "@preact/signals";
+import { signal, useSignal } from "@preact/signals";
 
 export function Counter({ start = 0, step = 1, label = "Contador Interativo" }) {
-  const count = signal(Number(start));
+  const count = typeof useSignal === "function"
+    ? useSignal(Number(start))
+    : signal(Number(start));
 
   return html`
     <article class="border round medium-padding surface-container-low margin">

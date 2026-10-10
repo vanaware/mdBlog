@@ -13,14 +13,18 @@ import { navigateTo } from "../router.ts";
 export function Navbar() {
   const current = currentPath.value;
   const list = articles.value;
-  const topSections = list.filter((art) => art.depth <= 1);
+  const currentArticle = list.find(
+    (a) =>
+      a.path === current ||
+      a.path.replace(/^\.?\//, "") === current.replace(/^\.?\//, ""),
+  );
 
   return html`
     <nav class="top surface-container border-bottom sticky">
       <button
-        class="circle transparent"
+        class="circle transparent s m"
         onClick=${() => (sidebarOpen.value = !sidebarOpen.value)}
-        aria-label="Abrir menu lateral"
+        aria-label="Alternar menu lateral"
       >
         <i>menu</i>
       </button>
@@ -35,27 +39,17 @@ export function Navbar() {
         <h6 class="bold no-margin">mdBlog</h6>
       </a>
 
-      <!-- Links diretos de navegação na barra (sem select box ou menu dropdown) -->
-      <div class="row items-center gap-small m l margin-left">
-        ${topSections.map((art) => {
-          const isActive = current === art.path;
-          return html`
-            <a
-              key=${art.path}
-              class=${`row items-center gap-tiny wave round small-padding small-text ${
-                isActive
-                  ? "bold primary-text primary-container"
-                  : "surface-text"
-              }`}
-              onClick=${() => navigateTo(art.path)}
-              title=${art.title}
-            >
-              <i class="tiny">${art.icon || "article"}</i>
-              <span>${art.title.replace(/^[^\w\s]*\s*/, "")}</span>
-            </a>
-          `;
-        })}
-      </div>
+      <!-- Artigo ativo destacado no topo (em telas médias e grandes) -->
+      ${currentArticle
+        ? html`
+          <div class="row items-center m l margin-left">
+            <span class="chip surface-container-highest small">
+              <i class="tiny primary-text">${currentArticle.icon || "article"}</i>
+              <span class="small-text truncate">${currentArticle.title.replace(/^[^\w\s]*\s*/, "")}</span>
+            </span>
+          </div>
+        `
+        : null}
 
       <div class="max"></div>
 

@@ -1,4 +1,5 @@
 import { html } from "htm/preact";
+import { useEffect } from "preact/hooks";
 import {
   articles,
   currentDoc,
@@ -8,12 +9,19 @@ import {
 } from "../state.ts";
 import { wireToVNode } from "../render/from-wire.ts";
 import { navigateTo } from "../router.ts";
+import { hydrateIslands } from "../render/hydrate-islands.ts";
 
 export function Content() {
   const doc = currentDoc.value;
   const path = currentPath.value;
   const loading = isLoading.value;
   const error = errorMessage.value;
+
+  useEffect(() => {
+    if (doc) {
+      hydrateIslands();
+    }
+  }, [doc, path]);
 
   if (loading && !doc) {
     return html`
