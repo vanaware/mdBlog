@@ -30,6 +30,8 @@ const STATIC_ASSETS = [
   "./manifest.json",
   "./icon.svg",
   "./mdblog.js",
+  "./islands/Counter.js",
+  "./islands/DemoWidget.js",
 ];
 
 // Camada de I/O em memória e cache do Service Worker
