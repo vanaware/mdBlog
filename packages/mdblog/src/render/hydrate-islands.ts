@@ -5,12 +5,17 @@ export interface HydrateOptions {
 }
 
 /**
- * Selectively hydrates DOM nodes marked with [data-island] using Preact.
- * Supports on-demand dynamic HTML+ES browser modules.
+ * Registry em memória de componentes de ilhas importadas dinamicamente.
  */
-export function hydrateIslands(
+const dynamicIslandsCache: Record<string, ComponentType<any>> = {};
+
+/**
+ * Rotina PRINCIPAL de hidratação de ilhas dinâmicas sob demanda.
+ * Carrega exclusivamente componentes de ./islands/${islandFileName}.
+ */
+export async function hydrateIslands(
   opts: HydrateOptions = {},
-): number {
+): Promise<number> {
   if (typeof document === "undefined") {
     return 0;
   }
@@ -19,10 +24,8 @@ export function hydrateIslands(
   const nodes = root.querySelectorAll<HTMLElement>("[data-island]");
   let hydratedCount = 0;
 
-  const registry: Record<string, ComponentType<any>> = {};
-
   for (const el of nodes) {
-    // 1. Avoid double hydration
+    // Evita dupla hidratação
     if (el.dataset.islandHydrated === "true") {
       continue;
     }
@@ -30,42 +33,65 @@ export function hydrateIslands(
     const name = el.dataset.island;
     if (!name) continue;
 
-    // Tentativa de import dinâmico nativo do navegador para ilha HTML+ES sob demanda
-    if (typeof globalThis !== "undefined") {
-      const islandFileName = name.endsWith(".js") ? name : `${name}.js`;
-      const baseName = islandFileName.replace(/\.js$/, "");
+    const islandFileName = name.endsWith(".js") ? name : `${name}.js`;
+    const baseName = islandFileName.replace(/\.js$/, "");
 
-      const dynamicImport = new Function("path", "return import(path)");
-      dynamicImport(`./islands/${islandFileName}`)
-        .catch(() => dynamicImport(`./island/${islandFileName}`))
-        .then((mod: any) => {
-          const dynamicComp = mod
-            ? (mod[baseName] || mod.default || mod[Object.keys(mod)[0]])
-            : null;
-          if (dynamicComp) {
-            registry[name] = dynamicComp;
-            registry[islandFileName] = dynamicComp;
-            registry[baseName] = dynamicComp;
-            let dynamicProps = {};
-            try {
-              dynamicProps = JSON.parse(el.dataset.props || "{}");
-            } catch (_) {}
-            el.dataset.islandHydrated = "true";
-            delete el.dataset.islandMissing;
-            try {
-              hydrate(h(dynamicComp, dynamicProps), el);
-              hydratedCount++;
-            } catch (err) {
-              console.error(`[hydrate] Failed to hydrate island "${name}":`, err);
-              el.dataset.islandError = "true";
-            }
-          } else {
-            el.dataset.islandMissing = "true";
+    let dynamicProps: Record<string, any> = {};
+    try {
+      dynamicProps = JSON.parse(el.dataset.props || "{}");
+    } catch (_) {
+      // Ignora erro de parsing
+    }
+
+    // 1. Verifica se já está em cache em memória
+    const cachedComp = dynamicIslandsCache[name] ||
+      dynamicIslandsCache[islandFileName] ||
+      dynamicIslandsCache[baseName];
+
+    if (cachedComp) {
+      try {
+        el.dataset.islandHydrated = "true";
+        delete el.dataset.islandMissing;
+        hydrate(h(cachedComp, dynamicProps), el);
+        hydratedCount++;
+        continue;
+      } catch (err) {
+        console.error(`[hydrate] Falha ao hidratar ilha "${name}" em cache:`, err);
+        el.dataset.islandError = "true";
+        continue;
+      }
+    }
+
+    // 2. Rotina principal: import dinâmico nativo exclusivamente de ./islands/
+    if (typeof globalThis !== "undefined") {
+      try {
+        const dynamicImport = new Function("path", "return import(path)");
+        const mod = await dynamicImport(`./islands/${islandFileName}`);
+        const dynamicComp = mod
+          ? (mod[baseName] || mod.default || mod[Object.keys(mod)[0]])
+          : null;
+
+        if (dynamicComp) {
+          dynamicIslandsCache[name] = dynamicComp;
+          dynamicIslandsCache[islandFileName] = dynamicComp;
+          dynamicIslandsCache[baseName] = dynamicComp;
+
+          el.dataset.islandHydrated = "true";
+          delete el.dataset.islandMissing;
+          try {
+            hydrate(h(dynamicComp, dynamicProps), el);
+            hydratedCount++;
+          } catch (err) {
+            console.error(`[hydrate] Falha na hidratação de "${name}":`, err);
+            el.dataset.islandError = "true";
           }
-        })
-        .catch(() => {
+        } else {
           el.dataset.islandMissing = "true";
-        });
+        }
+      } catch (err) {
+        console.warn(`[hydrate] Ilha dinâmica não encontrada em ./islands/${islandFileName}:`, err);
+        el.dataset.islandMissing = "true";
+      }
     } else {
       el.dataset.islandMissing = "true";
     }

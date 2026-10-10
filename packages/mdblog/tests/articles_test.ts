@@ -1,23 +1,23 @@
-import { assert, assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd";
-import { fromFileUrl } from "@std/path";
-import { resolveDocPath } from "../src/plugin/detect.ts";
-import { parseFrontmatter } from "../src/plugin/core/frontmatter.ts";
-import { articles } from "../src/state.ts";
+import { assert, assertEquals, } from "@std/assert";
+import { describe, it, } from "@std/testing/bdd";
+import { fromFileUrl, } from "@std/path";
+import { resolveDocPath, } from "../src/plugin/detect.ts";
+import { parseFrontmatter, } from "../src/plugin/core/frontmatter.ts";
+import { articles, } from "../src/state.ts";
 
-const publicDir = fromFileUrl(new URL("../public", import.meta.url));
-const srcDir = fromFileUrl(new URL("../src", import.meta.url));
-const scriptsDir = fromFileUrl(new URL("../../../scripts", import.meta.url));
+const publicDir = fromFileUrl(new URL("../public", import.meta.url,),);
+const srcDir = fromFileUrl(new URL("../src", import.meta.url,),);
+const scriptsDir = fromFileUrl(new URL("../../../scripts", import.meta.url,),);
 
 describe("Articles Architecture & Dynamic Blog", () => {
   it("verifies public/articles exists and contains markdown files including index.md", async () => {
-    const stat = await Deno.stat(`${publicDir}/articles`);
-    assertEquals(stat.isDirectory, true);
+    const stat = await Deno.stat(`${publicDir}/articles`,);
+    assertEquals(stat.isDirectory, true,);
 
     const files: string[] = [];
-    for await (const entry of Deno.readDir(`${publicDir}/articles`)) {
-      if (entry.isFile && entry.name.endsWith(".md")) {
-        files.push(entry.name);
+    for await (const entry of Deno.readDir(`${publicDir}/articles`,)) {
+      if (entry.isFile && entry.name.endsWith(".md",)) {
+        files.push(entry.name,);
       }
     }
 
@@ -26,19 +26,19 @@ describe("Articles Architecture & Dynamic Blog", () => {
       `Expected at least 8 markdown articles, found ${files.length}`,
     );
     assert(
-      files.includes("index.md"),
+      files.includes("index.md",),
       "index.md must be present in public/articles as home page",
     );
     assert(
-      files.includes("README.md"),
+      files.includes("README.md",),
       "README.md must be present in public/articles",
     );
     assert(
-      files.includes("guia.md"),
+      files.includes("guia.md",),
       "guia.md must be present in public/articles",
     );
     assert(
-      files.includes("PLANO_MIGRACAO_HTML_ES.md"),
+      files.includes("PLANO_MIGRACAO_HTML_ES.md",),
       "PLANO_MIGRACAO_HTML_ES.md must be in public/articles",
     );
   });
@@ -60,22 +60,22 @@ pages:
 # Corpo do Markdown
 Texto normal aqui.`;
 
-    const { frontmatter, body } = parseFrontmatter(sample);
-    assertEquals(frontmatter.title, "Título de Teste");
-    assertEquals(frontmatter.date, "2026-10-09");
-    assertEquals(frontmatter.author, "Vanaware");
-    assertEquals(frontmatter.location, "#/articles/test.md");
-    assertEquals(Array.isArray(frontmatter.pages), true);
-    assertEquals(frontmatter.pages.length, 2);
-    assertEquals(frontmatter.pages[0].path, "README.md");
-    assertEquals(frontmatter.pages[0].title, "Visão Geral");
-    assert(body.includes("# Corpo do Markdown"));
-    assert(!body.includes("---"));
+    const { frontmatter, body, } = parseFrontmatter(sample,);
+    assertEquals(frontmatter.title, "Título de Teste",);
+    assertEquals(frontmatter.date, "2026-10-09",);
+    assertEquals(frontmatter.author, "Vanaware",);
+    assertEquals(frontmatter.location, "#/articles/test.md",);
+    assertEquals(Array.isArray(frontmatter.pages,), true,);
+    assertEquals(frontmatter.pages.length, 2,);
+    assertEquals(frontmatter.pages[0].path, "README.md",);
+    assertEquals(frontmatter.pages[0].title, "Visão Geral",);
+    assert(body.includes("# Corpo do Markdown",),);
+    assert(!body.includes("---",),);
   });
 
   it("verifies index.md contains frontmatter with pages navigation list", async () => {
-    const raw = await Deno.readTextFile(`${publicDir}/articles/index.md`);
-    const { frontmatter, body } = parseFrontmatter(raw);
+    const raw = await Deno.readTextFile(`${publicDir}/articles/index.md`,);
+    const { frontmatter, body, } = parseFrontmatter(raw,);
 
     assert(
       typeof frontmatter.title === "string",
@@ -86,7 +86,7 @@ Texto normal aqui.`;
       "index.md must have a date in frontmatter",
     );
     assert(
-      Array.isArray(frontmatter.pages),
+      Array.isArray(frontmatter.pages,),
       "index.md must have pages list in frontmatter",
     );
     assert(
@@ -94,53 +94,55 @@ Texto normal aqui.`;
       "index.md pages list must contain main sections",
     );
     assert(
-      body.includes("# 📖 mdBlog — Página Inicial"),
+      body.includes("# 📖 mdBlog — Página Inicial",),
       "index.md body must contain content",
     );
   });
 
   it("verifies child pages contain their own sub-pages in frontmatter (recursive nesting)", async () => {
     // README.md (Nível 1) tem sub-páginas (Nível 2)
-    const readmeRaw = await Deno.readTextFile(`${publicDir}/articles/README.md`);
-    const { frontmatter: readmeFm } = parseFrontmatter(readmeRaw);
+    const readmeRaw = await Deno.readTextFile(
+      `${publicDir}/articles/README.md`,
+    );
+    const { frontmatter: readmeFm, } = parseFrontmatter(readmeRaw,);
     assert(
-      Array.isArray(readmeFm.pages),
+      Array.isArray(readmeFm.pages,),
       "README.md must declare sub-pages in frontmatter",
     );
-    assert(readmeFm.pages.includes("ARQUITETURA_WIRE_FORMAT.md"));
-    assert(readmeFm.pages.includes("FLUXOS_E_CICLO_DE_VIDA.md"));
+    assert(readmeFm.pages.includes("ARQUITETURA_WIRE_FORMAT.md",),);
+    assert(readmeFm.pages.includes("FLUXOS_E_CICLO_DE_VIDA.md",),);
 
     // ARQUITETURA_WIRE_FORMAT.md (Nível 2) tem sub-sub-página (Nível 3)
     const wireRaw = await Deno.readTextFile(
       `${publicDir}/articles/ARQUITETURA_WIRE_FORMAT.md`,
     );
-    const { frontmatter: wireFm } = parseFrontmatter(wireRaw);
+    const { frontmatter: wireFm, } = parseFrontmatter(wireRaw,);
     assert(
-      Array.isArray(wireFm.pages),
+      Array.isArray(wireFm.pages,),
       "ARQUITETURA_WIRE_FORMAT.md must declare sub-sub-pages in frontmatter",
     );
-    assert(wireFm.pages.includes("WIRE_SCHEMA_DETALHES.md"));
+    assert(wireFm.pages.includes("WIRE_SCHEMA_DETALHES.md",),);
 
     // guia.md tem sub-página
-    const guiaRaw = await Deno.readTextFile(`${publicDir}/articles/guia.md`);
-    const { frontmatter: guiaFm } = parseFrontmatter(guiaRaw);
-    assert(Array.isArray(guiaFm.pages), "guia.md must declare sub-pages");
-    assert(guiaFm.pages.includes("GUIA_DE_ISLANDS.md"));
+    const guiaRaw = await Deno.readTextFile(`${publicDir}/articles/guia.md`,);
+    const { frontmatter: guiaFm, } = parseFrontmatter(guiaRaw,);
+    assert(Array.isArray(guiaFm.pages,), "guia.md must declare sub-pages",);
+    assert(guiaFm.pages.includes("GUIA_DE_ISLANDS.md",),);
 
     // PLANO_DESENVOLVIMENTO.md tem sub-página
     const planoRaw = await Deno.readTextFile(
       `${publicDir}/articles/PLANO_DESENVOLVIMENTO.md`,
     );
-    const { frontmatter: planoFm } = parseFrontmatter(planoRaw);
+    const { frontmatter: planoFm, } = parseFrontmatter(planoRaw,);
     assert(
-      Array.isArray(planoFm.pages),
+      Array.isArray(planoFm.pages,),
       "PLANO_DESENVOLVIMENTO.md must declare sub-pages",
     );
-    assert(planoFm.pages.includes("PLANO_MIGRACAO_HTML_ES.md"));
+    assert(planoFm.pages.includes("PLANO_MIGRACAO_HTML_ES.md",),);
   });
 
   it("verifies flattenArticles preserves depth, parentPath and recursive hierarchy", async () => {
-    const { flattenArticles } = await import("../src/state.ts");
+    const { flattenArticles, } = await import("../src/state.ts");
     const mockTree = [
       {
         name: "index.md",
@@ -186,169 +188,188 @@ Texto normal aqui.`;
       },
     ];
 
-    const flat = flattenArticles(mockTree);
-    assertEquals(flat.length, 4);
-    assertEquals(flat[0].depth, 0);
-    assertEquals(flat[1].depth, 1);
-    assertEquals(flat[2].depth, 2);
-    assertEquals(flat[3].depth, 3);
-    assertEquals(flat[3].parentPath, "/articles/subdoc1.md");
+    const flat = flattenArticles(mockTree,);
+    assertEquals(flat.length, 4,);
+    assertEquals(flat[0].depth, 0,);
+    assertEquals(flat[1].depth, 1,);
+    assertEquals(flat[2].depth, 2,);
+    assertEquals(flat[3].depth, 3,);
+    assertEquals(flat[3].parentPath, "/articles/subdoc1.md",);
   });
 
   it("confirms zero hardcoded articles lists in state.ts (starts as empty signal)", async () => {
-    const stateSrc = await Deno.readTextFile(`${srcDir}/state.ts`);
+    const stateSrc = await Deno.readTextFile(`${srcDir}/state.ts`,);
     assert(
-      !stateSrc.includes("DEFAULT_ARTICLES"),
+      !stateSrc.includes("DEFAULT_ARTICLES",),
       "state.ts must NOT contain hardcoded DEFAULT_ARTICLES",
     );
     assert(
-      !stateSrc.includes("const QUICK_ARTICLES"),
+      !stateSrc.includes("const QUICK_ARTICLES",),
       "state.ts must NOT contain QUICK_ARTICLES",
     );
-    assert(Array.isArray(articles.value), "articles signal must be an array");
+    assert(Array.isArray(articles.value,), "articles signal must be an array",);
   });
 
   it("confirms zero build-time indexing in build.ts (browser generates list)", async () => {
-    const buildSrc = await Deno.readTextFile(`${scriptsDir}/esbuild.ts`);
+    const buildSrc = await Deno.readTextFile(`${scriptsDir}/esbuild.ts`,);
     assert(
-      !buildSrc.includes("generateArticlesIndex"),
+      !buildSrc.includes("generateArticlesIndex",),
       "build script must NOT generate articles index during build",
     );
     assert(
-      !buildSrc.includes("index.json"),
+      !buildSrc.includes("index.json",),
       "build script must NOT hardcode index.json generation",
     );
   });
 
   it("resolves /articles/ routes correctly via resolveDocPath", () => {
-    const res1 = resolveDocPath("/articles/guia", "/articles");
-    assertEquals(res1.isDoc, true);
-    assertEquals(res1.docPath, "/articles/guia.md");
+    const res1 = resolveDocPath("/articles/guia", "/articles",);
+    assertEquals(res1.isDoc, true,);
+    assertEquals(res1.docPath, "/articles/guia.md",);
 
-    const res2 = resolveDocPath("/articles", "/articles");
-    assertEquals(res2.isDoc, true);
-    assertEquals(res2.docPath, "/articles/index.md");
+    const res2 = resolveDocPath("/articles", "/articles",);
+    assertEquals(res2.isDoc, true,);
+    assertEquals(res2.docPath, "/articles/index.md",);
 
-    const res3 = resolveDocPath("/articles/README.md", "/articles");
-    assertEquals(res3.isDoc, true);
-    assertEquals(res3.docPath, "/articles/README.md");
+    const res3 = resolveDocPath("/articles/README.md", "/articles",);
+    assertEquals(res3.isDoc, true,);
+    assertEquals(res3.docPath, "/articles/README.md",);
 
     // Backward compatibility for /docs/
-    const resDocs = resolveDocPath("/docs/guia.md", "/articles");
-    assertEquals(resDocs.isDoc, true);
-    assertEquals(resDocs.docPath, "/docs/guia.md");
+    const resDocs = resolveDocPath("/docs/guia.md", "/articles",);
+    assertEquals(resDocs.isDoc, true,);
+    assertEquals(resDocs.docPath, "/docs/guia.md",);
   });
 
   it("verifies Navbar and Sidebar render articles dynamically, with Sidebar handling indented tree and Navbar without select box", async () => {
-    const navbarSrc = await Deno.readTextFile(`${srcDir}/components/Navbar.js`);
+    const navbarSrc = await Deno.readTextFile(
+      `${srcDir}/components/Navbar.js`,
+    );
     assert(
-      navbarSrc.includes("articles.value"),
+      navbarSrc.includes("articles.value",),
       "Navbar must read articles from reactive signal",
     );
-    assert(!navbarSrc.includes("<select"), "Navbar must not use a select box");
     assert(
-      !navbarSrc.includes("<menu"),
+      !navbarSrc.includes("<select",),
+      "Navbar must not use a select box",
+    );
+    assert(
+      !navbarSrc.includes("<menu",),
       "Navbar must not use a dropdown select box",
     );
     assert(
-      !navbarSrc.includes("const QUICK_ARTICLES"),
+      !navbarSrc.includes("const QUICK_ARTICLES",),
       "Navbar must not have hardcoded QUICK_ARTICLES",
     );
     assert(
-      !navbarSrc.includes("const SECTIONS ="),
+      !navbarSrc.includes("const SECTIONS =",),
       "Navbar must not have hardcoded SECTIONS",
     );
 
-    const sidebarSrc = await Deno.readTextFile(`${srcDir}/components/Sidebar.js`);
+    const sidebarSrc = await Deno.readTextFile(
+      `${srcDir}/components/Sidebar.js`,
+    );
     assert(
-      sidebarSrc.includes("articles.value"),
+      sidebarSrc.includes("articles.value",),
       "Sidebar must read articles from reactive signal",
     );
     assert(
-      sidebarSrc.includes("item.depth"),
+      sidebarSrc.includes("item.depth",),
       "Sidebar must inspect item.depth for indentation",
     );
     assert(
-      sidebarSrc.includes("left-margin"),
+      sidebarSrc.includes("left-margin",),
       "Sidebar must use left-margin indentation class for sub-pages",
     );
     assert(
-      !sidebarSrc.includes("subdirectory_arrow_right"),
+      !sidebarSrc.includes("subdirectory_arrow_right",),
       "Sidebar must NOT use indentation arrow icons",
     );
     assert(
-      !sidebarSrc.includes("const SECTIONS ="),
+      !sidebarSrc.includes("const SECTIONS =",),
       "Sidebar must not have hardcoded SECTIONS",
     );
   });
 
-  it("verifies static fallbacks for GitHub Pages exist and list raw filenames", async () => {
-    const jsonContent = await Deno.readTextFile(
-      `${publicDir}/articles/articles.json`,
-    );
-    const filenames: string[] = JSON.parse(jsonContent);
-    assert(
-      Array.isArray(filenames),
-      "articles.json must be an array of filenames",
-    );
-    assert(
-      filenames.includes("README.md"),
-      "articles.json must contain README.md",
-    );
-    assert(
-      filenames.every((f) => typeof f === "string" && f.endsWith(".md")),
-      "All entries must be .md strings",
+  it("confirms zero static fallback files (articles.json and articles/index.html removed) and discovery is purely frontmatter-driven", async () => {
+    let hasArticlesJson = false;
+    try {
+      await Deno.stat(`${publicDir}/articles/articles.json`,);
+      hasArticlesJson = true;
+    } catch {
+      hasArticlesJson = false;
+    }
+    assertEquals(
+      hasArticlesJson,
+      false,
+      "articles.json static fallback must NOT exist",
     );
 
-    const htmlContent = await Deno.readTextFile(`${publicDir}/articles/index.html`);
-    assert(
-      htmlContent.includes('<a href="README.md">'),
-      "index.html must contain link to README.md",
-    );
-    assert(
-      htmlContent.includes('<a href="guia.md">'),
-      "index.html must contain link to guia.md",
+    let hasArticlesIndexHtml = false;
+    try {
+      await Deno.stat(`${publicDir}/articles/index.html`,);
+      hasArticlesIndexHtml = true;
+    } catch {
+      hasArticlesIndexHtml = false;
+    }
+    assertEquals(
+      hasArticlesIndexHtml,
+      false,
+      "articles/index.html static fallback must NOT exist",
     );
   });
 
+  it("verifies search indexing cleans markdown content dynamically for full-text search", async () => {
+    const { cleanMarkdownText, } = await import("../src/state.ts");
+    const sample =
+      "# Título Principal\n\nTexto com `código` e [link](https://exemplo.com).\n\n```js\nconst x = 1;\n```";
+    const cleaned = cleanMarkdownText(sample,);
+    assert(cleaned.includes("Título Principal",),);
+    assert(cleaned.includes("Texto com código e link",),);
+    assert(!cleaned.includes("```",),);
+    assert(!cleaned.includes("#",),);
+  });
+
   it("verifies Content.js implements clean layout: discreet breadcrumb, title/author/date, wrapped sub-pages without indentation icons, and Made with mdBlog footer", async () => {
-    const contentSrc = await Deno.readTextFile(`${srcDir}/components/Content.js`);
+    const contentSrc = await Deno.readTextFile(
+      `${srcDir}/components/Content.js`,
+    );
 
     // 1. Discreet breadcrumbs with tight spacing and responsive wrapping
     assert(
-      contentSrc.includes("breadcrumbs"),
+      contentSrc.includes("breadcrumbs",),
       "Content.js must build breadcrumbs",
     );
     assert(
-      contentSrc.includes("chevron_right"),
+      contentSrc.includes("chevron_right",),
       "Content.js must use subtle chevron_right divider",
     );
     assert(
-      contentSrc.includes("small-text surface-variant-text"),
+      contentSrc.includes("small-text surface-variant-text",),
       "Breadcrumb must be subtle and discreet",
     );
     assert(
-      contentSrc.includes("no-space"),
+      contentSrc.includes("no-space",),
       "Breadcrumb must use no-space to avoid excessive spacing between items",
     );
     assert(
-      contentSrc.includes("row wrap"),
+      contentSrc.includes("row wrap",),
       "Breadcrumb must have wrap to fit on small screens",
     );
 
     // 2. Header with title, author, date
     assert(
-      contentSrc.includes("<header"),
+      contentSrc.includes("<header",),
       "Content.js must have clean article header",
     );
-    assert(contentSrc.includes("author"), "Header must include author");
-    assert(contentSrc.includes("date"), "Header must include date");
+    assert(contentSrc.includes("author",), "Header must include author",);
+    assert(contentSrc.includes("date",), "Header must include date",);
 
     // 3. Article content before sub-pages list
-    const articleIdx = contentSrc.indexOf("wireToVNode");
-    const subpagesIdx = contentSrc.indexOf("Sub-páginas");
-    assert(articleIdx > 0, "Content.js must render wireToVNode");
-    assert(subpagesIdx > 0, "Content.js must render sub-pages list");
+    const articleIdx = contentSrc.indexOf("wireToVNode",);
+    const subpagesIdx = contentSrc.indexOf("Sub-páginas",);
+    assert(articleIdx > 0, "Content.js must render wireToVNode",);
+    assert(subpagesIdx > 0, "Content.js must render sub-pages list",);
     assert(
       articleIdx < subpagesIdx,
       "Article content must be rendered BEFORE sub-pages list",
@@ -356,25 +377,25 @@ Texto normal aqui.`;
 
     // 4. Sub-pages: no indentation icons, and text wrapped to avoid overflow
     assert(
-      !contentSrc.includes("subdirectory_arrow_right"),
+      !contentSrc.includes("subdirectory_arrow_right",),
       "Sub-pages must not use indentation icons",
     );
     assert(
-      contentSrc.includes("bold small-text wrap"),
+      contentSrc.includes("bold small-text wrap",),
       "Sub-page titles must be compact and wrapped",
     );
     assert(
-      contentSrc.includes("row wrap"),
+      contentSrc.includes("row wrap",),
       "Sub-page cards must wrap on small screens",
     );
 
     // 5. Clean footer with only 'Made with mdBlog'
     assert(
-      contentSrc.includes("Made with mdBlog"),
+      contentSrc.includes("Made with mdBlog",),
       "Footer must contain 'Made with mdBlog'",
     );
     assert(
-      !contentSrc.includes("dangerouslySetInnerHTML"),
+      !contentSrc.includes("dangerouslySetInnerHTML",),
       "Footer must not contain debug strings",
     );
   });

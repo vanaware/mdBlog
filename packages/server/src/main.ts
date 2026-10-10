@@ -1,19 +1,19 @@
 /// <reference lib="deno.ns" />
 
-import { serveDir } from "@std/http/file-server";
-import { fromFileUrl } from "@std/path";
+import { serveDir, } from "@std/http/file-server";
+import { fromFileUrl, } from "@std/path";
 
-const rawPort = Deno.env.get("PORT");
-const port = rawPort ? Number(rawPort) : 3000;
+const rawPort = Deno.env.get("PORT",);
+const port = rawPort ? Number(rawPort,) : 3000;
 
 const fsRoot = (() => {
-  const distUrl = fromFileUrl(new URL("../build/dist", import.meta.url));
+  const distUrl = fromFileUrl(new URL("../build/dist", import.meta.url,),);
   try {
-    Deno.statSync(distUrl);
+    Deno.statSync(distUrl,);
     return distUrl;
   } catch {
     try {
-      Deno.statSync("./build/dist");
+      Deno.statSync("./build/dist",);
       return "./build/dist";
     } catch {
       return "./packages/server/build/dist";
@@ -21,27 +21,27 @@ const fsRoot = (() => {
   }
 })();
 
-Deno.serve({ port, hostname: "0.0.0.0" }, async (req) => {
+Deno.serve({ port, hostname: "0.0.0.0", }, async (req,) => {
   try {
-    const url = new URL(req.url);
-    console.debug(`[REQ] ${req.method} ${url.pathname}`);
+    const url = new URL(req.url,);
+    console.debug(`[REQ] ${req.method} ${url.pathname}`,);
 
     const staticResponse = await serveDir(req, {
       fsRoot,
       showDirListing: false,
       quiet: true,
-    });
+    },);
 
     staticResponse.headers.set(
       "Cache-Control",
       "no-store, no-cache, must-revalidate, proxy-revalidate",
     );
-    staticResponse.headers.set("Pragma", "no-cache");
-    staticResponse.headers.set("Expires", "0");
+    staticResponse.headers.set("Pragma", "no-cache",);
+    staticResponse.headers.set("Expires", "0",);
 
     // Permitir escopo global para Service Worker
-    if (url.pathname === "/sw.js" || url.pathname.endsWith("/sw.js")) {
-      staticResponse.headers.set("Service-Worker-Allowed", "/");
+    if (url.pathname === "/sw.js" || url.pathname.endsWith("/sw.js",)) {
+      staticResponse.headers.set("Service-Worker-Allowed", "/",);
     }
     return staticResponse;
   } catch (err) {
@@ -52,7 +52,7 @@ Deno.serve({ port, hostname: "0.0.0.0" }, async (req) => {
 
     return new Response("Internal Server Error", {
       status: 500,
-      headers: { "content-type": "text/plain; charset=utf-8" },
-    });
+      headers: { "content-type": "text/plain; charset=utf-8", },
+    },);
   }
-});
+},);

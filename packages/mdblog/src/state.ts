@@ -22,10 +22,24 @@ export interface ArticleItem {
   children?: ArticleItem[]; // Sub-páginas diretas
 }
 
+export interface SearchDocItem {
+  path: string;
+  title: string;
+  description: string;
+  content: string;
+  tags: string[];
+  icon: string;
+  badge?: string;
+  depth: number;
+}
+
 // O estado inicial começa vazio - gerado dinamicamente no browser via index.md frontmatter recursivamente
 export const articles = signal<ArticleItem[]>([]);
 export const articleTree = signal<ArticleItem[]>([]);
 export const isArticlesLoading = signal<boolean>(false);
+
+// Índice de busca dinâmico populado a partir de index.md e sub-páginas recorrentemente
+export const searchDocs = signal<SearchDocItem[]>([]);
 
 export const currentPath = signal<string>("./articles/index.md");
 export const currentDoc = signal<WireDoc | null>(null);
@@ -89,6 +103,21 @@ function extractTitleFromMarkdown(text: string, fallbackName: string): string {
 }
 
 /**
+ * Remove sintaxe markdown para obter texto puro indexável em mecanismos de busca.
+ */
+export function cleanMarkdownText(markdownBody: string): string {
+  if (!markdownBody) return "";
+  return markdownBody
+    .replace(/^#+\s+/gm, " ")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_~`#>-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * Achata a árvore hierárquica em uma lista sequencial em pré-ordem (preservando depth e parentPath).
  */
 export function flattenArticles(items: ArticleItem[]): ArticleItem[] {
@@ -108,13 +137,15 @@ export function flattenArticles(items: ArticleItem[]): ArticleItem[] {
 }
 
 /**
- * Carrega recursivamente uma página e suas sub-páginas a partir do frontmatter de cada uma.
+ * Carrega recursivamente uma página e suas sub-páginas a partir do frontmatter de cada uma,
+ * populando simultaneamente a árvore de artigos e a lista de itens para indexação de busca.
  */
 async function loadPageRecursive(
   rawItem: any,
   depth: number,
   parentPath: string,
   visited: Set<string>,
+  searchAccumulator: SearchDocItem[],
 ): Promise<ArticleItem | null> {
   const cleanName = typeof rawItem === "string"
     ? rawItem.trim()
@@ -137,7 +168,7 @@ async function loadPageRecursive(
       // offline ou falha de rede
     }
 
-    const { frontmatter: pageFm } = parseFrontmatter(pageText);
+    const { frontmatter: pageFm, body: pageBody } = parseFrontmatter(pageText);
     const slug = normalized.replace(/\.md$/, "");
     const title = pageFm.title ||
       extractTitleFromMarkdown(pageText, normalized);
@@ -163,6 +194,18 @@ async function loadPageRecursive(
       children: [],
     };
 
+    // Popula item de busca para o IndexedDB
+    searchAccumulator.push({
+      path: itemPath,
+      title,
+      description: pageFm.description || "",
+      content: cleanMarkdownText(pageBody),
+      tags: item.tags || [],
+      icon,
+      badge: pageFm.badge,
+      depth,
+    });
+
     // Suporta 'pages', 'articles' ou 'subpages' no frontmatter da própria página recursivamente
     const subPagesRaw = pageFm.pages || pageFm.articles || pageFm.subpages;
     if (Array.isArray(subPagesRaw) && subPagesRaw.length > 0) {
@@ -173,6 +216,7 @@ async function loadPageRecursive(
           depth + 1,
           itemPath,
           visited,
+          searchAccumulator,
         );
         if (childNode) {
           children.push(childNode);
@@ -199,54 +243,18 @@ async function loadPageRecursive(
 }
 
 /**
- * Tenta descobrir a lista de arquivos .md caso index.md não forneça a lista em frontmatter.
- */
-async function discoverArticleFilenamesFallback(): Promise<string[]> {
-  try {
-    const res = await fetch("./articles/", {
-      headers: { "Accept": "application/json" },
-    });
-
-    if (res.ok) {
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        const files: string[] = await res.json();
-        if (Array.isArray(files) && files.length > 0) {
-          return files.filter((f) =>
-            typeof f === "string" && f.endsWith(".md")
-          );
-        }
-      }
-
-      const html = await res.text();
-      const matches = Array.from(
-        html.matchAll(/href="(?:\.\/)?([^"?#]+\.md)"/gi),
-      ).map(
-        (m) => decodeURIComponent(m[1]),
-      );
-      if (matches.length > 0) {
-        return Array.from(new Set(matches));
-      }
-    }
-  } catch (_err) {
-    // continua
-  }
-
-  return [];
-}
-
-/**
  * GERAÇÃO DINÂMICA RECURSIVA NO BROWSER:
- * 1. Procura o arquivo /articles/index.md como página principal (depth: 0).
- * 2. Lê seu frontmatter YAML contendo 'pages'.
- * 3. Para cada página, lê recursivamente seu frontmatter e descobre sub-páginas ('pages') sucessivamente.
- * 4. Atribui a cada item sua profundidade hierárquica (depth) para indentação no Navbar e Sidebar.
+ * 1. Procura exclusivamente o arquivo ./articles/index.md como raiz (depth: 0).
+ * 2. Lê seu frontmatter YAML contendo a lista recursiva de sub-páginas ('pages').
+ * 3. Para cada página, lê recursivamente seu frontmatter e descobre sub-páginas sucessivamente.
+ * 4. Popula simultaneamente o IndexedDB (via idb-keyval) com os dados para busca do SearchBox.
+ * 5. Sem dependência de fallback estático (articles.json ou articles/index.html removidos).
  */
 export async function loadArticles(): Promise<ArticleItem[]> {
   isArticlesLoading.value = true;
 
   try {
-    // 1. Tenta carregar o index.md e analisar seu frontmatter
+    // 1. Carrega o index.md e analisa seu frontmatter
     let indexRaw: string | null = null;
     try {
       const res = await fetch("./articles/index.md?_md_raw=1");
@@ -261,128 +269,92 @@ export async function loadArticles(): Promise<ArticleItem[]> {
     }
 
     if (indexRaw) {
-      const { frontmatter } = parseFrontmatter(indexRaw);
+      const { frontmatter, body } = parseFrontmatter(indexRaw);
       const pagesList: any[] = frontmatter.pages || frontmatter.articles ||
         frontmatter.subpages;
 
+      const visited = new Set<string>(["index.md"]);
+      const searchAccumulator: SearchDocItem[] = [];
+
+      // Página Inicial (Home) a partir do próprio index.md (depth: 0)
+      const indexItem: ArticleItem = {
+        name: "index.md",
+        slug: "index",
+        path: "./articles/index.md",
+        title: frontmatter.title
+          ? `🏠 ${frontmatter.title.split("-")[0].trim()}`
+          : "🏠 Página Inicial",
+        icon: "home",
+        badge: "Home",
+        date: frontmatter.date,
+        location: frontmatter.location || "#/articles/index.md",
+        author: frontmatter.author,
+        description: frontmatter.description,
+        tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : [],
+        depth: 0,
+        children: [],
+      };
+
+      // Adiciona o index.md ao índice de busca
+      searchAccumulator.push({
+        path: "./articles/index.md",
+        title: frontmatter.title || "Página Inicial",
+        description: frontmatter.description || "",
+        content: cleanMarkdownText(body),
+        tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : [],
+        icon: "home",
+        badge: "Home",
+        depth: 0,
+      });
+
+      // Carrega recursivamente cada página filha declarada no frontmatter
       if (Array.isArray(pagesList) && pagesList.length > 0) {
-        const visited = new Set<string>(["index.md"]);
-
-        // Página Inicial (Home) a partir do próprio index.md (depth: 0)
-        const indexItem: ArticleItem = {
-          name: "index.md",
-          slug: "index",
-          path: "/articles/index.md",
-          title: frontmatter.title
-            ? `🏠 ${frontmatter.title.split("-")[0].trim()}`
-            : "🏠 Página Inicial",
-          icon: "home",
-          badge: "Home",
-          date: frontmatter.date,
-          location: frontmatter.location || "#/articles/index.md",
-          author: frontmatter.author,
-          description: frontmatter.description,
-          tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : [],
-          depth: 0,
-          children: [],
-        };
-
-        // Carrega recursivamente cada página filha declarada em index.md
         const childNodes: ArticleItem[] = [];
         for (const item of pagesList) {
           const node = await loadPageRecursive(
             item,
             1,
-            "/articles/index.md",
+            "./articles/index.md",
             visited,
+            searchAccumulator,
           );
           if (node) {
             childNodes.push(node);
           }
         }
         indexItem.children = childNodes;
-
-        const tree = [indexItem];
-        const flattened = flattenArticles(tree);
-
-        articleTree.value = tree;
-        articles.value = flattened;
-
-        // Persiste cache no IndexedDB via idb-keyval
-        try {
-          await set("browser-articles-cache", flattened);
-        } catch {
-          // non-fatal
-        }
-
-        return articles.value;
       }
+
+      const tree = [indexItem];
+      const flattened = flattenArticles(tree);
+
+      articleTree.value = tree;
+      articles.value = flattened;
+      searchDocs.value = searchAccumulator;
+
+      // Persiste cache no IndexedDB via idb-keyval
+      try {
+        await set("browser-articles-cache", flattened);
+        await set("mdblog-search-index", searchAccumulator);
+      } catch {
+        // non-fatal
+      }
+
+      return articles.value;
     }
 
-    // 2. Se index.md não tinha pages ou falhou, tenta descoberta direta de arquivos
-    const filenames = await discoverArticleFilenamesFallback();
-    if (filenames.length > 0) {
-      const generated: ArticleItem[] = [];
-      await Promise.all(
-        filenames.map(async (filename) => {
-          try {
-            const res = await fetch(`./articles/${filename}?_md_raw=1`);
-            if (res.ok) {
-              const text = await res.text();
-              const { frontmatter } = parseFrontmatter(text);
-              const title = frontmatter.title ||
-                extractTitleFromMarkdown(text, filename);
-              const slug = filename.replace(/\.md$/, "");
-              const icon = inferArticleIcon(slug, title);
-              const isIndex = slug === "index";
-
-              generated.push({
-                name: filename,
-                slug,
-                path: `/articles/${filename}`,
-                title,
-                icon,
-                badge: isIndex ? "Home" : undefined,
-                date: frontmatter.date,
-                location: frontmatter.location || `#/articles/${filename}`,
-                author: frontmatter.author,
-                description: frontmatter.description,
-                tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : [],
-                depth: isIndex ? 0 : 1,
-                parentPath: isIndex ? undefined : "/articles/index.md",
-                children: [],
-              });
-            }
-          } catch {
-            // ignora
-          }
-        }),
-      );
-
-      generated.sort((a, b) => {
-        if (a.name === "index.md") return -1;
-        if (b.name === "index.md") return 1;
-        return a.title.localeCompare(b.title);
-      });
-
-      if (generated.length > 0) {
-        articles.value = generated;
-        articleTree.value = generated;
-        try {
-          await set("browser-articles-cache", generated);
-        } catch {
-          // non-fatal
-        }
-        return articles.value;
-      }
-    }
-
-    // 3. Fallback offline: busca cache salvo no IndexedDB (idb-keyval)
+    // 2. Fallback offline: busca cache salvo no IndexedDB (idb-keyval)
     try {
       const cached = await get<ArticleItem[]>("browser-articles-cache");
       if (cached && Array.isArray(cached) && cached.length > 0) {
         articles.value = cached;
-        return cached;
+      }
+      const cachedSearch = await get<SearchDocItem[]>("mdblog-search-index");
+      if (cachedSearch && Array.isArray(cachedSearch) && cachedSearch.length > 0) {
+        searchDocs.value = cachedSearch;
+      }
+      if (articles.value.length > 0) {
+        return articles.value;
       }
     } catch {
       // ignora

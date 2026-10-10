@@ -63,10 +63,10 @@ export function wireToVNode(
     }
 
     case "i": {
-      // Island Node (Mode B)
+      // Dynamic Island Node (HTML+ES)
       const Comp = islandRegistry[node.n];
       const propsJson = JSON.stringify(node.p ?? {});
-      const isMissing = !Comp;
+      const isMissing = options.islands !== undefined ? !Comp : false;
 
       // Children inside container for initial render / fallback
       let innerContent: ComponentChildren = null;

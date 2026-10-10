@@ -59,7 +59,11 @@ export function Content() {
     `;
   }
 
-  const currentArticle = articles.value.find((a) => a.path === path);
+  const currentArticle = articles.value.find(
+    (a) =>
+      a.path === path ||
+      a.path.replace(/^\.?\//, "") === path.replace(/^\.?\//, ""),
+  );
 
   // Monta o breadcrumb discreto a partir da hierarquia do artigo
   const breadcrumbs = [];
@@ -67,7 +71,12 @@ export function Content() {
   while (curr) {
     breadcrumbs.unshift(curr);
     if (!curr.parentPath || curr.parentPath === curr.path) break;
-    curr = articles.value.find((a) => a.path === curr.parentPath);
+    curr = articles.value.find(
+      (a) =>
+        a.path === curr.parentPath ||
+        a.path.replace(/^\.?\//, "") ===
+          (curr.parentPath || "").replace(/^\.?\//, ""),
+    );
   }
 
   const rootArticle = articles.value.find(
