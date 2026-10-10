@@ -1,5 +1,6 @@
-import { render } from "preact";
+import { Component, Fragment, h, hydrate, render } from "preact";
 import { html } from "htm/preact";
+import { batch, computed, effect, signal, useSignal } from "@preact/signals";
 import { App } from "./components/App.js";
 import { Navbar } from "./components/Navbar.js";
 import { Sidebar } from "./components/Sidebar.js";
@@ -10,23 +11,36 @@ import { initRouter, navigateTo } from "./router.ts";
 import { registerServiceWorker } from "./register-sw.ts";
 import * as state from "./state.ts";
 import * as mdTranspiler from "./lib/md-transpiler.ts";
+import { hydrateIslands } from "./render/hydrate-islands.ts";
 
-// Exporta todos os componentes e ferramentas da biblioteca
+// Exporta todos os componentes, ferramentas e primitivas para consumo direto de ilhas e apps externos
 export {
   App,
+  batch,
+  Component,
+  computed,
   Content,
+  effect,
+  Fragment,
+  h,
+  html,
+  hydrate,
+  hydrateIslands,
   initRouter,
   mdTranspiler,
   Navbar,
   navigateTo,
   registerServiceWorker,
+  render,
   SearchBox,
   Sidebar,
+  signal,
   state,
   ThemeToggle,
+  useSignal,
 };
 
-// Disponibiliza a biblioteca no escopo global para consumo direto via browser
+// Disponibiliza a biblioteca e todas as primitivas no escopo global para consumo direto no browser
 if (typeof globalThis !== "undefined") {
   globalThis.mdBlog = {
     App,
@@ -40,6 +54,19 @@ if (typeof globalThis !== "undefined") {
     registerServiceWorker,
     state,
     mdTranspiler,
+    hydrateIslands,
+    // Primitivas reativas e de renderização para ilhas
+    html,
+    signal,
+    useSignal,
+    computed,
+    effect,
+    batch,
+    h,
+    render,
+    hydrate,
+    Component,
+    Fragment,
   };
 }
 

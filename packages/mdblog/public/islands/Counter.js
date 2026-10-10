@@ -1,6 +1,6 @@
 // Ilha Counter em formato puro HTML+ES (execução direta no navegador)
-import { html } from "htm/preact";
-import { signal, useSignal } from "@preact/signals";
+// Utiliza os utilitários exportados pelo bundle mdBlog (sem requisições externas de CDN)
+import { html, signal, useSignal } from "../mdblog.js";
 
 export function Counter({ start = 0, step = 1, label = "Contador Interativo" }) {
   const count = typeof useSignal === "function"
@@ -13,7 +13,7 @@ export function Counter({ start = 0, step = 1, label = "Contador Interativo" }) 
         <div class="max wrap">
           <h6 class="no-margin bold wrap">${label}</h6>
           <p class="small-text surface-variant-text no-margin wrap">
-            Ilha HTML+ES (execução nativa sem compilação de bundle)
+            Ilha HTML+ES (execução nativa com Preact Signals do bundle)
           </p>
         </div>
         <div class="row items-center gap">

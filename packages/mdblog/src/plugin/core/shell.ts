@@ -29,16 +29,6 @@ export function defaultShell(doc: WireDoc, bundlePath = "./mdblog.js"): string {
     <!-- Favicon SVG Inline -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📑</text></svg>" />
 
-    <!-- Import Map exclusivo para as Islands dinâmicas no browser -->
-    <script type="importmap">
-    {
-      "imports": {
-        "preact": "https://esm.sh/preact@10.25.4",
-        "htm/preact": "https://esm.sh/htm@3.1.1/preact?external=preact",
-        "@preact/signals": "https://esm.sh/@preact/signals@2.0.1?external=preact"
-      }
-    }
-    </script>
 
     <!-- BeerCSS Framework v5.0.3 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/beercss@5.0.3/dist/cdn/beer.min.css" />

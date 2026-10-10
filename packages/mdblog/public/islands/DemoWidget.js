@@ -1,6 +1,6 @@
 // Ilha interativa pura HTML+ES (executada diretamente no navegador sem compilação nem bundle)
-import { html } from "htm/preact";
-import { signal, useSignal } from "@preact/signals";
+// Utiliza os utilitários exportados pelo bundle mdBlog (sem requisições externas de CDN)
+import { html, signal, useSignal } from "../mdblog.js";
 
 export function DemoWidget({ title = "Ilha Dinâmica HTML+ES", step = 1 }) {
   const count = typeof useSignal === "function" ? useSignal(0) : signal(0);
@@ -11,7 +11,7 @@ export function DemoWidget({ title = "Ilha Dinâmica HTML+ES", step = 1 }) {
         <div>
           <h6 class="no-margin bold">${title}</h6>
           <p class="small-text surface-variant-text no-margin">
-            Módulo ES nativo carregado sob demanda via import() do browser
+            Módulo ES nativo utilizando Preact Signals do bundle mdBlog
           </p>
         </div>
         <div class="row items-center gap">

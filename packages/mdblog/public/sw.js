@@ -21,7 +21,7 @@
 
 import mdTranspiler from "./mdblog.js";
 
-const CACHE_NAME = "mdblog-pwa-v1";
+const CACHE_NAME = "mdblog-pwa-v2";
 
 // Lista de assets fundamentais para operação offline
 const STATIC_ASSETS = [

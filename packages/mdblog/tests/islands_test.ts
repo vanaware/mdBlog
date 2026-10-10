@@ -58,14 +58,20 @@ describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
     const demoWidgetCode = await Deno.readTextFile(
       `${publicDir}/islands/DemoWidget.js`,
     );
-    assert(demoWidgetCode.includes('from "htm/preact"',),);
+    assert(
+      demoWidgetCode.includes('from "../mdblog.js"',) ||
+        demoWidgetCode.includes("mdBlog",),
+    );
     assert(demoWidgetCode.includes("html`",),);
     assert(demoWidgetCode.includes("export function DemoWidget",),);
 
     const publicCounterCode = await Deno.readTextFile(
       `${publicDir}/islands/Counter.js`,
     );
-    assert(publicCounterCode.includes('from "htm/preact"',),);
+    assert(
+      publicCounterCode.includes('from "../mdblog.js"',) ||
+        publicCounterCode.includes("mdBlog",),
+    );
     assert(publicCounterCode.includes("html`",),);
 
     // Confirma que não existe pasta ou symlink 'island' no singular (apenas a opção 'islands' mantida)

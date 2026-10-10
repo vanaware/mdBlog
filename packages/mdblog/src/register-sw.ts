@@ -1,4 +1,5 @@
 import { isSWActive } from "./state.ts";
+import { getAppBaseUrl } from "./plugin/detect.ts";
 
 export async function registerServiceWorker(): Promise<void> {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
@@ -8,9 +9,12 @@ export async function registerServiceWorker(): Promise<void> {
   }
 
   try {
-    // Relative path for GitHub Pages and subfolder support
-    const registration = await navigator.serviceWorker.register("./sw.js", {
-      scope: "./",
+    // Deriva caminho base e escopo dinamicamente para compatibilidade com subpastas (ex: GitHub Pages)
+    const baseUrl = getAppBaseUrl();
+    const swUrl = `${baseUrl}sw.js`;
+
+    const registration = await navigator.serviceWorker.register(swUrl, {
+      scope: baseUrl,
     });
 
     // Check for updates immediately so stale workers are replaced
@@ -37,7 +41,10 @@ export async function registerServiceWorker(): Promise<void> {
       });
     }
   } catch (err) {
-    console.warn("[SW] Registration error (normal in some sandboxed environments):", err);
+    console.warn(
+      "[SW] Registration error (normal in some sandboxed environments):",
+      err,
+    );
     isSWActive.value = false;
   }
 }

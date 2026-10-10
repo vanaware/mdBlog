@@ -46,7 +46,7 @@ describe("Build Script & Distribution", () => {
 
     // Lê o sw.js compilado e verifica o conteúdo
     const swContent = await Deno.readTextFile(`${distDir}/sw.js`,);
-    assert(swContent.includes("mdblog-pwa-v1",),);
+    assert(swContent.includes("mdblog-pwa-v2",),);
 
     // Verifica se o arquivo public/sw.js padrão demonstra o uso da biblioteca empacotada
     const publicSw = await Deno.readTextFile(`${publicDir}/sw.js`,);

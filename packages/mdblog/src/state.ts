@@ -2,6 +2,7 @@ import { effect, signal } from "@preact/signals";
 import type { WireDoc } from "./plugin/wire.ts";
 import { parseFrontmatter } from "./plugin/core/frontmatter.ts";
 import { get, set } from "idb-keyval";
+import { getAppBaseUrl } from "./plugin/detect.ts";
 
 export type ViewMode = "preview" | "ast" | "raw";
 
@@ -155,13 +156,14 @@ async function loadPageRecursive(
   visited.add(normalized);
 
   try {
+    const baseUrl = getAppBaseUrl();
     let pageText = "";
     try {
-      const res = await fetch(`./articles/${normalized}?_md_raw=1`);
+      const res = await fetch(`${baseUrl}articles/${normalized}?_md_raw=1`);
       if (res.ok) {
         pageText = await res.text();
       } else {
-        const res2 = await fetch(`./articles/${normalized}`);
+        const res2 = await fetch(`${baseUrl}articles/${normalized}`);
         if (res2.ok) pageText = await res2.text();
       }
     } catch {
@@ -255,13 +257,14 @@ export async function loadArticles(): Promise<ArticleItem[]> {
 
   try {
     // 1. Carrega o index.md e analisa seu frontmatter
+    const baseUrl = getAppBaseUrl();
     let indexRaw: string | null = null;
     try {
-      const res = await fetch("./articles/index.md?_md_raw=1");
+      const res = await fetch(`${baseUrl}articles/index.md?_md_raw=1`);
       if (res.ok) {
         indexRaw = await res.text();
       } else {
-        const res2 = await fetch("./articles/index.md");
+        const res2 = await fetch(`${baseUrl}articles/index.md`);
         if (res2.ok) indexRaw = await res2.text();
       }
     } catch {

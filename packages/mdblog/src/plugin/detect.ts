@@ -13,8 +13,24 @@ export function isSWControlling(): boolean {
 }
 
 /**
+ * Computes canonical directory base URL respecting subfolders (e.g. GitHub Pages).
+ */
+export function getAppBaseUrl(): string {
+  if (typeof globalThis === "undefined" || !globalThis.location) return "./";
+  const { origin, pathname } = globalThis.location;
+  if (!origin || origin === "null") return "./";
+  if (pathname.endsWith(".html")) {
+    const dir = pathname.substring(0, pathname.lastIndexOf("/") + 1);
+    return `${origin}${dir}`;
+  }
+  const dir = pathname.endsWith("/") ? pathname : `${pathname}/`;
+  return `${origin}${dir}`;
+}
+
+/**
  * Normalizes and resolves a documentation request path.
  * Maps clean paths like "/docs/guia" or "docs/guia" or "/docs/guia.md" to canonical ".md" paths.
+ * Supports subfolder hosting on GitHub Pages (e.g. "/mdBlog/articles/guia.md").
  */
 export function resolveDocPath(
   urlOrPath: string,
@@ -31,15 +47,19 @@ export function resolveDocPath(
   // Remove trailing slashes and hash
   pathname = pathname.replace(/#.*$/, "").replace(/\?.*$/, "");
 
+  const cleanBase = basePath.replace(/^\.?\//, "").replace(/\/$/, "");
+
   // If path is root or empty
-  if (pathname === "" || pathname === "/") {
-    pathname = `${basePath}/index.md`;
+  if (pathname === "" || pathname === "/" || pathname === "./") {
+    pathname = `./${cleanBase}/index.md`;
   }
 
   // Check if it pertains to articles, docs, or ends with .md
-  const normalizedBase = basePath.startsWith("/") ? basePath : `/${basePath}`;
-  const isDoc = pathname.startsWith(normalizedBase) ||
-    pathname.startsWith("./articles") ||
+  const isDoc = pathname.includes(`/${cleanBase}/`) ||
+    pathname.startsWith(`${cleanBase}/`) ||
+    pathname.startsWith(`./${cleanBase}/`) ||
+    pathname.endsWith(`/${cleanBase}`) ||
+    pathname.endsWith(`/${cleanBase}/`) ||
     pathname.endsWith(".md");
 
   if (!isDoc) {
@@ -48,13 +68,8 @@ export function resolveDocPath(
 
   let docPath = pathname;
   if (!docPath.endsWith(".md")) {
-    if (
-      docPath === "./articles" || docPath === "./articles/" ||
-      docPath === "./articles/index"
-    ) {
-      docPath = "./articles/index.md";
-    } else if (docPath === normalizedBase || docPath === `${normalizedBase}/`) {
-      docPath = `${normalizedBase}/index.md`;
+    if (docPath.endsWith(`/${cleanBase}`) || docPath.endsWith(`/${cleanBase}/`)) {
+      docPath = `${docPath.replace(/\/+$/, "")}/index.md`;
     } else {
       docPath = `${docPath}.md`;
     }
