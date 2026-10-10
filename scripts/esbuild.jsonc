@@ -1,0 +1,63 @@
+{
+  "$schema": "https://vanaware.github.io/buildit/schema/esbuild.json",
+  "versionPaths": [
+    "packages/mdblog/public/version.js",
+    "packages/mdblog/src/version.ts"
+  ],
+  "forcepackagesversion": true,
+  "targets": {
+    "mdblog": {
+      "default": true,
+      "srcdir": "packages/mdblog/src",
+      "distdir": "packages/server/build/dist",
+      "clean": {
+        "includes": ["*"]
+      },
+      "copyFiles": [
+        {
+          "basedir": "packages/mdblog/public"
+        }
+      ],
+      "entryPoints": ["mod.ts"],
+      "outfile": "mdblog.js",
+      "platform": "browser",
+      "format": "esm",
+      "bundle": true,
+      "minify": false,
+      "sourcemap": "linked",
+      "drop": ["debugger"],
+      "conditions": ["browser"],
+      "metafile": true,
+      "write": true,
+      "legalComments": "eof",
+      "keepNames": true,
+      "splitting": false,
+      "banner": {
+        "js": "/*!\n * mdBlog v__APP_VERSION__\n * (c) 2026 Vanaware - MIT License\n */\n"
+      }
+    },
+    "dist": {
+      "default": true,
+      "srcdir": "packages/mdblog/src",
+      "distdir": "packages/mdblog/dist",
+      "clean": ["*"],
+      "entryPoints": ["mod.ts"],
+      "outfile": "mdblog.min.js",
+      "platform": "browser",
+      "format": "esm",
+      "bundle": true,
+      "minify": true,
+      "sourcemap": "external",
+      "drop": ["debugger"],
+      "conditions": ["browser"],
+      "metafile": false,
+      "write": true,
+      "legalComments": "eof",
+      "keepNames": true,
+      "splitting": false,
+      "banner": {
+        "js": "/*!\n * mdBlog v__APP_VERSION__\n * (c) 2026 Vanaware - MIT License\n */\n"
+      }
+    }
+  }
+}

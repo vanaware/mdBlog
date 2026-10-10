@@ -1,0 +1,39 @@
+name: Publish to JSR
+
+on:
+  push:
+    tags:
+      - "v*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version-file: .tool-versions
+          cache: true
+
+      - name: Install dependencies
+        run: deno ci
+
+      - name: Verify code integrity
+        run: deno task tests
+
+      - name: Sanitize Version
+        run: |
+          deno task sanitize-version ./packages/mdblog/deno.jsonc
+
+      - name: Publish mdBlog to JSR
+        run: |
+          cd packages/mdblog
+          deno publish --allow-slow-types --allow-dirty

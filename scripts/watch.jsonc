@@ -1,0 +1,32 @@
+{
+  "$schema": "https://vanaware.github.io/buildit/schema/watch.json",
+  "targets": {
+    "mdblog": {
+      "default": true,
+      "srcdir": "packages/mdblog/src",
+      "distdir": "packages/server/build/dist",
+      "copyFiles": [
+        {
+          "basedir": "packages/mdblog/public"
+        }
+      ],
+      "entryPoints": [
+        "mod.ts"
+      ],
+      "platform": "browser",
+      "format": "esm",
+      "bundle": true,
+      "minify": false,
+      "sourcemap": "inline",
+      "conditions": [
+        "browser"
+      ],
+      "write": true,
+      "legalComments": "eof",
+      "outfile": "mdblog.js",
+      "banner": {
+        "js": "/*!\n * mdBlog v__APP_VERSION__ [DEV WATCH]\n * (c) 2026 Vanaware - MIT License\n */\n"
+      }
+    }
+  }
+}

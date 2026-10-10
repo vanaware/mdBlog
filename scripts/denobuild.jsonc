@@ -1,0 +1,51 @@
+{
+  "$schema": "https://vanaware.github.io/buildit/schema/denobuild.json",
+  "versionPaths": [
+    "packages/mdblog/public/version.js",
+    "packages/mdblog/src/version.ts"
+  ],
+  "forcepackagesversion": true,
+  "targets": {
+    "mdblog": {
+      "default": true,
+      "srcdir": "packages/mdblog/src",
+      "distdir": "packages/server/build/dist",
+      "clean": {
+        "includes": ["*"]
+      },
+      "copyFiles": [
+        {
+          "basedir": "packages/mdblog/public"
+        }
+      ],
+      "entryPoints": ["mod.ts"],
+      "outfile": "mdblog.js",
+      "platform": "browser",
+      "format": "esm",
+      "minify": false,
+      "sourcemap": "linked",
+      "keepNames": true,
+      "codeSplitting": false,
+      "packages": "bundle",
+      "inlineImports": true
+    },
+    "dist": {
+      "default": true,
+      "srcdir": "packages/mdblog/src",
+      "distdir": "packages/mdblog/dist",
+      "clean": {
+        "includes": ["*"]
+      },
+      "entryPoints": ["mod.ts"],
+      "outfile": "mdblog.min.js",
+      "platform": "browser",
+      "format": "esm",
+      "minify": true,
+      "sourcemap": "external",
+      "keepNames": true,
+      "codeSplitting": false,
+      "packages": "bundle",
+      "inlineImports": true
+    }
+  }
+}
