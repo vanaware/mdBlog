@@ -1,14 +1,12 @@
 {
   "name": "@vanaware/mdblog",
-  "version": "0.0.0#tujywa6a",
+  "version": "0.0.2#mv2xmei8",
   "description": "Browser Blog engine from markdown.",
   "author": "Vanaware",
   "license": "MIT",
   "compilerOptions": {
     "lib": ["deno.window", "dom", "dom.iterable"]
   },
-  "nodeModulesDir": "auto",
-  "unstable": ["bundle"],
   "imports": {
     "preact": "npm:preact@10.25.4",
     "preact/hooks": "npm:preact@10.25.4/hooks",

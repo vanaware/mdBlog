@@ -1,5 +1,5 @@
 {
-  "version": "0.0.0#tujywa6a",
+  "version": "0.0.2#mv2xmei8",
   "description": "Browser Blog engine from markdown.",
   "license": "MIT",
   "author": "Vanaware",
@@ -59,7 +59,6 @@
     "sanitize-version": "deno run -A ./scripts/sanitize-version.ts",
     "tag-version": "deno run -A ./scripts/tag-version.ts",
     "bump": "deno install --frozen=false && deno task esbuild noversion && deno task tag-version"
-  },
   },
   "lint": {
     "rules": {
