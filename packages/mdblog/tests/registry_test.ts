@@ -1,5 +1,6 @@
 import { assertEquals, assert } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
+import type { VNode } from "preact";
 import { wireToVNode } from "../src/render/from-wire.ts";
 import { slugify } from "../src/plugin/detect.ts";
 import type { WireFragment, WireIsland, WireComponent } from "../src/plugin/wire.ts";
@@ -39,8 +40,8 @@ describe("Render Layer & Registry", () => {
 
   it("renders headings with BeerCSS wrap class and balanced hierarchy without non-wrapping row", async () => {
     const { Heading } = await import("../src/render/registry.js");
-    const h1Node = Heading({ depth: 1, id: "titulo-principal", children: "Título Principal" }) as any;
-    const h2Node = Heading({ depth: 2, id: "secao", children: "Subseção" }) as any;
+    const h1Node = Heading({ depth: 1, id: "titulo-principal", children: "Título Principal" }) as VNode<{ class: string }>;
+    const h2Node = Heading({ depth: 2, id: "secao", children: "Subseção" }) as VNode<{ class: string }>;
 
     // depth 1 maps to h4 with wrap class
     assertEquals(h1Node.type, "h4");
@@ -60,7 +61,7 @@ describe("Render Layer & Registry", () => {
       c: [],
     };
 
-    const vnode = wireToVNode(islandNode, { islands: {} }) as any;
+    const vnode = wireToVNode(islandNode, { islands: {} }) as VNode<Record<string, string>>;
     assert(vnode !== null);
     assertEquals(vnode.props["data-island"], "NonExistentIsland");
     assertEquals(vnode.props["data-island-missing"], "true");

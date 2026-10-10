@@ -52,7 +52,13 @@ export function hydrateIslands(
             } catch (_) {}
             el.dataset.islandHydrated = "true";
             delete el.dataset.islandMissing;
-            hydrate(h(dynamicComp, dynamicProps), el);
+            try {
+              hydrate(h(dynamicComp, dynamicProps), el);
+              hydratedCount++;
+            } catch (err) {
+              console.error(`[hydrate] Failed to hydrate island "${name}":`, err);
+              el.dataset.islandError = "true";
+            }
           } else {
             el.dataset.islandMissing = "true";
           }
@@ -62,27 +68,6 @@ export function hydrateIslands(
         });
     } else {
       el.dataset.islandMissing = "true";
-    }
-
-    // 2. Safely parse props
-    let props = {};
-    try {
-      props = JSON.parse(el.dataset.props || "{}");
-    } catch (err) {
-      console.warn(`[hydrate] Failed to parse props for island ${name}:`, err);
-    }
-
-    // 3. Mark as hydrated before invoking hydrate
-    el.dataset.islandHydrated = "true";
-    delete el.dataset.islandMissing;
-
-    // 4. Hydrate this subtree
-    try {
-      hydrate(h(Comp, props), el);
-      hydratedCount++;
-    } catch (err) {
-      console.error(`[hydrate] Failed to hydrate island "${name}":`, err);
-      el.dataset.islandError = "true";
     }
   }
 

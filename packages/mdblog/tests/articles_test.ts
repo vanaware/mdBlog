@@ -1,16 +1,21 @@
 import { assert, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
+import { fromFileUrl } from "@std/path";
 import { resolveDocPath } from "../src/plugin/detect.ts";
 import { parseFrontmatter } from "../src/plugin/core/frontmatter.ts";
 import { articles } from "../src/state.ts";
 
+const publicDir = fromFileUrl(new URL("../public", import.meta.url));
+const srcDir = fromFileUrl(new URL("../src", import.meta.url));
+const scriptsDir = fromFileUrl(new URL("../../../scripts", import.meta.url));
+
 describe("Articles Architecture & Dynamic Blog", () => {
   it("verifies public/articles exists and contains markdown files including index.md", async () => {
-    const stat = await Deno.stat("public/articles");
+    const stat = await Deno.stat(`${publicDir}/articles`);
     assertEquals(stat.isDirectory, true);
 
     const files: string[] = [];
-    for await (const entry of Deno.readDir("public/articles")) {
+    for await (const entry of Deno.readDir(`${publicDir}/articles`)) {
       if (entry.isFile && entry.name.endsWith(".md")) {
         files.push(entry.name);
       }
@@ -69,7 +74,7 @@ Texto normal aqui.`;
   });
 
   it("verifies index.md contains frontmatter with pages navigation list", async () => {
-    const raw = await Deno.readTextFile("public/articles/index.md");
+    const raw = await Deno.readTextFile(`${publicDir}/articles/index.md`);
     const { frontmatter, body } = parseFrontmatter(raw);
 
     assert(
@@ -96,7 +101,7 @@ Texto normal aqui.`;
 
   it("verifies child pages contain their own sub-pages in frontmatter (recursive nesting)", async () => {
     // README.md (Nível 1) tem sub-páginas (Nível 2)
-    const readmeRaw = await Deno.readTextFile("public/articles/README.md");
+    const readmeRaw = await Deno.readTextFile(`${publicDir}/articles/README.md`);
     const { frontmatter: readmeFm } = parseFrontmatter(readmeRaw);
     assert(
       Array.isArray(readmeFm.pages),
@@ -107,7 +112,7 @@ Texto normal aqui.`;
 
     // ARQUITETURA_WIRE_FORMAT.md (Nível 2) tem sub-sub-página (Nível 3)
     const wireRaw = await Deno.readTextFile(
-      "public/articles/ARQUITETURA_WIRE_FORMAT.md",
+      `${publicDir}/articles/ARQUITETURA_WIRE_FORMAT.md`,
     );
     const { frontmatter: wireFm } = parseFrontmatter(wireRaw);
     assert(
@@ -117,14 +122,14 @@ Texto normal aqui.`;
     assert(wireFm.pages.includes("WIRE_SCHEMA_DETALHES.md"));
 
     // guia.md tem sub-página
-    const guiaRaw = await Deno.readTextFile("public/articles/guia.md");
+    const guiaRaw = await Deno.readTextFile(`${publicDir}/articles/guia.md`);
     const { frontmatter: guiaFm } = parseFrontmatter(guiaRaw);
     assert(Array.isArray(guiaFm.pages), "guia.md must declare sub-pages");
     assert(guiaFm.pages.includes("GUIA_DE_ISLANDS.md"));
 
     // PLANO_DESENVOLVIMENTO.md tem sub-página
     const planoRaw = await Deno.readTextFile(
-      "public/articles/PLANO_DESENVOLVIMENTO.md",
+      `${publicDir}/articles/PLANO_DESENVOLVIMENTO.md`,
     );
     const { frontmatter: planoFm } = parseFrontmatter(planoRaw);
     assert(
@@ -191,7 +196,7 @@ Texto normal aqui.`;
   });
 
   it("confirms zero hardcoded articles lists in state.ts (starts as empty signal)", async () => {
-    const stateSrc = await Deno.readTextFile("src/state.ts");
+    const stateSrc = await Deno.readTextFile(`${srcDir}/state.ts`);
     assert(
       !stateSrc.includes("DEFAULT_ARTICLES"),
       "state.ts must NOT contain hardcoded DEFAULT_ARTICLES",
@@ -204,14 +209,14 @@ Texto normal aqui.`;
   });
 
   it("confirms zero build-time indexing in build.ts (browser generates list)", async () => {
-    const buildSrc = await Deno.readTextFile("build.ts");
+    const buildSrc = await Deno.readTextFile(`${scriptsDir}/esbuild.ts`);
     assert(
       !buildSrc.includes("generateArticlesIndex"),
-      "build.ts must NOT generate articles index during build",
+      "build script must NOT generate articles index during build",
     );
     assert(
       !buildSrc.includes("index.json"),
-      "build.ts must NOT hardcode index.json generation",
+      "build script must NOT hardcode index.json generation",
     );
   });
 
@@ -235,7 +240,7 @@ Texto normal aqui.`;
   });
 
   it("verifies Navbar and Sidebar render articles dynamically, with Sidebar handling indented tree and Navbar without select box", async () => {
-    const navbarSrc = await Deno.readTextFile("src/components/Navbar.js");
+    const navbarSrc = await Deno.readTextFile(`${srcDir}/components/Navbar.js`);
     assert(
       navbarSrc.includes("articles.value"),
       "Navbar must read articles from reactive signal",
@@ -254,7 +259,7 @@ Texto normal aqui.`;
       "Navbar must not have hardcoded SECTIONS",
     );
 
-    const sidebarSrc = await Deno.readTextFile("src/components/Sidebar.js");
+    const sidebarSrc = await Deno.readTextFile(`${srcDir}/components/Sidebar.js`);
     assert(
       sidebarSrc.includes("articles.value"),
       "Sidebar must read articles from reactive signal",
@@ -279,7 +284,7 @@ Texto normal aqui.`;
 
   it("verifies static fallbacks for GitHub Pages exist and list raw filenames", async () => {
     const jsonContent = await Deno.readTextFile(
-      "public/articles/articles.json",
+      `${publicDir}/articles/articles.json`,
     );
     const filenames: string[] = JSON.parse(jsonContent);
     assert(
@@ -295,7 +300,7 @@ Texto normal aqui.`;
       "All entries must be .md strings",
     );
 
-    const htmlContent = await Deno.readTextFile("public/articles/index.html");
+    const htmlContent = await Deno.readTextFile(`${publicDir}/articles/index.html`);
     assert(
       htmlContent.includes('<a href="README.md">'),
       "index.html must contain link to README.md",
@@ -307,7 +312,7 @@ Texto normal aqui.`;
   });
 
   it("verifies Content.js implements clean layout: discreet breadcrumb, title/author/date, wrapped sub-pages without indentation icons, and Made with mdBlog footer", async () => {
-    const contentSrc = await Deno.readTextFile("src/components/Content.js");
+    const contentSrc = await Deno.readTextFile(`${srcDir}/components/Content.js`);
 
     // 1. Discreet breadcrumbs with tight spacing and responsive wrapping
     assert(

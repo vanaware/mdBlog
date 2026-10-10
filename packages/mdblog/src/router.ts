@@ -99,7 +99,7 @@ export function initRouter(): void {
       document.title = `${doc.title} - mdBlog`;
       preRenderedScript.remove();
       setTimeout(() => {
-        hydrateIslands(islands);
+        hydrateIslands();
       }, 50);
       return;
     } catch (err) {

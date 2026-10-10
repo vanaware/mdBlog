@@ -171,7 +171,7 @@ export function Content() {
 
       <!-- 3. Conteúdo do artigo -->
       <article class="no-border no-padding wrap">
-        ${wireToVNode(renderWire, { islands })}
+        ${wireToVNode(renderWire)}
       </article>
 
       <!-- 4. Lista de Sub-páginas (exibida após o conteúdo do artigo) -->

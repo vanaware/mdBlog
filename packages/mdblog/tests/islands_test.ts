@@ -1,8 +1,11 @@
 import { assert, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
+import { fromFileUrl } from "@std/path";
 import { parseMarkdown } from "../src/plugin/core/parse.ts";
+
+const publicDir = fromFileUrl(new URL("../public", import.meta.url));
 import { mdastToWire } from "../src/plugin/core/to-wire.ts";
-import type { WireIsland } from "../src/plugin/wire.ts";
+import type { WireComponent, WireIsland } from "../src/plugin/wire.ts";
 
 describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
   it("identifies code block islands by filename (```island:Counter.js)", () => {
@@ -44,7 +47,7 @@ describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
     const { wire } = mdastToWire(root);
 
     assert(wire.c && wire.c.length === 1);
-    const node = wire.c[0] as any;
+    const node = wire.c[0] as WireComponent;
     assertEquals(node.t, "c");
     assertEquals(node.n, "CodeBlock");
     assertEquals(node.p?.lang, "typescript");
@@ -53,23 +56,23 @@ describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
   it("verifies dynamic islands exist as pure HTML+ES files in islands and island folders", async () => {
     // Verifica que ilhas estáticas isoladas existem em public/islands como ES Modules
     const demoWidgetCode = await Deno.readTextFile(
-      "public/islands/DemoWidget.js",
+      `${publicDir}/islands/DemoWidget.js`,
     );
     assert(demoWidgetCode.includes('from "htm/preact"'));
     assert(demoWidgetCode.includes("html`"));
     assert(demoWidgetCode.includes("export function DemoWidget"));
 
     const publicCounterCode = await Deno.readTextFile(
-      "public/islands/Counter.js",
+      `${publicDir}/islands/Counter.js`,
     );
     assert(publicCounterCode.includes('from "htm/preact"'));
     assert(publicCounterCode.includes("html`"));
 
     // Verifica que a pasta public/island (singular) também contém as ilhas
-    const islandDirStat = await Deno.stat("public/island");
+    const islandDirStat = await Deno.stat(`${publicDir}/island`);
     assertEquals(islandDirStat.isDirectory, true);
     const islandCounterCode = await Deno.readTextFile(
-      "public/island/Counter.js",
+      `${publicDir}/island/Counter.js`,
     );
     assert(islandCounterCode.includes("export function Counter"));
   });
