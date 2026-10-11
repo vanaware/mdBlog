@@ -2,12 +2,6 @@ name: Deploy Example to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "packages/example/**"
-      - "packages/mdblog/src/**"
-      - ".github/workflows/pages.yml"
     tags:
       - "v*.*"
   workflow_dispatch:
