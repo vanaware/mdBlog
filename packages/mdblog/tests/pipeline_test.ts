@@ -102,7 +102,6 @@ const x = 42;
       `# Título\n\nTexto de teste com [link](https://deno.com)\n\n::Counter{start: 10}`;
     const doc = processMarkdown(markdown, "/test.md",);
 
-
     const totalNodes = countWireNodes(doc.wire,);
     const islandCount = countWireIslands(doc.wire,);
 
