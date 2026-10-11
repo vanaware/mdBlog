@@ -1,5 +1,4 @@
 import { type ComponentType, h, render } from "preact";
-import { getAppBaseUrl } from "../plugin/detect.ts";
 
 export interface HydrateOptions {
   root?: HTMLElement;
@@ -9,6 +8,8 @@ export interface HydrateOptions {
  * Registry em memória de componentes de ilhas importadas dinamicamente.
  */
 export const dynamicIslandsCache: Record<string, ComponentType<any>> = {};
+
+const inFlightImports: Record<string, Promise<any>> = {};
 
 if (typeof globalThis !== "undefined") {
   (globalThis as any).__mdblog_islands = dynamicIslandsCache;
@@ -25,7 +26,7 @@ function mountIsland(
 
 /**
  * Rotina PRINCIPAL de hidratação de ilhas dinâmicas sob demanda.
- * Carrega componentes de ./islands/${islandFileName}.
+ * Carrega componentes de ./islands/${islandFileName} de forma resiliente a subpastas (ex: GitHub Pages).
  */
 export async function hydrateIslands(
   opts: HydrateOptions = {},
@@ -79,16 +80,22 @@ export async function hydrateIslands(
     // 2. Rotina principal: import dinâmico nativo de ./islands/
     if (typeof globalThis !== "undefined") {
       try {
-        const baseUrl = getAppBaseUrl();
-        const islandUrl = `${baseUrl}islands/${islandFileName}`;
+        if (!inFlightImports[islandFileName]) {
+          const islandUrl = globalThis.location
+            ? new URL(`./islands/${islandFileName}`, globalThis.location.href).href
+            : `./islands/${islandFileName}`;
 
-        const dynamicImport = new Function("path", "return import(path)");
-        const mod = await dynamicImport(islandUrl).catch(() =>
-          dynamicImport(`./islands/${islandFileName}`)
-        );
+          const dynamicImport = new Function("path", "return import(path)");
+          inFlightImports[islandFileName] = dynamicImport(islandUrl).catch(() =>
+            dynamicImport(`./islands/${islandFileName}`)
+          );
+        }
 
+        const mod = await inFlightImports[islandFileName];
+
+        const firstKey = Object.keys(mod)[0];
         const dynamicComp = mod
-          ? (mod[baseName] || mod.default || mod[Object.keys(mod)[0]])
+          ? (mod[baseName] || mod.default || (firstKey ? mod[firstKey] : null))
           : null;
 
         if (dynamicComp) {

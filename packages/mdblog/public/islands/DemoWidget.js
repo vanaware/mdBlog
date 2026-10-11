@@ -1,6 +1,10 @@
 // Ilha interativa pura HTML+ES (executada diretamente no navegador sem compilação nem bundle)
 // Utiliza os utilitários exportados pelo bundle mdBlog (sem requisições externas de CDN)
-import { html, signal, useSignal } from "../mdblog.js";
+import { html as _html, signal as _signal, useSignal as _useSignal } from "../mdblog.js";
+
+const html = _html || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.html : null);
+const signal = _signal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.signal : null);
+const useSignal = _useSignal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.useSignal : null);
 
 export function DemoWidget({ title = "Ilha Dinâmica HTML+ES", step = 1 }) {
   const count = typeof useSignal === "function" ? useSignal(0) : signal(0);

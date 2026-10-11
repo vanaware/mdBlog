@@ -1,28 +1,17 @@
-/**
- * Lightweight, zero-dependency browser-safe Frontmatter parser.
- * Supports YAML key-values, lists, and JSON frontmatter blocks.
- */
-
 export interface ParsedFrontmatter {
   frontmatter: Record<string, any>;
   body: string;
 }
 
-export function parseYAML(yaml: string): Record<string, any> {
-  const trimmed = yaml.trim();
-  if (!trimmed) return {};
-
-  // Support embedded JSON frontmatter
-  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      // fallback to line parser
-    }
-  }
-
+/**
+ * Lightweight, zero-dependency YAML frontmatter parser.
+ * Handles scalars, string values, booleans, arrays (lists), and nested arrays of objects.
+ */
+function parseYAML(yamlStr: string): Record<string, any> {
   const result: Record<string, any> = {};
-  const lines = yaml.split(/\r?\n/);
+  if (!yamlStr || !yamlStr.trim()) return result;
+
+  const lines = yamlStr.split(/\r?\n/);
   let currentKey: string | null = null;
   let currentList: any[] | null = null;
   let currentItem: Record<string, any> | null = null;
@@ -34,14 +23,14 @@ export function parseYAML(yaml: string): Record<string, any> {
 
     // List item: "  - path: 'val'" or "  - 'val'"
     const listItemMatch = line.match(/^(\s*)-\s+(.*)$/);
-    if (listItemMatch && currentKey) {
+    if (listItemMatch && listItemMatch[2] !== undefined && currentKey) {
       if (!currentList) {
         currentList = [];
         result[currentKey] = currentList;
       }
       const rest = listItemMatch[2].trim();
       const propMatch = rest.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
-      if (propMatch) {
+      if (propMatch && propMatch[1] && propMatch[2] !== undefined) {
         currentItem = {};
         currentList.push(currentItem);
         const k = propMatch[1];
@@ -57,7 +46,7 @@ export function parseYAML(yaml: string): Record<string, any> {
 
     // Indented sub-property of current list item: "    title: 'val'"
     const subPropMatch = line.match(/^\s{2,}([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
-    if (subPropMatch && currentItem) {
+    if (subPropMatch && subPropMatch[1] && subPropMatch[2] !== undefined && currentItem) {
       const k = subPropMatch[1];
       const val = subPropMatch[2].trim().replace(/^["'`]|["'`]$/g, "");
       currentItem[k] = val;
@@ -66,7 +55,7 @@ export function parseYAML(yaml: string): Record<string, any> {
 
     // Top-level key: "key: value" or "key:"
     const topKeyMatch = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
-    if (topKeyMatch) {
+    if (topKeyMatch && topKeyMatch[1] && topKeyMatch[2] !== undefined) {
       const k = topKeyMatch[1];
       const valStr = topKeyMatch[2].trim();
       currentKey = k;
@@ -105,7 +94,7 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
     return { frontmatter: {}, body: markdown };
   }
 
-  const frontmatterRaw = match[1];
+  const frontmatterRaw = match[1] || "";
   const body = markdown.slice(match[0].length);
   const frontmatter = parseYAML(frontmatterRaw);
 

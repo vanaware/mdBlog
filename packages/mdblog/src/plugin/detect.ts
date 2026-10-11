@@ -36,22 +36,20 @@ export function resolveDocPath(
   urlOrPath: string,
   basePath: string = "./articles",
 ): { docPath: string; isDoc: boolean } {
-  let pathname = urlOrPath;
-  try {
-    const parsed = new URL(urlOrPath, "http://localhost");
-    pathname = parsed.pathname;
-  } catch {
-    // Relative path or raw string
+  let pathname = (urlOrPath || "").trim();
+  if (pathname.includes("#")) {
+    pathname = pathname.substring(pathname.indexOf("#") + 1);
   }
-
-  // Remove trailing slashes and hash
-  pathname = pathname.replace(/#.*$/, "").replace(/\?.*$/, "");
+  pathname = pathname.replace(/\?.*$/, "");
 
   const cleanBase = basePath.replace(/^\.?\//, "").replace(/\/$/, "");
 
   // If path is root or empty
-  if (pathname === "" || pathname === "/" || pathname === "./") {
-    pathname = `./${cleanBase}/index.md`;
+  if (
+    pathname === "" || pathname === "/" || pathname === "./" ||
+    pathname === `/${cleanBase}` || pathname === `${cleanBase}`
+  ) {
+    return { docPath: `/${cleanBase}/index.md`, isDoc: true };
   }
 
   // Check if it pertains to articles, docs, or ends with .md
@@ -60,6 +58,8 @@ export function resolveDocPath(
     pathname.startsWith(`./${cleanBase}/`) ||
     pathname.endsWith(`/${cleanBase}`) ||
     pathname.endsWith(`/${cleanBase}/`) ||
+    pathname.includes("/docs/") ||
+    pathname.startsWith("docs/") ||
     pathname.endsWith(".md");
 
   if (!isDoc) {
@@ -73,6 +73,18 @@ export function resolveDocPath(
     } else {
       docPath = `${docPath}.md`;
     }
+  }
+
+  if (
+    !docPath.includes(`/${cleanBase}`) &&
+    !docPath.startsWith(`${cleanBase}`) &&
+    !docPath.includes("/docs/")
+  ) {
+    docPath = `/${cleanBase}/${docPath.replace(/^\.?\//, "")}`;
+  }
+
+  if (!docPath.startsWith("/") && !docPath.startsWith("./")) {
+    docPath = `/${docPath}`;
   }
 
   // Normalize duplicate slashes

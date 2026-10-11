@@ -5,7 +5,7 @@ import { get } from "idb-keyval";
 import { searchDocs } from "../state.ts";
 import { navigateTo } from "../router.ts";
 
-export function SearchBox({ placeholder = "Pesquisar documentação..." } = {}) {
+export function SearchBox({ placeholder = "Buscar artigos..." } = {}) {
   const query = useSignal("");
   const isOpen = useSignal(false);
 
@@ -30,7 +30,7 @@ export function SearchBox({ placeholder = "Pesquisar documentação..." } = {}) 
       const matchTags = Array.isArray(doc.tags) &&
         doc.tags.some((tag) => tag.toLowerCase().includes(trimmed));
       return matchTitle || matchDesc || matchContent || matchTags;
-    }).slice(0, 8);
+    }).slice(0, 10);
 
   function handleSelect(path) {
     isOpen.value = false;
@@ -38,91 +38,113 @@ export function SearchBox({ placeholder = "Pesquisar documentação..." } = {}) 
     navigateTo(path);
   }
 
+  function handleClose() {
+    isOpen.value = false;
+    query.value = "";
+  }
+
   return html`
-    <div class="margin-none">
-      <div class="field prefix round fill small surface-container-highest no-margin">
+    <div class="row items-center no-margin">
+      <!-- Botão/Campo de ativação na barra de navegação -->
+      <div
+        class="field prefix round fill small surface-container-highest no-margin"
+        onClick=${() => (isOpen.value = true)}
+      >
         <i class="front">search</i>
         <input
           type="search"
           placeholder=${placeholder}
           value=${query.value}
+          onFocus=${() => (isOpen.value = true)}
           onInput=${(e) => {
             query.value = e.target.value;
             isOpen.value = true;
           }}
-          onFocus=${() => (isOpen.value = true)}
+          readonly=${false}
         />
-        ${query.value
-          ? html`
-            <i
-              class="back link"
-              onClick=${() => {
-                query.value = "";
-                isOpen.value = false;
-              }}
-            >
-              close
-            </i>
-          `
-          : null}
       </div>
 
-      ${isOpen.value && results.length > 0
+      <!-- Modal de busca flutuante via BeerCSS dialog (z-index 100, imune a sobreposição da sidebar) -->
+      ${isOpen.value
         ? html`
-          <div class="surface-container-high border round shadow medium-padding active scroll medium-height">
-            <div class="row items-center justify-between no-margin margin-bottom">
-              <span class="small-text surface-variant-text bold">
-                ${results.length} resultado(s) encontrado(s):
-              </span>
-              <span class="chip tiny surface-variant">IndexedDB</span>
-            </div>
-            <div class="column gap-small">
-              ${results.map((doc) =>
-                html`
-                  <a
-                    key=${doc.path}
-                    href="#${doc.path}"
-                    class="row items-center wave padding-small round surface-container-low gap-small"
-                    onClick=${(e) => {
-                      e.preventDefault();
-                      handleSelect(doc.path);
+          <div
+            class="overlay active"
+            onClick=${handleClose}
+          ></div>
+
+          <dialog class="medium round shadow active border surface-container-high scroll">
+            <header class="row items-center justify-between no-margin margin-bottom">
+              <div class="row items-center gap-small">
+                <i class="primary-text small">search</i>
+                <h6 class="no-margin bold small-text">Pesquisar Artigos</h6>
+              </div>
+              <button
+                class="circle tiny transparent"
+                onClick=${handleClose}
+                aria-label="Fechar busca"
+              >
+                <i>close</i>
+              </button>
+            </header>
+
+            <div class="field prefix round fill small surface-container-highest no-margin">
+              <i class="front">search</i>
+              <input
+                type="search"
+                placeholder=${placeholder}
+                value=${query.value}
+                autofocus
+                onInput=${(e) => {
+                  query.value = e.target.value;
+                }}
+              />
+              ${query.value
+                ? html`
+                  <i
+                    class="back link"
+                    onClick=${() => {
+                      query.value = "";
                     }}
                   >
-                    <i class="primary-text small">${doc.icon || "description"}</i>
-                    <div class="max truncate min">
-                      <div class="bold truncate small-text">${doc.title}</div>
-                      ${doc.description
-                        ? html`
-                          <div class="small-text surface-variant-text truncate">
-                            ${doc.description}
-                          </div>
-                        `
-                        : (doc.content
-                          ? html`
-                            <div class="small-text surface-variant-text truncate opacity-70">
-                              ${doc.content.slice(0, 80)}...
-                            </div>
-                          `
-                          : null)}
-                    </div>
-                    ${doc.badge
-                      ? html`<span class="badge tiny primary">${doc.badge}</span>`
-                      : null}
-                  </a>
+                    close
+                  </i>
                 `
-              )}
+                : null}
             </div>
-          </div>
-        `
-        : null}
 
-      ${isOpen.value && trimmed !== "" && results.length === 0
-        ? html`
-          <div class="surface-container-high border round shadow small-padding active">
-            <p class="small-text surface-variant-text no-margin center-align">
-              Nenhum artigo encontrado para "${query.value}"
-            </p>
-          </div>
+            ${results.length > 0
+              ? html`
+                <div class="column gap-tiny margin-top scroll small-height">
+                  ${results.map((doc) =>
+                    html`
+                      <a
+                        key=${doc.path}
+                        class="row items-center wave padding-small round surface-container-low gap-small"
+                        onClick=${(e) => {
+                          e.preventDefault();
+                          handleSelect(doc.path);
+                        }}
+                      >
+                        <i class="primary-text small">${doc.icon || "article"}</i>
+                        <span class="bold truncate small-text max">${doc.title}</span>
+                        <i class="tiny surface-variant-text">arrow_forward</i>
+                      </a>
+                    `
+                  )}
+                </div>
+              `
+              : null}
+
+            ${trimmed !== "" && results.length === 0
+              ? html`
+                <div class="padding center-align margin-top">
+                  <p class="small-text surface-variant-text no-margin">
+                    Nenhum artigo encontrado para "${query.value}"
+                  </p>
+                </div>
+              `
+              : null}
+          </dialog>
         `
         : null}
     </div>

@@ -1,4 +1,12 @@
 import { Component, Fragment, h, hydrate, render } from "preact";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "preact/hooks";
 import { html } from "htm/preact";
 import { batch, computed, effect, signal, useSignal } from "@preact/signals";
 import { App } from "./components/App.js";
@@ -37,12 +45,20 @@ export {
   signal,
   state,
   ThemeToggle,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
   useSignal,
+  useState,
 };
+
+export default mdTranspiler;
 
 // Disponibiliza a biblioteca e todas as primitivas no escopo global para consumo direto no browser
 if (typeof globalThis !== "undefined") {
-  globalThis.mdBlog = {
+  (globalThis as any).mdBlog = {
     App,
     Navbar,
     Sidebar,
@@ -67,6 +83,12 @@ if (typeof globalThis !== "undefined") {
     hydrate,
     Component,
     Fragment,
+    useState,
+    useEffect,
+    useRef,
+    useMemo,
+    useCallback,
+    useContext,
   };
 }
 
@@ -88,8 +110,8 @@ async function bootstrap() {
   // 1. Verifica se há um componente customizado provido via window ou arquivo app.js
   let ComponentToMount = App;
 
-  if (typeof globalThis !== "undefined" && globalThis.mdBlogApp) {
-    ComponentToMount = globalThis.mdBlogApp;
+  if (typeof globalThis !== "undefined" && (globalThis as any).mdBlogApp) {
+    ComponentToMount = (globalThis as any).mdBlogApp;
   } else {
     try {
       // Tenta importar dinamicamente app.js em tempo de execução no browser se existir

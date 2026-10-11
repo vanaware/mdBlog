@@ -1,6 +1,16 @@
 import { html } from "htm/preact";
 import { articles, currentPath, sidebarOpen } from "../state.ts";
 
+function norm(p) {
+  let s = (p || "")
+    .replace(/^#\/?/, "")
+    .replace(/^\.?\//, "")
+    .replace(/^articles\//, "")
+    .replace(/^docs\//, "");
+  if (!s || s === "index") s = "index.md";
+  return s;
+}
+
 export function Sidebar() {
   const current = currentPath.value;
   const list = articles.value;
@@ -15,17 +25,17 @@ export function Sidebar() {
       ></div>
     ` : null}
 
-    <!-- Navbar lateral compacta: docada em telas grandes (l) e médias (m) -->
+    <!-- Navbar lateral compacta: pequena largura (small-width) em telas grandes (l) e médias (m) -->
     <nav
-      class=${`left drawer scroll surface-container-low border-right small-padding ${
+      class=${`left drawer scroll surface-container-low border-right small-padding small-width ${
         sidebarOpen.value ? "active" : "m l"
       }`}
     >
       <!-- Topo compacto sem margens excessivas -->
-      <div class="row items-center justify-between tiny-padding border-bottom no-margin">
-        <div class="row items-center gap-small">
-          <i class="primary-text small">menu_book</i>
-          <span class="bold small-text truncate">Artigos do Blog</span>
+      <div class="row items-center justify-between no-padding border-bottom no-margin">
+        <div class="row items-center gap-tiny">
+          <i class="primary-text tiny">menu_book</i>
+          <span class="bold tiny-text truncate">Artigos</span>
         </div>
         <button
           class="circle tiny transparent s"
@@ -36,26 +46,19 @@ export function Sidebar() {
         </button>
       </div>
 
-      <!-- Cabeçalho de contagem compacto -->
-      <div class="row items-center justify-between tiny-padding tiny-margin bottom-margin">
-        <span class="tiny-text surface-variant-text bold uppercase truncate">
-          Publicações (${list.length})
-        </span>
-        <span class="chip tiny surface-variant l">Hierárquico</span>
-      </div>
-
       <!-- Lista vertical com espaçamento ultracompacto (gap-tiny) -->
-      <div class="column gap-tiny no-padding no-margin">
+      <div class="column gap-tiny no-padding no-margin margin-top-small">
         ${list.map((item) => {
-          const isActive = current === item.path ||
-            current.replace(/^\.?\//, "") === (item.path || "").replace(/^\.?\//, "");
+          const isActive = norm(current) === norm(item.path);
           const depth = item.depth || 0;
           const indentClass = depth === 1 ? "left-margin" : depth >= 2 ? "small-margin left-margin" : "";
+          const linkHref = item.name === "index.md" ? "#/" : `#/${item.name}`;
+
           return html`
             <a
               key=${item.path}
-              href="#${item.path}"
-              class=${`row items-center wave round tiny-padding no-margin ${
+              href=${linkHref}
+              class=${`row items-center wave round tiny-padding no-margin gap-tiny ${
                 isActive
                   ? "primary-container bold"
                   : "transparent surface-text"
@@ -75,9 +78,6 @@ export function Sidebar() {
                 ${item.icon || "article"}
               </i>
               <span class="max truncate tiny-text">${item.title}</span>
-              ${item.badge ? html`
-                <span class="badge none primary tiny l">${item.badge}</span>
-              ` : null}
             </a>
           `;
         })}

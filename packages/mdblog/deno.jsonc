@@ -1,6 +1,6 @@
 {
   "name": "@vanaware/mdblog",
-  "version": "0.0.16#mv313w1w",
+  "version": "0.0.26#mv325gyy",
   "description": "Browser Blog engine from markdown.",
   "author": "Vanaware",
   "license": "MIT",
@@ -13,9 +13,7 @@
     "@std/testing": "jsr:@std/testing@^1.0.20",
     "preact": "npm:preact@10.25.4",
     "preact/hooks": "npm:preact@10.25.4/hooks",
-    "preact/jsx-runtime": "npm:preact@10.25.4/jsx-runtime",
     "@preact/signals": "npm:@preact/signals@2.0.1",
-    "htm": "npm:htm@^3.1.1",
     "htm/preact": "npm:htm@^3.1.1/preact",
     "idb-keyval": "npm:idb-keyval@^6.2.1",
     "mdast-util-from-markdown": "npm:mdast-util-from-markdown@^2.0.2",

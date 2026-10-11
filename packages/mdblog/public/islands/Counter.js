@@ -1,6 +1,10 @@
 // Ilha Counter em formato puro HTML+ES (execução direta no navegador)
 // Utiliza os utilitários exportados pelo bundle mdBlog (sem requisições externas de CDN)
-import { html, signal, useSignal } from "../mdblog.js";
+import { html as _html, signal as _signal, useSignal as _useSignal } from "../mdblog.js";
+
+const html = _html || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.html : null);
+const signal = _signal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.signal : null);
+const useSignal = _useSignal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.useSignal : null);
 
 export function Counter({ start = 0, step = 1, label = "Contador Interativo" }) {
   const count = typeof useSignal === "function"

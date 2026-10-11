@@ -62,9 +62,9 @@ export function mdastToWire(
         // Suporte a ilhas dinâmicas por arquivo no markdown: ::NomeDoArquivo.js{start: 5} ou ::NomeDoArquivo.js
         const text = extractText(node).trim();
         const islandDirectiveMatch = text.match(
-          /^::([A-Za-z0-9_.-]+)(?:\{([\s\S]*)\})?$/,
+          /^:{2,3}\s*([A-Za-z0-9_.-]+)\s*(?:\{([\s\S]*)\})?\s*(?::{2,3})?$/,
         );
-        if (islandDirectiveMatch) {
+        if (islandDirectiveMatch && islandDirectiveMatch[1]) {
           const rawTarget = islandDirectiveMatch[1];
           const islandFileName = rawTarget.endsWith(".js")
             ? rawTarget
@@ -77,11 +77,10 @@ export function mdastToWire(
               props = JSON.parse(wrapped);
             } catch {
               try {
-                // Quote unquoted object keys (e.g. start: 20 -> "start": 20)
-                const quoted = wrapped.replace(
-                  /([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g,
-                  '$1"$2":',
-                );
+                // Quote unquoted object keys (e.g. start: 20 -> "start": 20) and normalize single quotes
+                const quoted = wrapped
+                  .replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":')
+                  .replace(/'([^']*)'/g, '"$1"');
                 props = JSON.parse(quoted);
               } catch {
                 // Ignore parse error, use empty props

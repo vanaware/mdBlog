@@ -23,31 +23,32 @@ const config = {
 };
 
 export async function navigateTo(path: string): Promise<void> {
-  let cleanPath = path;
-  if (cleanPath.startsWith("#")) {
-    cleanPath = cleanPath.slice(1);
+  let clean = (path || "").replace(/^#\/?/, "").replace(/^\.?\//, "");
+  clean = clean.replace(/^articles\//, "").replace(/^docs\//, "");
+  if (!clean || clean === "/" || clean === "index" || clean === "index.md") {
+    clean = "index.md";
   }
-  if (
-    !cleanPath || cleanPath === "./" || cleanPath === "./docs" ||
-    cleanPath === "./articles" || cleanPath === "./articles/index"
-  ) {
-    cleanPath = "./articles/index.md";
-  }
-  if (!cleanPath.startsWith("/")) {
-    cleanPath = `./${cleanPath}`;
-  }
-  if (!cleanPath.endsWith(".md")) {
-    cleanPath = `${cleanPath}.md`;
+  if (!clean.endsWith(".md")) {
+    clean = `${clean}.md`;
   }
 
-  currentPath.value = cleanPath;
+  const hashRoute = clean === "index.md" ? "#/" : `#/${clean}`;
+  const fetchPath = `./articles/${clean}`;
+
+  if (typeof globalThis !== "undefined" && globalThis.location) {
+    if (globalThis.location.hash !== hashRoute) {
+      globalThis.location.hash = hashRoute;
+    }
+  }
+
+  currentPath.value = hashRoute;
   viewMode.value = "preview";
   isLoading.value = true;
   errorMessage.value = null;
 
   try {
     const t0 = performance.now();
-    const doc = await mdFetch(cleanPath, io, config);
+    const doc = await mdFetch(fetchPath, io, config);
     const t1 = performance.now();
     parseTimeMs.value = Math.max(0.1, Number((t1 - t0).toFixed(1)));
 
@@ -59,7 +60,7 @@ export async function navigateTo(path: string): Promise<void> {
       hydrateIslands();
     }, 50);
   } catch (err) {
-    console.error(`[router] Error loading ${cleanPath}:`, err);
+    console.error(`[router] Error loading ${fetchPath}:`, err);
     errorMessage.value = err instanceof Error ? err.message : String(err);
   } finally {
     isLoading.value = false;
@@ -73,7 +74,7 @@ export function initRouter(): void {
   loadArticles().then(() => {
     // Se a rota atual não foi definida, vai para o primeiro artigo
     const hash = globalThis.location.hash;
-    if (!hash && articles.value.length > 0) {
+    if (!hash && articles.value.length > 0 && articles.value[0]) {
       navigateTo(articles.value[0].path);
     }
   }).catch(() => {});
@@ -83,7 +84,7 @@ export function initRouter(): void {
     if (hash) {
       navigateTo(hash);
     } else {
-      navigateTo("./articles/index.md");
+      navigateTo("index.md");
     }
   }
 
@@ -95,7 +96,7 @@ export function initRouter(): void {
     try {
       const doc = JSON.parse(preRenderedScript.textContent);
       currentDoc.value = doc;
-      currentPath.value = doc.url || "./articles/README.md";
+      currentPath.value = doc.url || "#/README.md";
       document.title = `${doc.title} - mdBlog`;
       preRenderedScript.remove();
       setTimeout(() => {

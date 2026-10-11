@@ -11,6 +11,16 @@ import { wireToVNode } from "../render/from-wire.ts";
 import { navigateTo } from "../router.ts";
 import { hydrateIslands } from "../render/hydrate-islands.ts";
 
+function norm(p) {
+  let s = (p || "")
+    .replace(/^#\/?/, "")
+    .replace(/^\.?\//, "")
+    .replace(/^articles\//, "")
+    .replace(/^docs\//, "");
+  if (!s || s === "/" || s === "index") s = "index.md";
+  return s;
+}
+
 export function Content() {
   const doc = currentDoc.value;
   const path = currentPath.value;
@@ -68,9 +78,7 @@ export function Content() {
   }
 
   const currentArticle = articles.value.find(
-    (a) =>
-      a.path === path ||
-      a.path.replace(/^\.?\//, "") === path.replace(/^\.?\//, ""),
+    (a) => norm(a.path) === norm(path),
   );
 
   // Monta o breadcrumb discreto a partir da hierarquia do artigo
@@ -78,12 +86,9 @@ export function Content() {
   let curr = currentArticle;
   while (curr) {
     breadcrumbs.unshift(curr);
-    if (!curr.parentPath || curr.parentPath === curr.path) break;
+    if (!curr.parentPath || norm(curr.parentPath) === norm(curr.path)) break;
     curr = articles.value.find(
-      (a) =>
-        a.path === curr.parentPath ||
-        a.path.replace(/^\.?\//, "") ===
-          (curr.parentPath || "").replace(/^\.?\//, ""),
+      (a) => norm(a.path) === norm(curr.parentPath),
     );
   }
 
@@ -221,9 +226,6 @@ export function Content() {
                       </div>
                     </div>
                     <div class="row items-center gap-small">
-                      ${sub.badge
-                        ? html`<span class="badge tiny primary">${sub.badge}</span>`
-                        : null}
                       <i class="surface-variant-text small">chevron_right</i>
                     </div>
                   </a>
