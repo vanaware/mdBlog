@@ -1,4 +1,5 @@
 import { html } from "htm/preact";
+import type { VNode } from "preact";
 import { useEffect } from "preact/hooks";
 import {
   articles,
@@ -6,12 +7,14 @@ import {
   currentPath,
   errorMessage,
   isLoading,
+  type ArticleItem,
 } from "../state.ts";
 import { wireToVNode } from "../render/from-wire.ts";
 import { navigateTo } from "../router.ts";
 import { hydrateIslands } from "../render/hydrate-islands.ts";
+import type { WireComponent, WireFragment } from "../plugin/wire.ts";
 
-function norm(p) {
+function norm(p?: string | null): string {
   let s = (p || "")
     .replace(/^#\/?/, "")
     .replace(/^\.?\//, "")
@@ -21,7 +24,7 @@ function norm(p) {
   return s;
 }
 
-export function Content() {
+export function Content(): VNode {
   const doc = currentDoc.value;
   const path = currentPath.value;
   const loading = isLoading.value;
@@ -82,13 +85,13 @@ export function Content() {
   );
 
   // Monta o breadcrumb discreto a partir da hierarquia do artigo
-  const breadcrumbs = [];
-  let curr = currentArticle;
+  const breadcrumbs: ArticleItem[] = [];
+  let curr: ArticleItem | undefined = currentArticle;
   while (curr) {
     breadcrumbs.unshift(curr);
     if (!curr.parentPath || norm(curr.parentPath) === norm(curr.path)) break;
     curr = articles.value.find(
-      (a) => norm(a.path) === norm(curr.parentPath),
+      (a) => norm(a.path) === norm(curr?.parentPath),
     );
   }
 
@@ -98,7 +101,7 @@ export function Content() {
   );
   if (
     rootArticle && breadcrumbs.length > 0 &&
-    breadcrumbs[0].path !== rootArticle.path
+    breadcrumbs[0] && breadcrumbs[0].path !== rootArticle.path
   ) {
     breadcrumbs.unshift(rootArticle);
   }
@@ -117,17 +120,17 @@ export function Content() {
     Array.isArray(renderWire.c) &&
     renderWire.c.length > 0
   ) {
-    const firstNode = renderWire.c[0];
+    const firstNode = renderWire.c[0] as WireComponent | undefined;
     if (
       firstNode &&
       firstNode.t === "c" &&
       firstNode.n === "Heading" &&
-      (firstNode.p?.depth === 1 || firstNode.p?.depth === "1")
+      (firstNode.p?.depth === 1 || (firstNode.p?.depth as unknown) === "1")
     ) {
       renderWire = {
         ...renderWire,
         c: renderWire.c.slice(1),
-      };
+      } as WireFragment;
     }
   }
 

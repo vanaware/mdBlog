@@ -1,13 +1,14 @@
 import { html } from "htm/preact";
+import type { VNode } from "preact";
 import { useSignal } from "@preact/signals";
 
-export function ThemeToggle() {
+export function ThemeToggle(): VNode {
   const isDark = useSignal(
     typeof document !== "undefined" &&
       document.body.classList.contains("dark"),
   );
 
-  function toggle() {
+  function toggle(): void {
     isDark.value = !isDark.value;
     if (typeof document !== "undefined") {
       if (isDark.value) {

@@ -46,7 +46,7 @@ describe("Render Layer & Registry", () => {
   });
 
   it("renders headings with BeerCSS wrap class and balanced hierarchy without non-wrapping row", async () => {
-    const { Heading, } = await import("../src/render/registry.js");
+    const { Heading, } = await import("../src/render/registry.ts");
     const h1Node = Heading({
       depth: 1,
       id: "titulo-principal",

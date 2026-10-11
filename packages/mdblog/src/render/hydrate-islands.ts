@@ -7,21 +7,21 @@ export interface HydrateOptions {
 /**
  * Registry em memória de componentes de ilhas importadas dinamicamente.
  */
-export const dynamicIslandsCache: Record<string, ComponentType<any>> = {};
+export const dynamicIslandsCache: Record<string, ComponentType<never>> = {};
 
-const inFlightImports: Record<string, Promise<any>> = {};
+const inFlightImports: Record<string, Promise<Record<string, unknown>>> = {};
 
 if (typeof globalThis !== "undefined") {
-  (globalThis as any).__mdblog_islands = dynamicIslandsCache;
+  (globalThis as Record<string, unknown>).__mdblog_islands = dynamicIslandsCache;
 }
 
 function mountIsland(
-  comp: ComponentType<any>,
-  props: Record<string, any>,
+  comp: ComponentType<never>,
+  props: Record<string, unknown>,
   el: HTMLElement,
 ) {
   el.innerHTML = "";
-  render(h(comp, props), el);
+  render(h(comp, props as never), el);
 }
 
 /**
@@ -51,7 +51,7 @@ export async function hydrateIslands(
     const islandFileName = name.endsWith(".js") ? name : `${name}.js`;
     const baseName = islandFileName.replace(/\.js$/, "");
 
-    let dynamicProps: Record<string, any> = {};
+    let dynamicProps: Record<string, unknown> = {};
     try {
       dynamicProps = JSON.parse(el.dataset.props || "{}");
     } catch (_) {

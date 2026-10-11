@@ -1,12 +1,12 @@
-import { h, Fragment, type ComponentChildren, type VNode } from "preact";
+import { type ComponentChildren, type ComponentType, Fragment, h, type VNode } from "preact";
 import type { Wire, WireComponent, WireElement, WireFragment, WireIsland } from "../plugin/wire.ts";
-import { defaultRegistry } from "./registry.js";
+import { defaultRegistry } from "./registry.ts";
 
-export type ComponentRegistry = Record<string, any>;
+export type ComponentRegistry = Record<string, ComponentType<never>>;
 
 export interface WireToVNodeOptions {
   registry?: ComponentRegistry;
-  islands?: Record<string, any>;
+  islands?: Record<string, ComponentType<never>>;
 }
 
 /**
@@ -16,8 +16,8 @@ export function wireToVNode(
   wire: Wire,
   options: WireToVNodeOptions = {},
 ): ComponentChildren {
-  const registry: Record<string, any> = { ...defaultRegistry, ...options.registry };
-  const islandRegistry: Record<string, any> = options.islands ?? {};
+  const registry: Record<string, ComponentType<never>> = { ...defaultRegistry, ...options.registry };
+  const islandRegistry: Record<string, ComponentType<never>> = options.islands ?? {};
 
   if (wire === null || wire === undefined) {
     return null;

@@ -90,9 +90,9 @@ describe("Build Script & Distribution", () => {
     assertEquals(manifest.name, "mdBlog",);
   });
 
-  it("verifies Sidebar uses BeerCSS scroll and compact classes in pure HTML+ES .js", async () => {
+  it("verifies Sidebar uses BeerCSS scroll and compact classes in TypeScript (.ts)", async () => {
     const sidebarSrc = await Deno.readTextFile(
-      `${srcDir}/components/Sidebar.js`,
+      `${srcDir}/components/Sidebar.ts`,
     );
     assert(sidebarSrc.includes("drawer scroll",),);
     assert(sidebarSrc.includes("small-padding",),);
@@ -102,7 +102,7 @@ describe("Build Script & Distribution", () => {
     assert(!sidebarSrc.includes("<style>",),);
   });
 
-  it("confirms zero .tsx files exist in src and all components use HTML+ES (.js)", async () => {
+  it("confirms all components and render registry in src use TypeScript (.ts)", async () => {
     async function checkDir(dir: string,) {
       for await (const entry of Deno.readDir(dir,)) {
         const path = `${dir}/${entry.name}`;
@@ -110,8 +110,8 @@ describe("Build Script & Distribution", () => {
           await checkDir(path,);
         } else if (entry.isFile) {
           assert(
-            !entry.name.endsWith(".tsx",),
-            `Encontrado arquivo .tsx não migrado: ${path}`,
+            entry.name.endsWith(".ts",),
+            `Expected only .ts files in src: ${path}`,
           );
         }
       }

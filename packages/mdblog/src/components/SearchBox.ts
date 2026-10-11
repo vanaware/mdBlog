@@ -1,18 +1,23 @@
 import { html } from "htm/preact";
+import type { VNode } from "preact";
 import { useSignal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
 import { get } from "idb-keyval";
-import { searchDocs } from "../state.ts";
+import { searchDocs, type SearchDocItem } from "../state.ts";
 import { navigateTo } from "../router.ts";
 
-export function SearchBox({ placeholder = "Buscar artigos..." } = {}) {
+export interface SearchBoxProps {
+  placeholder?: string;
+}
+
+export function SearchBox({ placeholder = "Buscar artigos..." }: SearchBoxProps = {}): VNode {
   const query = useSignal("");
   const isOpen = useSignal(false);
 
   // Tenta restaurar índice do IndexedDB se o signal ainda estiver vazio
   useEffect(() => {
     if (searchDocs.value.length === 0) {
-      get("mdblog-search-index").then((cached) => {
+      get<SearchDocItem[]>("mdblog-search-index").then((cached) => {
         if (Array.isArray(cached) && cached.length > 0) {
           searchDocs.value = cached;
         }
@@ -32,13 +37,13 @@ export function SearchBox({ placeholder = "Buscar artigos..." } = {}) {
       return matchTitle || matchDesc || matchContent || matchTags;
     }).slice(0, 10);
 
-  function handleSelect(path) {
+  function handleSelect(path: string): void {
     isOpen.value = false;
     query.value = "";
     navigateTo(path);
   }
 
-  function handleClose() {
+  function handleClose(): void {
     isOpen.value = false;
     query.value = "";
   }
@@ -56,8 +61,8 @@ export function SearchBox({ placeholder = "Buscar artigos..." } = {}) {
           placeholder=${placeholder}
           value=${query.value}
           onFocus=${() => (isOpen.value = true)}
-          onInput=${(e) => {
-            query.value = e.target.value;
+          onInput=${(e: Event) => {
+            query.value = (e.target as HTMLInputElement).value;
             isOpen.value = true;
           }}
           readonly=${false}
@@ -94,8 +99,8 @@ export function SearchBox({ placeholder = "Buscar artigos..." } = {}) {
                 placeholder=${placeholder}
                 value=${query.value}
                 autofocus
-                onInput=${(e) => {
-                  query.value = e.target.value;
+                onInput=${(e: Event) => {
+                  query.value = (e.target as HTMLInputElement).value;
                 }}
               />
               ${query.value
@@ -120,7 +125,7 @@ export function SearchBox({ placeholder = "Buscar artigos..." } = {}) {
                       <a
                         key=${doc.path}
                         class="row items-center wave padding-small round surface-container-low gap-small"
-                        onClick=${(e) => {
+                        onClick=${(e: Event) => {
                           e.preventDefault();
                           handleSelect(doc.path);
                         }}

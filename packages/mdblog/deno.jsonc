@@ -1,6 +1,6 @@
 {
   "name": "@vanaware/mdblog",
-  "version": "0.0.26#mv325gyy",
+  "version": "0.0.27#mv32fdp0",
   "description": "Browser Blog engine from markdown.",
   "author": "Vanaware",
   "license": "MIT",
@@ -36,7 +36,6 @@
   "publish": {
     "include": [
       "src/**/*.ts",
-      "src/**/*.js",
       "README.md",
       "docs/**/*.md",
       "dist/mdblog.min.js",

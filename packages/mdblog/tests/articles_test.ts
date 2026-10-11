@@ -243,7 +243,7 @@ Texto normal aqui.`;
 
   it("verifies Navbar and Sidebar render articles dynamically, with Sidebar handling indented tree and Navbar without select box", async () => {
     const navbarSrc = await Deno.readTextFile(
-      `${srcDir}/components/Navbar.js`,
+      `${srcDir}/components/Navbar.ts`,
     );
     assert(
       navbarSrc.includes("articles.value",),
@@ -267,7 +267,7 @@ Texto normal aqui.`;
     );
 
     const sidebarSrc = await Deno.readTextFile(
-      `${srcDir}/components/Sidebar.js`,
+      `${srcDir}/components/Sidebar.ts`,
     );
     assert(
       sidebarSrc.includes("articles.value",),
@@ -330,15 +330,15 @@ Texto normal aqui.`;
     assert(!cleaned.includes("#",),);
   });
 
-  it("verifies Content.js implements clean layout: discreet breadcrumb, title/author/date, wrapped sub-pages without indentation icons, and Made with mdBlog footer", async () => {
+  it("verifies Content.ts implements clean layout: discreet breadcrumb, title/author/date, wrapped sub-pages without indentation icons, and Made with mdBlog footer", async () => {
     const contentSrc = await Deno.readTextFile(
-      `${srcDir}/components/Content.js`,
+      `${srcDir}/components/Content.ts`,
     );
 
     // 1. Discreet breadcrumbs with tight spacing and responsive wrapping
     assert(
       contentSrc.includes("breadcrumbs",),
-      "Content.js must build breadcrumbs",
+      "Content.ts must build breadcrumbs",
     );
     assert(
       contentSrc.includes("chevron_right",),

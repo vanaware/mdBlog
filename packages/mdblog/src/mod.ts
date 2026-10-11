@@ -9,12 +9,12 @@ import {
 } from "preact/hooks";
 import { html } from "htm/preact";
 import { batch, computed, effect, signal, useSignal } from "@preact/signals";
-import { App } from "./components/App.js";
-import { Navbar } from "./components/Navbar.js";
-import { Sidebar } from "./components/Sidebar.js";
-import { Content } from "./components/Content.js";
-import { ThemeToggle } from "./components/ThemeToggle.js";
-import { SearchBox } from "./components/SearchBox.js";
+import { App } from "./components/App.ts";
+import { Navbar } from "./components/Navbar.ts";
+import { Sidebar } from "./components/Sidebar.ts";
+import { Content } from "./components/Content.ts";
+import { ThemeToggle } from "./components/ThemeToggle.ts";
+import { SearchBox } from "./components/SearchBox.ts";
 import { initRouter, navigateTo } from "./router.ts";
 import { registerServiceWorker } from "./register-sw.ts";
 import * as state from "./state.ts";
@@ -58,7 +58,7 @@ export default mdTranspiler;
 
 // Disponibiliza a biblioteca e todas as primitivas no escopo global para consumo direto no browser
 if (typeof globalThis !== "undefined") {
-  (globalThis as any).mdBlog = {
+  (globalThis as Record<string, unknown>).mdBlog = {
     App,
     Navbar,
     Sidebar,
@@ -110,8 +110,11 @@ async function bootstrap() {
   // 1. Verifica se há um componente customizado provido via window ou arquivo app.js
   let ComponentToMount = App;
 
-  if (typeof globalThis !== "undefined" && (globalThis as any).mdBlogApp) {
-    ComponentToMount = (globalThis as any).mdBlogApp;
+  const g = typeof globalThis !== "undefined"
+    ? (globalThis as Record<string, unknown>)
+    : null;
+  if (g && typeof g.mdBlogApp === "function") {
+    ComponentToMount = g.mdBlogApp as typeof App;
   } else {
     try {
       // Tenta importar dinamicamente app.js em tempo de execução no browser se existir

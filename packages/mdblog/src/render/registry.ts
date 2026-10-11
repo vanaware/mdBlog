@@ -1,8 +1,14 @@
-import { h } from "preact";
+import { type ComponentChildren, type ComponentType, h, type VNode } from "preact";
 import { html } from "htm/preact";
 import { useSignal } from "@preact/signals";
 
-export function Heading({ depth, id, children } = {}) {
+export interface HeadingProps {
+  depth?: number | string;
+  id?: string;
+  children?: ComponentChildren;
+}
+
+export function Heading({ depth = 1, id, children }: HeadingProps = {}): VNode {
   const headingTags = ["h4", "h5", "h6", "h6", "h6", "h6"];
   const clampedDepth = Math.min(Math.max(Number(depth) || 1, 1), 6);
   const tag = headingTags[clampedDepth - 1] ?? "h6";
@@ -32,14 +38,23 @@ export function Heading({ depth, id, children } = {}) {
   );
 }
 
-export function Paragraph({ children } = {}) {
+export interface ParagraphProps {
+  children?: ComponentChildren;
+}
+
+export function Paragraph({ children }: ParagraphProps = {}): VNode {
   return html`<p class="margin-bottom wrap">${children}</p>`;
 }
 
-export function CodeBlock({ lang, value = "" } = {}) {
+export interface CodeBlockProps {
+  lang?: string;
+  value?: string;
+}
+
+export function CodeBlock({ lang, value = "" }: CodeBlockProps = {}): VNode {
   const copied = useSignal(false);
 
-  async function handleCopy() {
+  async function handleCopy(): Promise<void> {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(value);
@@ -75,11 +90,19 @@ export function CodeBlock({ lang, value = "" } = {}) {
   `;
 }
 
-export function InlineCode({ value = "" } = {}) {
+export interface InlineCodeProps {
+  value?: string;
+}
+
+export function InlineCode({ value = "" }: InlineCodeProps = {}): VNode {
   return html`<code class="surface-container-high round">${value}</code>`;
 }
 
-export function Blockquote({ children } = {}) {
+export interface BlockquoteProps {
+  children?: ComponentChildren;
+}
+
+export function Blockquote({ children }: BlockquoteProps = {}): VNode {
   return html`
     <blockquote class="surface-container-low border left-border border-primary padding round margin wrap">
       ${children}
@@ -87,14 +110,25 @@ export function Blockquote({ children } = {}) {
   `;
 }
 
-export function List({ ordered, start, children } = {}) {
+export interface ListProps {
+  ordered?: boolean;
+  start?: number;
+  children?: ComponentChildren;
+}
+
+export function List({ ordered, start, children }: ListProps = {}): VNode {
   if (ordered) {
     return html`<ol start=${start} class="padding-left margin-bottom wrap">${children}</ol>`;
   }
   return html`<ul class="padding-left margin-bottom wrap">${children}</ul>`;
 }
 
-export function ListItem({ checked, children } = {}) {
+export interface ListItemProps {
+  checked?: boolean;
+  children?: ComponentChildren;
+}
+
+export function ListItem({ checked, children }: ListItemProps = {}): VNode {
   if (typeof checked === "boolean") {
     return html`
       <li class="row wrap items-center gap margin-bottom">
@@ -109,7 +143,11 @@ export function ListItem({ checked, children } = {}) {
   return html`<li class="margin-bottom wrap">${children}</li>`;
 }
 
-export function Table({ children } = {}) {
+export interface TableProps {
+  children?: ComponentChildren;
+}
+
+export function Table({ children }: TableProps = {}): VNode {
   return html`
     <div class="responsive scroll margin">
       <table class="border round">${children}</table>
@@ -117,15 +155,30 @@ export function Table({ children } = {}) {
   `;
 }
 
-export function TableRow({ children } = {}) {
+export interface TableRowProps {
+  children?: ComponentChildren;
+}
+
+export function TableRow({ children }: TableRowProps = {}): VNode {
   return html`<tr>${children}</tr>`;
 }
 
-export function TableCell({ align, children } = {}) {
+export interface TableCellProps {
+  align?: string;
+  children?: ComponentChildren;
+}
+
+export function TableCell({ align, children }: TableCellProps = {}): VNode {
   return html`<td class=${align ? `align-${align}` : undefined}>${children}</td>`;
 }
 
-export function Link({ href = "", title, children } = {}) {
+export interface LinkProps {
+  href?: string;
+  title?: string;
+  children?: ComponentChildren;
+}
+
+export function Link({ href = "", title, children }: LinkProps = {}): VNode {
   let targetHref = href;
   const isExternal = href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//");
 
@@ -150,7 +203,13 @@ export function Link({ href = "", title, children } = {}) {
   `;
 }
 
-export function Image({ src, alt, title } = {}) {
+export interface ImageProps {
+  src?: string;
+  alt?: string;
+  title?: string;
+}
+
+export function Image({ src, alt, title }: ImageProps = {}): VNode {
   return html`
     <figure class="no-margin margin-top margin-bottom">
       <img src=${src} alt=${alt || ""} title=${title} class="responsive round border" loading="lazy" />
@@ -159,7 +218,11 @@ export function Image({ src, alt, title } = {}) {
   `;
 }
 
-export function Unknown({ nodeType } = {}) {
+export interface UnknownProps {
+  nodeType?: string;
+}
+
+export function Unknown({ nodeType }: UnknownProps = {}): VNode {
   return html`
     <span class="chip error-container small" title=${`Unknown node type: ${nodeType}`}>
       [${nodeType ?? "Unknown"}]
@@ -167,7 +230,7 @@ export function Unknown({ nodeType } = {}) {
   `;
 }
 
-export const defaultRegistry = {
+export const defaultRegistry: Record<string, ComponentType<never>> = {
   Heading,
   Paragraph,
   CodeBlock,

@@ -1,7 +1,8 @@
 import { html } from "htm/preact";
+import type { VNode } from "preact";
 import { articles, currentPath, sidebarOpen } from "../state.ts";
 
-function norm(p) {
+function norm(p?: string | null): string {
   let s = (p || "")
     .replace(/^#\/?/, "")
     .replace(/^\.?\//, "")
@@ -11,7 +12,7 @@ function norm(p) {
   return s;
 }
 
-export function Sidebar() {
+export function Sidebar(): VNode {
   const current = currentPath.value;
   const list = articles.value;
 
@@ -21,7 +22,7 @@ export function Sidebar() {
       <div
         class="overlay active s"
         onClick=${() => (sidebarOpen.value = false)}
-        onTouchMove=${(e) => e.preventDefault()}
+        onTouchMove=${(e: TouchEvent) => e.preventDefault()}
       ></div>
     ` : null}
 
@@ -64,7 +65,7 @@ export function Sidebar() {
                   : "transparent surface-text"
               } ${indentClass}`}
               onClick=${() => {
-                if (typeof window !== "undefined" && window.innerWidth < 600) {
+                if (typeof globalThis !== "undefined" && globalThis.innerWidth < 600) {
                   sidebarOpen.value = false;
                 }
               }}

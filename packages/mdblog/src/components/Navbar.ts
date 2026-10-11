@@ -1,4 +1,5 @@
 import { html } from "htm/preact";
+import type { VNode } from "preact";
 import {
   articles,
   currentPath,
@@ -6,11 +7,11 @@ import {
   isSWActive,
   sidebarOpen,
 } from "../state.ts";
-import { ThemeToggle } from "./ThemeToggle.js";
-import { SearchBox } from "./SearchBox.js";
+import { ThemeToggle } from "./ThemeToggle.ts";
+import { SearchBox } from "./SearchBox.ts";
 import { navigateTo } from "../router.ts";
 
-function norm(p) {
+function norm(p?: string | null): string {
   let s = (p || "")
     .replace(/^#\/?/, "")
     .replace(/^\.?\//, "")
@@ -20,10 +21,9 @@ function norm(p) {
   return s;
 }
 
-export function Navbar() {
+export function Navbar(): VNode {
   const current = currentPath.value;
   const list = articles.value;
-  const currentArticle = list.find((a) => norm(a.path) === norm(current));
 
   return html`
     <nav class="top surface-container border-bottom sticky">
