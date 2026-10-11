@@ -13,6 +13,7 @@ import type {
   WireIsland,
 } from "../plugin/wire.ts";
 import { defaultRegistry } from "./registry.ts";
+import { dynamicIslandsCache } from "./hydrate-islands.ts";
 
 /**
  * @description Map of component names to component implementations.
@@ -103,7 +104,14 @@ export function wireToVNode(
 
     case "i": {
       // Dynamic Island Node (HTML+ES)
-      const Comp = islandRegistry[node.n];
+      const islandFileName = node.n.endsWith(".js") ? node.n : `${node.n}.js`;
+      const baseName = islandFileName.replace(/\.js$/, "");
+      const Comp = islandRegistry[node.n] ||
+        islandRegistry[islandFileName] ||
+        islandRegistry[baseName] ||
+        dynamicIslandsCache[node.n] ||
+        dynamicIslandsCache[islandFileName] ||
+        dynamicIslandsCache[baseName];
       const propsJson = JSON.stringify(node.p ?? {});
       const isMissing = options.islands !== undefined ? !Comp : false;
 

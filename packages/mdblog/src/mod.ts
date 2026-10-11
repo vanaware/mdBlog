@@ -343,7 +343,7 @@ async function bootstrap() {
   }
 
   if (root) {
-    render(html`<${ComponentToMount} />`, root);
+    render(html`<${ComponentToMount} />` as VNode, root);
   }
 
   // Inicializa o roteador para leitura reativa dos artigos

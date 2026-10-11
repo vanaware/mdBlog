@@ -1,14 +1,13 @@
 ---
 title: "🧪 Guia Prático & Ilhas Reativas"
 icon: "science"
-date: "2026-10-08"
-badge: "Ilhas"
+date: "2026-10-09"
 author: "SyntaxMesh Team"
 tags:
   - "guia"
   - "islands"
   - "signals"
-description: "Guia prático com demonstração viva de ilhas reativas em HTML+ES."
+description: "Guia prático com demonstração viva de ilhas reativas em HTML+ES, sub-páginas e frontmatter."
 location: "#/articles/guia.md"
 pages:
   - "GUIA_DE_ISLANDS.md"
@@ -16,21 +15,21 @@ pages:
 
 # 🧪 Guia Prático e Demonstração de Recursos
 
-Bem-vindo à demonstração viva da arquitetura **Docsify com Service Worker e Wire Format**!
+Bem-vindo à demonstração viva da arquitetura do **mdBlog**!
 
-Este documento é processado pelo parser Markdown, transformado em nós JSON serializáveis (*Wire Format*) e materializado pelo Preact no navegador sem o uso de `dangerouslySetInnerHTML`.
+Este documento é processado pelo parser Markdown, transformado em nós JSON serializáveis (*Wire Format AST*) e materializado pelo Preact no navegador com layout responsivo do BeerCSS.
 
 ---
 
 ## ⚡ Demonstração de Ilhas Interativas (Solução HTML+ES)
 
-Abaixo temos uma ilha reativa construída com **HTML+ES (`htm/preact` + ES Modules)**, executada diretamente no navegador sem compilação prévia pelo bundle:
+Abaixo temos uma ilha reativa construída com **HTML+ES (`htm/preact` + ES Modules)**, executada diretamente no navegador sem compilação prévia:
 
 ::Counter.js{start: 10, step: 1, label: "Contador Interativo Reativo"}
 
-### Segunda Ilha (Configuração Diferente)
+### Segunda Ilha com Bloco de Código
 
-Você pode instanciar múltiplas ilhas com propriedades independentes isoladas via `@preact/signals`:
+Você também pode instanciar ilhas declarando parâmetros em formato JSON estruturado usando blocos de código:
 
 ```island:Counter.js
 {
@@ -40,15 +39,26 @@ Você pode instanciar múltiplas ilhas com propriedades independentes isoladas v
 }
 ```
 
+Cada instância de ilha gerencia seu próprio estado reativo através de `@preact/signals`. Clicar nos botões de uma ilha não interfere nos valores de outras ilhas presentes na mesma página.
+
 ---
 
-## 🧩 Ilhas Dinâmicas sob Demanda (Zero Build)
+## 🧭 Configuração de Frontmatter e Sub-Páginas
 
-Graças ao padrão **HTML+ES**, uma nova ilha pode ser criada como um simples arquivo `.js` (ex.: `public/islands/DemoWidget.js`) e carregada sob demanda via `import()` nativo do navegador sem precisar reexecutar `build.ts`:
+Cada documento no mdBlog inicia com um bloco de metadados em YAML:
 
-```markdown
-::DemoWidget{title: "Minha Ilha Dinâmica", step: 2}
+```yaml
+---
+title: "Título do Artigo"
+icon: "science"             # Ícone do Material Symbols
+date: "2026-10-10"
+author: "Equipe de Docs"
+pages:
+  - "GUIA_DE_ISLANDS.md"    # Sub-páginas acessíveis a partir daqui
+---
 ```
+
+Ao declarar `pages:`, o mdBlog constrói automaticamente a trilha de breadcrumbs no topo e disponibiliza links de navegação rápida para as sub-páginas ao final da leitura.
 
 ---
 
@@ -56,37 +66,26 @@ Graças ao padrão **HTML+ES**, uma nova ilha pode ser criada como um simples ar
 
 O Wire Format converte tabelas Markdown em componentes Preact com layout responsivo do BeerCSS:
 
-| Recurso | Tradicional (Docsify) | Wire Format (Este Projeto) |
+| Recurso | Tradicional (Docsify) | Wire Format (mdBlog) |
 |---|---|---|
-| Injeção HTML | `dangerouslySetInnerHTML` | Nós VNode Preact puros |
-| Interceptação SW | Não nativo | Transforma `.md` em AST no worker |
-| Interatividade | Requer scripts soltos no DOM | Preact Islands com `@preact/signals` |
-| Risco XSS | Elevado sem DOMPurify | Impossível por arquitetura |
-| Suporte Offline | Básico | Cache Storage + IndexedDB (`idb-keyval`) |
-
----
-
-## ✅ Listas de Tarefas (GFM Task Lists)
-
-- [x] Especificação da arquitetura e contratos no `CURRENT.md`
-- [x] Parser `mdast` com extensões GFM ativas
-- [x] Transformador de AST para Wire Format JSON
-- [x] Hidratação seletiva de Islands (`[data-island]`)
-- [x] Adapters para Service Worker e Fallback Client-side
-- [ ] Novas ilhas customizadas desenvolvidas pela comunidade
+| Injeção HTML | `dangerouslySetInnerHTML` | VNodes Preact puros e tipados |
+| Interceptação SW | Não nativo | Transforma `.md` em AST em segundo plano |
+| Interatividade | Scripts avulsos no DOM | Preact Islands com `@preact/signals` |
+| Proteção XSS | Complexa sem sanitizadores | Imune por arquitetura de AST |
+| Suporte Offline | Básico | CacheStorage + IndexedDB (`idb-keyval`) |
 
 ---
 
 ## 💻 Blocos de Código com Botão de Copiar
 
-Você pode copiar facilmente os trechos de código clicando no botão no canto superior direito:
+Você pode copiar facilmente trechos de código clicando no botão no canto superior direito:
 
-```ts
+```typescript
 import { mdFetch } from "./src/plugin/adapters/client.ts";
 import { createBrowserIO } from "./src/plugin/core/io.ts";
 
 const io = createBrowserIO();
-const doc = await mdFetch("/docs/README.md", io);
+const doc = await mdFetch("./articles/guia.md", io);
 
 console.log("Título do Documento:", doc.title);
 console.log("Nós no Wire Format:", doc.wire.c?.length);
@@ -94,8 +93,6 @@ console.log("Nós no Wire Format:", doc.wire.c?.length);
 
 ---
 
-## 💬 Citações e Notas
+## 📖 Sub-páginas Desta Seção
 
-> **Nota Arquitetural:** O Wire Format é 100% serializável. Nenhuma closure, função ou nó do DOM transita entre o Service Worker e o cliente. Isso garante imunidade a bugs de serialização estruturada (`DataCloneError`).
-
-Para explorar mais detalhes do projeto, navegue pelas seções no menu lateral ou consulte a [Arquitetura do Wire Format](./ARQUITETURA_WIRE_FORMAT.md).
+- **[🏝️ Guia Avançado de Islands](./GUIA_DE_ISLANDS.md)**: Detalhamento técnico do algoritmo de hidratação e ciclo de vida das ilhas.

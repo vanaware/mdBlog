@@ -11,10 +11,9 @@ export interface HydrateOptions {
 /**
  * @description In-memory registry cache of dynamically imported island components.
  */
-export const dynamicIslandsCache: Record<string, unknown> = {};
+export const dynamicIslandsCache: Record<string, ComponentType<any>> = {};
 
-
-const inFlightImports: Record<string, Promise<Record<string, unknown>>> = {};
+const inFlightImports: Record<string, Promise<Record<string, any> | null>> = {};
 
 if (typeof globalThis !== "undefined") {
   (globalThis as Record<string, unknown>).__mdblog_islands = dynamicIslandsCache;
@@ -107,10 +106,10 @@ export async function hydrateIslands(
 
         const mod = await inFlightImports[islandFileName];
 
-        const firstKey = Object.keys(mod)[0];
-        const dynamicComp = mod
+        const firstKey = mod ? Object.keys(mod)[0] : undefined;
+        const dynamicComp = (mod
           ? (mod[baseName] || mod.default || (firstKey ? mod[firstKey] : null))
-          : null;
+          : null) as ComponentType<any> | null;
 
         if (dynamicComp) {
           dynamicIslandsCache[name] = dynamicComp;
