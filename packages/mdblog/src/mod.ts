@@ -263,6 +263,8 @@ const mdTranspiler = {
 };
 
 export { mdTranspiler };
+
+export { APP_VERSION as version } from "./version.ts";
 export default mdTranspiler;
 
 
