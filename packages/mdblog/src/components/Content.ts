@@ -24,7 +24,19 @@ function norm(p?: string | null): string {
   return s;
 }
 
-export function Content(): VNode {
+/**
+ * @description Main document content reader component rendering breadcrumbs, article metadata, Wire AST body, and footer.
+ * @returns Preact VNode representing the main reading view.
+ * @example
+ * ```ts
+ * import { Content } from "./Content.ts";
+ * import { html } from "htm/preact";
+ * const node = html`<${Content} />`;
+ * ```
+ */
+export function Content(): unknown {
+
+
   const doc = currentDoc.value;
   const path = currentPath.value;
   const loading = isLoading.value;

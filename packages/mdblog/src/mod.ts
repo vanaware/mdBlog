@@ -1,4 +1,12 @@
-import { Component, Fragment, h, hydrate, render } from "preact";
+import {
+  type ComponentChildren,
+  type ComponentType,
+  Fragment,
+  h,
+  hydrate,
+  render,
+  type VNode,
+} from "preact";
 import {
   useCallback,
   useContext,
@@ -7,54 +15,251 @@ import {
   useRef,
   useState,
 } from "preact/hooks";
-import { html } from "htm/preact";
-import { batch, computed, effect, signal, useSignal } from "@preact/signals";
+import { html as rawHtml } from "htm/preact";
+import {
+  batch as rawBatch,
+  computed as rawComputed,
+  effect as rawEffect,
+  signal as rawSignal,
+  useSignal as rawUseSignal,
+} from "@preact/signals";
+import * as stateNamespace from "./state.ts";
+
+/**
+ * @description Reactive application state, signals, and dynamic article tree discovery.
+ */
+export const state: typeof stateNamespace = stateNamespace;
+
 import { App } from "./components/App.ts";
 import { Navbar } from "./components/Navbar.ts";
 import { Sidebar } from "./components/Sidebar.ts";
 import { Content } from "./components/Content.ts";
 import { ThemeToggle } from "./components/ThemeToggle.ts";
-import { SearchBox } from "./components/SearchBox.ts";
+import { SearchBox, type SearchBoxProps } from "./components/SearchBox.ts";
 import { initRouter, navigateTo } from "./router.ts";
 import { registerServiceWorker } from "./register-sw.ts";
-import * as state from "./state.ts";
-import * as mdTranspiler from "./lib/md-transpiler.ts";
-import { hydrateIslands } from "./render/hydrate-islands.ts";
+import {
+  dynamicIslandsCache,
+  hydrateIslands,
+  type HydrateOptions,
+} from "./render/hydrate-islands.ts";
+import {
+  type ComponentRegistry,
+  wireToVNode,
+  type WireToVNodeOptions,
+} from "./render/from-wire.ts";
+import { defaultRegistry } from "./render/registry.ts";
+import {
+  countWireIslands,
+  countWireNodes,
+  createBrowserIO,
+  createMemoryIO,
+  createSWFetchHandler,
+  defaultShell,
+  isSWControlling,
+  loadDoc,
+  mdastToWire,
+  parseMarkdown,
+  processMarkdown,
+  resolveDocPath,
+  sanitizeProps,
+  slugify,
+} from "./lib/md-transpiler.ts";
+import type {
+  CacheIOOptions,
+  DocConfig,
+  IO,
+  MdastRoot,
+  SWPluginOptions,
+  Wire,
+  WireComponent,
+  WireDoc,
+  WireElement,
+  WireFragment,
+  WireIsland,
+} from "./lib/md-transpiler.ts";
 
-// Exporta todos os componentes, ferramentas e primitivas para consumo direto de ilhas e apps externos
+/**
+ * @description Reactive Signal container holding a mutable value.
+ */
+export interface Signal<T = unknown> {
+  /** @description The current reactive value. */
+  value: T;
+  /** @description Converts signal value to string representation. */
+  toString(): string;
+  /** @description Returns primitive value. */
+  valueOf(): T;
+}
+
+/**
+ * @description Tagged template literal for JSX/HTML evaluation without a build step.
+ * @param strings - Template strings array.
+ * @param values - Interpolated values.
+ * @returns Renderable Preact virtual element.
+ * @example
+ * ```ts
+ * import { html } from "./mod.ts";
+ * const node = html`<div class="banner">Hello World</div>`;
+ * ```
+ */
+export function html(strings: TemplateStringsArray, ...values: unknown[]): unknown {
+  return rawHtml(strings, ...values);
+}
+
+
+/**
+ * @description Creates a new reactive state signal with an initial value.
+ * @param initialValue - Initial value for the signal.
+ * @returns A reactive Signal container.
+ * @example
+ * ```ts
+ * import { signal } from "./mod.ts";
+ * const count = signal(0);
+ * count.value++;
+ * ```
+ */
+export function signal<T>(initialValue: T): Signal<T> {
+  return rawSignal(initialValue) as unknown as Signal<T>;
+}
+
+/**
+ * @description Preact hook for creating a component-scoped reactive signal.
+ * @param initialValue - Initial value for the signal.
+ * @returns Component-scoped reactive Signal container.
+ * @example
+ * ```ts
+ * import { useSignal } from "./mod.ts";
+ * function Counter() {
+ *   const count = useSignal(0);
+ *   return count.value;
+ * }
+ * ```
+ */
+export function useSignal<T>(initialValue: T): Signal<T> {
+  return rawUseSignal(initialValue) as unknown as Signal<T>;
+}
+
+/**
+ * @description Creates a computed reactive value derived from other signals.
+ * @param compute - Computation function reading signals.
+ * @returns Read-only derived Signal.
+ * @example
+ * ```ts
+ * import { signal, computed } from "./mod.ts";
+ * const count = signal(2);
+ * const double = computed(() => count.value * 2);
+ * ```
+ */
+export function computed<T>(compute: () => T): Readonly<Signal<T>> {
+  return rawComputed(compute) as unknown as Readonly<Signal<T>>;
+}
+
+/**
+ * @description Subscribes to reactive signals and triggers side-effects upon mutations.
+ * @param callback - Function to execute when accessed signals change.
+ * @returns Cleanup unsubscribe function.
+ * @example
+ * ```ts
+ * import { signal, effect } from "./mod.ts";
+ * const count = signal(0);
+ * const dispose = effect(() => console.log(count.value));
+ * ```
+ */
+export function effect(callback: () => void | (() => void)): () => void {
+  return rawEffect(callback);
+}
+
+/**
+ * @description Batches multiple signal updates into a single notification cycle.
+ * @param callback - Function executing multiple signal mutations.
+ * @returns Result of the callback execution.
+ * @example
+ * ```ts
+ * import { signal, batch } from "./mod.ts";
+ * const a = signal(1);
+ * const b = signal(2);
+ * batch(() => { a.value = 10; b.value = 20; });
+ * ```
+ */
+export function batch<T>(callback: () => T): T {
+  return rawBatch(callback);
+}
+
 export {
   App,
-  batch,
-  Component,
-  computed,
   Content,
-  effect,
-  Fragment,
-  h,
-  html,
-  hydrate,
+  countWireIslands,
+  countWireNodes,
+  createBrowserIO,
+  createMemoryIO,
+  createSWFetchHandler,
+  defaultRegistry,
+  defaultShell,
+  dynamicIslandsCache,
   hydrateIslands,
   initRouter,
-  mdTranspiler,
+  isSWControlling,
+  loadDoc,
+  mdastToWire,
   Navbar,
   navigateTo,
+  parseMarkdown,
+  processMarkdown,
   registerServiceWorker,
-  render,
+  resolveDocPath,
+  sanitizeProps,
   SearchBox,
   Sidebar,
-  signal,
-  state,
+  slugify,
   ThemeToggle,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useSignal,
-  useState,
+
+  wireToVNode,
 };
 
+export type {
+  CacheIOOptions,
+  ComponentRegistry,
+  DocConfig,
+  HydrateOptions,
+  IO,
+  MdastRoot,
+  SearchBoxProps,
+  SWPluginOptions,
+  Wire,
+  WireComponent,
+  WireDoc,
+  WireElement,
+  WireFragment,
+  WireIsland,
+  WireToVNodeOptions,
+};
+
+
+
+
+/**
+ * @description Transpiler and Service Worker pipeline suite bundled with mdBlog.
+ */
+const mdTranspiler = {
+  countWireIslands,
+  countWireNodes,
+  createBrowserIO,
+  createMemoryIO,
+  createSWFetchHandler,
+  defaultShell,
+  isSWControlling,
+  loadDoc,
+  mdastToWire,
+  parseMarkdown,
+  processMarkdown,
+  resolveDocPath,
+  sanitizeProps,
+  slugify,
+};
+
+export { mdTranspiler };
 export default mdTranspiler;
+
 
 // Disponibiliza a biblioteca e todas as primitivas no escopo global para consumo direto no browser
 if (typeof globalThis !== "undefined") {

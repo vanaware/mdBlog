@@ -3,7 +3,15 @@
  */
 
 /**
- * Checks whether the current window is actively controlled by a Service Worker.
+ * @description Checks whether the current window is actively controlled by a Service Worker.
+ * @returns True if `navigator.serviceWorker.controller` exists.
+ * @example
+ * ```ts
+ * import { isSWControlling } from "./detect.ts";
+ * if (isSWControlling()) {
+ *   console.log("Managed by Service Worker");
+ * }
+ * ```
  */
 export function isSWControlling(): boolean {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
@@ -13,7 +21,13 @@ export function isSWControlling(): boolean {
 }
 
 /**
- * Computes canonical directory base URL respecting subfolders (e.g. GitHub Pages).
+ * @description Computes canonical directory base URL respecting subfolders (e.g. GitHub Pages).
+ * @returns Normalized base URL ending with a slash.
+ * @example
+ * ```ts
+ * import { getAppBaseUrl } from "./detect.ts";
+ * const base = getAppBaseUrl();
+ * ```
  */
 export function getAppBaseUrl(): string {
   if (typeof globalThis === "undefined" || !globalThis.location) return "./";
@@ -28,9 +42,18 @@ export function getAppBaseUrl(): string {
 }
 
 /**
- * Normalizes and resolves a documentation request path.
+ * @description Normalizes and resolves a documentation request path.
  * Maps clean paths like "/docs/guia" or "docs/guia" or "/docs/guia.md" to canonical ".md" paths.
  * Supports subfolder hosting on GitHub Pages (e.g. "/mdBlog/articles/guia.md").
+ * @param urlOrPath - Raw request pathname or link URL.
+ * @param basePath - Root articles folder relative path.
+ * @returns Object with normalized docPath and boolean isDoc flag.
+ * @example
+ * ```ts
+ * import { resolveDocPath } from "./detect.ts";
+ * const { docPath, isDoc } = resolveDocPath("/articles/intro");
+ * // docPath === "/articles/intro.md"
+ * ```
  */
 export function resolveDocPath(
   urlOrPath: string,
@@ -68,7 +91,9 @@ export function resolveDocPath(
 
   let docPath = pathname;
   if (!docPath.endsWith(".md")) {
-    if (docPath.endsWith(`/${cleanBase}`) || docPath.endsWith(`/${cleanBase}/`)) {
+    if (
+      docPath.endsWith(`/${cleanBase}`) || docPath.endsWith(`/${cleanBase}/`)
+    ) {
       docPath = `${docPath.replace(/\/+$/, "")}/index.md`;
     } else {
       docPath = `${docPath}.md`;
@@ -94,9 +119,18 @@ export function resolveDocPath(
 }
 
 /**
- * Generates a clean URL slug for heading anchors.
+ * @description Generates a clean URL slug for heading anchors.
+ * @param text - Plain heading text.
+ * @returns Clean kebab-case slug string.
+ * @example
+ * ```ts
+ * import { slugify } from "./detect.ts";
+ * const slug = slugify("Seção de Configuração!");
+ * // slug === "secao-de-configuracao"
+ * ```
  */
 export function slugify(text: string): string {
+
   return text
     .toLowerCase()
     .normalize("NFD")

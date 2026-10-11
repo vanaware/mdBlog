@@ -1,13 +1,18 @@
 import { type ComponentType, h, render } from "preact";
 
+/**
+ * @description Options for island selective hydration.
+ */
 export interface HydrateOptions {
+  /** @description Root DOM container element to scan for islands. Defaults to document.body. */
   root?: HTMLElement;
 }
 
 /**
- * Registry em memória de componentes de ilhas importadas dinamicamente.
+ * @description In-memory registry cache of dynamically imported island components.
  */
-export const dynamicIslandsCache: Record<string, ComponentType<never>> = {};
+export const dynamicIslandsCache: Record<string, unknown> = {};
+
 
 const inFlightImports: Record<string, Promise<Record<string, unknown>>> = {};
 
@@ -16,21 +21,30 @@ if (typeof globalThis !== "undefined") {
 }
 
 function mountIsland(
-  comp: ComponentType<never>,
+  comp: ComponentType<any>,
   props: Record<string, unknown>,
   el: HTMLElement,
 ) {
   el.innerHTML = "";
-  render(h(comp, props as never), el);
+  render(h(comp, props as any), el);
 }
 
 /**
- * Rotina PRINCIPAL de hidratação de ilhas dinâmicas sob demanda.
- * Carrega componentes de ./islands/${islandFileName} de forma resiliente a subpastas (ex: GitHub Pages).
+ * @description Scans the DOM for dynamic `[data-island]` markers and hydrates them on-demand.
+ * Loads HTML+ES modules dynamically from `./islands/${islandFileName}` with zero bundler dependency.
+ * @param opts - Configuration options specifying root DOM node.
+ * @returns Resolves to the count of newly hydrated island components.
+ * @example
+ * ```ts
+ * import { hydrateIslands } from "./hydrate-islands.ts";
+ * const hydrated = await hydrateIslands();
+ * console.log(`Hydrated ${hydrated} islands.`);
+ * ```
  */
 export async function hydrateIslands(
   opts: HydrateOptions = {},
 ): Promise<number> {
+
   if (typeof document === "undefined") {
     return 0;
   }

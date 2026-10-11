@@ -28,15 +28,17 @@ export function Heading({ depth = 1, id, children }: HeadingProps = {}): VNode {
     : null;
 
   return h(
-    tag,
+    tag as any,
     {
       id,
-      class: `wrap bold margin-top margin-bottom ${isSmall ? "small" : ""}`.trim(),
+      class: `wrap bold margin-top margin-bottom ${isSmall ? "small" : ""}`
+        .trim(),
     },
     children,
     anchor,
-  );
+  ) as VNode;
 }
+
 
 export interface ParagraphProps {
   children?: ComponentChildren;
@@ -230,7 +232,12 @@ export function Unknown({ nodeType }: UnknownProps = {}): VNode {
   `;
 }
 
-export const defaultRegistry: Record<string, ComponentType<never>> = {
+/**
+ * @description Default map of standard Markdown and GFM components used by mdBlog.
+ */
+export const defaultRegistry: Record<string, unknown> = {
+
+
   Heading,
   Paragraph,
   CodeBlock,

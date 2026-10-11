@@ -2,7 +2,19 @@ import { html } from "htm/preact";
 import type { VNode } from "preact";
 import { useSignal } from "@preact/signals";
 
-export function ThemeToggle(): VNode {
+/**
+ * @description Button component toggling BeerCSS light and dark color themes on document.body.
+ * @returns Preact VNode representing the theme toggle button.
+ * @example
+ * ```ts
+ * import { ThemeToggle } from "./ThemeToggle.ts";
+ * import { html } from "htm/preact";
+ * const node = html`<${ThemeToggle} />`;
+ * ```
+ */
+export function ThemeToggle(): unknown {
+
+
   const isDark = useSignal(
     typeof document !== "undefined" &&
       document.body.classList.contains("dark"),

@@ -1,20 +1,26 @@
+/**
+ * @description Result structure returned by parseFrontmatter.
+ */
 export interface ParsedFrontmatter {
+  /** @description Parsed key-value metadata object from YAML. */
   frontmatter: Record<string, any>;
+  /** @description Markdown content without the YAML frontmatter block. */
   body: string;
 }
+
 
 /**
  * Lightweight, zero-dependency YAML frontmatter parser.
  * Handles scalars, string values, booleans, arrays (lists), and nested arrays of objects.
  */
-function parseYAML(yamlStr: string): Record<string, any> {
-  const result: Record<string, any> = {};
+function parseYAML(yamlStr: string): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
   if (!yamlStr || !yamlStr.trim()) return result;
 
   const lines = yamlStr.split(/\r?\n/);
   let currentKey: string | null = null;
-  let currentList: any[] | null = null;
-  let currentItem: Record<string, any> | null = null;
+  let currentList: unknown[] | null = null;
+  let currentItem: Record<string, unknown> | null = null;
 
   for (const rawLine of lines) {
     const line = rawLine;
@@ -46,7 +52,10 @@ function parseYAML(yamlStr: string): Record<string, any> {
 
     // Indented sub-property of current list item: "    title: 'val'"
     const subPropMatch = line.match(/^\s{2,}([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
-    if (subPropMatch && subPropMatch[1] && subPropMatch[2] !== undefined && currentItem) {
+    if (
+      subPropMatch && subPropMatch[1] && subPropMatch[2] !== undefined &&
+      currentItem
+    ) {
       const k = subPropMatch[1];
       const val = subPropMatch[2].trim().replace(/^["'`]|["'`]$/g, "");
       currentItem[k] = val;
@@ -68,10 +77,12 @@ function parseYAML(yamlStr: string): Record<string, any> {
         try {
           result[k] = JSON.parse(valStr);
         } catch {
-          result[k] = valStr.slice(1, -1).split(",").map((s) => s.trim().replace(/^["'`]|["'`]$/g, ""));
+          result[k] = valStr.slice(1, -1).split(",").map((s) =>
+            s.trim().replace(/^["'`]|["'`]$/g, "")
+          );
         }
       } else {
-        let val: any = valStr.replace(/^["'`]|["'`]$/g, "");
+        let val: unknown = valStr.replace(/^["'`]|["'`]$/g, "");
         if (val === "true") val = true;
         else if (val === "false") val = false;
         else if (!isNaN(Number(val)) && val !== "") val = Number(val);
@@ -83,6 +94,16 @@ function parseYAML(yamlStr: string): Record<string, any> {
   return result;
 }
 
+/**
+ * @description Extracts and parses YAML frontmatter from markdown content.
+ * @param markdown - Raw markdown string potentially containing frontmatter.
+ * @returns Object with parsed frontmatter dictionary and clean markdown body.
+ * @example
+ * ```ts
+ * import { parseFrontmatter } from "./frontmatter.ts";
+ * const { frontmatter, body } = parseFrontmatter("---\ntitle: Home\n---\n# Hello");
+ * ```
+ */
 export function parseFrontmatter(markdown: string): ParsedFrontmatter {
   if (!markdown) {
     return { frontmatter: {}, body: "" };
@@ -100,3 +121,4 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
 
   return { frontmatter, body };
 }
+

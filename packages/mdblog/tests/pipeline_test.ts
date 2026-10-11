@@ -100,7 +100,8 @@ const x = 42;
   it("calculates node counts and detects islands in Wire tree", () => {
     const markdown =
       `# Título\n\nTexto de teste com [link](https://deno.com)\n\n::Counter{start: 10}`;
-    const doc = processMarkdown(markdown, "/test.md", new Set(["Counter",],),);
+    const doc = processMarkdown(markdown, "/test.md",);
+
 
     const totalNodes = countWireNodes(doc.wire,);
     const islandCount = countWireIslands(doc.wire,);

@@ -5,14 +5,36 @@ import { resolveDocPath } from "../detect.ts";
 import { loadDoc } from "../core/pipeline.ts";
 import { defaultShell } from "../core/shell.ts";
 
+/**
+ * @description Configuration options for the Service Worker fetch adapter.
+ */
 export interface SWPluginOptions extends DocConfig {
+  /**
+   * @description Path to the bundled client script for HTML shell responses.
+   * @default "./mdblog.js"
+   */
   bundlePath?: string;
 }
 
 /**
- * Creates a fetch event handler for the Service Worker.
+ * @description Creates a fetch event handler for the Service Worker.
+ * Intercepts documentation markdown routes and returns WireDoc JSON or HTML shells.
+ * @param io - IO abstraction instance to fetch and cache documents.
+ * @param options - Routing and caching options.
+ * @returns Event interceptor function returning boolean if request was handled.
+ * @example
+ * ```ts
+ * import { createSWFetchHandler } from "./sw.ts";
+ * import { createBrowserIO } from "../core/io.ts";
+ * const io = createBrowserIO();
+ * const handler = createSWFetchHandler(io, { basePath: "./articles" });
+ * ```
  */
-export function createSWFetchHandler(io: IO, options: SWPluginOptions = {}) {
+export function createSWFetchHandler(
+  io: IO,
+  options: SWPluginOptions = {},
+): (event: FetchEvent) => boolean {
+
   const basePath = options.basePath ?? "./articles";
   const bundlePath = options.bundlePath ?? "./mdblog.js";
 

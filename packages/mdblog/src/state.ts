@@ -1,58 +1,139 @@
-import { effect, signal } from "@preact/signals";
+import { effect, signal, type Signal } from "@preact/signals";
 import type { WireDoc } from "./plugin/wire.ts";
 import { parseFrontmatter } from "./plugin/core/frontmatter.ts";
 import { get, set } from "idb-keyval";
 import { getAppBaseUrl } from "./plugin/detect.ts";
 
+/**
+ * @description View rendering mode: rendered preview, AST wire tree JSON, or raw markdown.
+ */
 export type ViewMode = "preview" | "ast" | "raw";
 
+/**
+ * @description Article node representation in the hierarchical articles tree.
+ */
 export interface ArticleItem {
+  /** @description Relative filename (e.g. "intro.md"). */
   name: string;
+  /** @description URL slug for navigation. */
   slug: string;
+  /** @description Relative document path (e.g. "./articles/intro.md"). */
   path: string;
+  /** @description Document display title. */
   title: string;
+  /** @description Semantic Material Symbols icon name. */
   icon: string;
+  /** @description Optional badge text. */
   badge?: string;
+  /** @description Document publication or update date. */
   date?: string;
+  /** @description Document route location hash. */
   location?: string;
+  /** @description Author name. */
   author?: string;
+  /** @description Short description or summary. */
   description?: string;
+  /** @description List of tags or categories. */
   tags?: string[];
-  depth: number; // 0 = root/index, 1 = páginas de primeiro nível, 2 = sub-páginas, 3 = sub-sub-páginas...
-  parentPath?: string; // Caminho da página pai
-  children?: ArticleItem[]; // Sub-páginas diretas
+  /** @description Hierarchical depth (0 = root/index.md, 1 = top level, 2 = subpages). */
+  depth: number;
+  /** @description Path of the parent document. */
+  parentPath?: string;
+  /** @description Nested sub-pages. */
+  children?: ArticleItem[];
 }
 
+/**
+ * @description Search index item for client-side search.
+ */
 export interface SearchDocItem {
+  /** @description Document path. */
   path: string;
+  /** @description Document title. */
   title: string;
+  /** @description Document description. */
   description: string;
+  /** @description Plain text content extracted for indexing. */
   content: string;
+  /** @description Document tags. */
   tags: string[];
+  /** @description Document icon. */
   icon: string;
+  /** @description Optional badge text. */
   badge?: string;
+  /** @description Nesting depth. */
   depth: number;
 }
 
-// O estado inicial começa vazio - gerado dinamicamente no browser via index.md frontmatter recursivamente
-export const articles = signal<ArticleItem[]>([]);
-export const articleTree = signal<ArticleItem[]>([]);
-export const isArticlesLoading = signal<boolean>(false);
+/**
+ * @description Reactive signal holding the flattened list of all articles in pre-order.
+ */
+export const articles: Signal<ArticleItem[]> = signal<ArticleItem[]>([]);
 
-// Índice de busca dinâmico populado a partir de index.md e sub-páginas recorrentemente
-export const searchDocs = signal<SearchDocItem[]>([]);
+/**
+ * @description Reactive signal holding the hierarchical article tree starting from index.md.
+ */
+export const articleTree: Signal<ArticleItem[]> = signal<ArticleItem[]>([]);
 
-export const currentPath = signal<string>("./articles/index.md");
-export const currentDoc = signal<WireDoc | null>(null);
-export const isLoading = signal<boolean>(true);
-export const errorMessage = signal<string | null>(null);
-export const isOffline = signal<boolean>(
+/**
+ * @description Reactive signal indicating whether article discovery is in progress.
+ */
+export const isArticlesLoading: Signal<boolean> = signal<boolean>(false);
+
+/**
+ * @description Reactive signal holding search index items for SearchBox.
+ */
+export const searchDocs: Signal<SearchDocItem[]> = signal<SearchDocItem[]>([]);
+
+/**
+ * @description Reactive signal holding current active article route hash.
+ */
+export const currentPath: Signal<string> = signal<string>(
+  "./articles/index.md",
+);
+
+/**
+ * @description Reactive signal holding currently loaded and parsed WireDoc document.
+ */
+export const currentDoc: Signal<WireDoc | null> = signal<WireDoc | null>(null);
+
+/**
+ * @description Reactive signal indicating whether a document is currently being loaded.
+ */
+export const isLoading: Signal<boolean> = signal<boolean>(true);
+
+/**
+ * @description Reactive signal holding current error message string, or null if healthy.
+ */
+export const errorMessage: Signal<string | null> = signal<string | null>(null);
+
+/**
+ * @description Reactive signal indicating whether browser is offline.
+ */
+export const isOffline: Signal<boolean> = signal<boolean>(
   typeof navigator !== "undefined" ? !navigator.onLine : false,
 );
-export const isSWActive = signal<boolean>(false);
-export const sidebarOpen = signal<boolean>(false);
-export const parseTimeMs = signal<number>(0);
-export const viewMode = signal<ViewMode>("preview");
+
+/**
+ * @description Reactive signal indicating whether Service Worker is actively controlling page.
+ */
+export const isSWActive: Signal<boolean> = signal<boolean>(false);
+
+/**
+ * @description Reactive signal controlling mobile sidebar drawer visibility.
+ */
+export const sidebarOpen: Signal<boolean> = signal<boolean>(false);
+
+/**
+ * @description Reactive signal tracking document parse time in milliseconds.
+ */
+export const parseTimeMs: Signal<number> = signal<number>(0);
+
+/**
+ * @description Reactive signal controlling document view mode (preview, ast, raw).
+ */
+export const viewMode: Signal<ViewMode> = signal<ViewMode>("preview");
+
 
 /**
  * Atribui ícone semântico baseado no nome ou conteúdo do artigo.
@@ -104,7 +185,14 @@ function extractTitleFromMarkdown(text: string, fallbackName: string): string {
 }
 
 /**
- * Remove sintaxe markdown para obter texto puro indexável em mecanismos de busca.
+ * @description Removes markdown syntax and code blocks to produce clean plain text for search indexing.
+ * @param markdownBody - Markdown string to strip.
+ * @returns Cleaned plain text string.
+ * @example
+ * ```ts
+ * import { cleanMarkdownText } from "./state.ts";
+ * const plain = cleanMarkdownText("# Heading\n\n**bold** and [link](url)");
+ * ```
  */
 export function cleanMarkdownText(markdownBody: string): string {
   if (!markdownBody) return "";
@@ -119,7 +207,14 @@ export function cleanMarkdownText(markdownBody: string): string {
 }
 
 /**
- * Achata a árvore hierárquica em uma lista sequencial em pré-ordem (preservando depth e parentPath).
+ * @description Flattens a hierarchical article tree into a sequential list in pre-order.
+ * @param items - Hierarchical list of ArticleItems.
+ * @returns Flattened array of ArticleItems preserving depth and parentPath.
+ * @example
+ * ```ts
+ * import { flattenArticles } from "./state.ts";
+ * const flat = flattenArticles(articleTree.value);
+ * ```
  */
 export function flattenArticles(items: ArticleItem[]): ArticleItem[] {
   const flattened: ArticleItem[] = [];
@@ -138,8 +233,7 @@ export function flattenArticles(items: ArticleItem[]): ArticleItem[] {
 }
 
 /**
- * Carrega recursivamente uma página e suas sub-páginas a partir do frontmatter de cada uma,
- * populando simultaneamente a árvore de artigos e a lista de itens para indexação de busca.
+ * Carrega recursivamente uma página e suas sub-páginas a partir do frontmatter de cada uma.
  */
 async function loadPageRecursive(
   rawItem: any,
@@ -245,14 +339,18 @@ async function loadPageRecursive(
 }
 
 /**
- * GERAÇÃO DINÂMICA RECURSIVA NO BROWSER:
- * 1. Procura exclusivamente o arquivo ./articles/index.md como raiz (depth: 0).
- * 2. Lê seu frontmatter YAML contendo a lista recursiva de sub-páginas ('pages').
- * 3. Para cada página, lê recursivamente seu frontmatter e descobre sub-páginas sucessivamente.
- * 4. Popula simultaneamente o IndexedDB (via idb-keyval) com os dados para busca do SearchBox.
- * 5. Sem dependência de fallback estático (articles.json ou articles/index.html removidos).
+ * @description Dynamically loads and discovers all articles starting from index.md frontmatter.
+
+ * Recursively parses sub-page trees and updates both `articleTree` and `articles` signals.
+ * @returns Resolves to the discovered flattened articles list.
+ * @example
+ * ```ts
+ * import { loadArticles } from "./state.ts";
+ * await loadArticles();
+ * ```
  */
 export async function loadArticles(): Promise<ArticleItem[]> {
+
   isArticlesLoading.value = true;
 
   try {

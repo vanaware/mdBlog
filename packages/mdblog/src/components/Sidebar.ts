@@ -12,7 +12,19 @@ function norm(p?: string | null): string {
   return s;
 }
 
-export function Sidebar(): VNode {
+/**
+ * @description Collapsible left sidebar drawer displaying hierarchical article navigation.
+ * @returns Preact VNode representing the navigation drawer.
+ * @example
+ * ```ts
+ * import { Sidebar } from "./Sidebar.ts";
+ * import { html } from "htm/preact";
+ * const node = html`<${Sidebar} />`;
+ * ```
+ */
+export function Sidebar(): unknown {
+
+
   const current = currentPath.value;
   const list = articles.value;
 

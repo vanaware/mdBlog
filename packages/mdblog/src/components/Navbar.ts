@@ -21,7 +21,19 @@ function norm(p?: string | null): string {
   return s;
 }
 
-export function Navbar(): VNode {
+/**
+ * @description Top navigation bar component displaying logo, network status, search input, and theme toggle.
+ * @returns Preact VNode representing the application header.
+ * @example
+ * ```ts
+ * import { Navbar } from "./Navbar.ts";
+ * import { html } from "htm/preact";
+ * const node = html`<${Navbar} />`;
+ * ```
+ */
+export function Navbar(): unknown {
+
+
   const current = currentPath.value;
   const list = articles.value;
 

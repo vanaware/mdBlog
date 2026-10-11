@@ -190,11 +190,12 @@ Texto normal aqui.`;
 
     const flat = flattenArticles(mockTree,);
     assertEquals(flat.length, 4,);
-    assertEquals(flat[0].depth, 0,);
-    assertEquals(flat[1].depth, 1,);
-    assertEquals(flat[2].depth, 2,);
-    assertEquals(flat[3].depth, 3,);
-    assertEquals(flat[3].parentPath, "/articles/subdoc1.md",);
+    assertEquals(flat[0]!.depth, 0,);
+    assertEquals(flat[1]!.depth, 1,);
+    assertEquals(flat[2]!.depth, 2,);
+    assertEquals(flat[3]!.depth, 3,);
+    assertEquals(flat[3]!.parentPath, "/articles/subdoc1.md",);
+
   });
 
   it("confirms zero hardcoded articles lists in state.ts (starts as empty signal)", async () => {

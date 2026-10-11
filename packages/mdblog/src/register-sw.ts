@@ -1,7 +1,18 @@
 import { isSWActive } from "./state.ts";
 import { getAppBaseUrl } from "./plugin/detect.ts";
 
+/**
+ * @description Registers the mdBlog offline Service Worker with dynamic subfolder scope resolution.
+ * Updates the global `isSWActive` signal upon successful activation.
+ * @returns Resolves when registration attempt finishes.
+ * @example
+ * ```ts
+ * import { registerServiceWorker } from "./register-sw.ts";
+ * await registerServiceWorker();
+ * ```
+ */
 export async function registerServiceWorker(): Promise<void> {
+
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
     console.info("[SW] Service Worker is not supported in this browser.");
     isSWActive.value = false;

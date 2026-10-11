@@ -8,10 +8,21 @@ function safeJsonSerialize(data: unknown): string {
 }
 
 /**
- * Generates the full HTML shell for first-paint navigation.
- * Emits BeerCSS, manifest, and an inline <script id="__md_wire"> payload for zero-latency initial rendering.
+ * @description Generates the full HTML shell for first-paint navigation.
+ * Emits BeerCSS, manifest, and an inline `<script id="__md_wire">` payload for zero-latency initial rendering.
+ * @param doc - Parsed WireDoc document to embed into the shell.
+ * @param bundlePath - Relative path to the application bundle script.
+ * @returns Fully formatted HTML document string.
+ * @example
+ * ```ts
+ * import { defaultShell } from "./shell.ts";
+ * import { processMarkdown } from "./pipeline.ts";
+ * const doc = processMarkdown("# Welcome", "/index.md");
+ * const html = defaultShell(doc, "./mdblog.js");
+ * ```
  */
 export function defaultShell(doc: WireDoc, bundlePath = "./mdblog.js"): string {
+
   const serializedWire = safeJsonSerialize(doc);
 
   return `<!DOCTYPE html>

@@ -6,11 +6,30 @@ import { get } from "idb-keyval";
 import { searchDocs, type SearchDocItem } from "../state.ts";
 import { navigateTo } from "../router.ts";
 
+/**
+ * @description Properties accepted by the SearchBox component.
+ */
 export interface SearchBoxProps {
+  /** @description Placeholder text displayed in search input. */
   placeholder?: string;
 }
 
-export function SearchBox({ placeholder = "Buscar artigos..." }: SearchBoxProps = {}): VNode {
+/**
+ * @description Search box component with interactive dialog, auto-indexed full-text search, and quick navigation.
+ * @param props - Search configuration props.
+ * @returns Preact VNode representing the search bar and dialog.
+ * @example
+ * ```ts
+ * import { SearchBox } from "./SearchBox.ts";
+ * import { html } from "htm/preact";
+ * const node = html`<${SearchBox} placeholder="Search..." />`;
+ * ```
+ */
+export function SearchBox({
+  placeholder = "Buscar artigos...",
+}: SearchBoxProps = {}): unknown {
+
+
   const query = useSignal("");
   const isOpen = useSignal(false);
 

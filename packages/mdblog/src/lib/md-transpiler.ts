@@ -10,6 +10,8 @@
 
 export { parseMarkdown } from "../plugin/core/parse.ts";
 export { mdastToWire } from "../plugin/core/to-wire.ts";
+
+
 export {
   processMarkdown,
   loadDoc,
@@ -17,9 +19,11 @@ export {
 export {
   createBrowserIO,
   createMemoryIO,
+  type CacheIOOptions,
 } from "../plugin/core/io.ts";
 export {
   createSWFetchHandler,
+  type SWPluginOptions,
 } from "../plugin/adapters/sw.ts";
 export {
   defaultShell,
@@ -28,6 +32,7 @@ export type {
   IO,
   DocConfig,
 } from "../plugin/types.ts";
+
 export {
   slugify,
   isSWControlling,
@@ -37,7 +42,9 @@ export {
   countWireNodes,
   countWireIslands,
   sanitizeProps,
+  type MdastRoot,
   type WireDoc,
+
   type Wire,
   type WireElement,
   type WireComponent,

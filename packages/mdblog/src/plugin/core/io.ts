@@ -1,15 +1,35 @@
 import type { IO } from "../types.ts";
 import { del, get, set } from "idb-keyval";
 
+/**
+ * @description Options for browser CacheStorage and IndexedDB IO configuration.
+ */
 export interface CacheIOOptions {
+  /**
+   * @description Name of CacheStorage cache bucket.
+   * @default "md-wire-v1"
+   */
   cacheName?: string;
+
+  /**
+   * @description Whether to enable IndexedDB persistence via idb-keyval.
+   * @default true
+   */
   useIndexedDB?: boolean;
 }
 
 /**
- * Creates an IO implementation backed by Cache Storage and idb-keyval (IndexedDB).
+ * @description Creates an IO implementation backed by browser Cache Storage and IndexedDB (idb-keyval).
+ * @param options - Cache bucket name and IndexedDB configuration options.
+ * @returns IO instance implementing readText, cacheGet, cachePut, and cacheDelete.
+ * @example
+ * ```ts
+ * import { createBrowserIO } from "./io.ts";
+ * const io = createBrowserIO({ cacheName: "docs-v1", useIndexedDB: true });
+ * ```
  */
 export function createBrowserIO(options: CacheIOOptions = {}): IO {
+
   const cacheName = options.cacheName ?? "md-wire-v1";
   const useIdb = options.useIndexedDB !== false &&
     typeof indexedDB !== "undefined";
@@ -146,9 +166,18 @@ export function createBrowserIO(options: CacheIOOptions = {}): IO {
 }
 
 /**
- * Creates an in-memory IO for testing or headless execution.
+ * @description Creates an in-memory IO implementation for testing or headless execution.
+ * @param initialFiles - Map of initial relative file paths to their string contents.
+ * @returns IO instance with in-memory files and cache maps.
+ * @example
+ * ```ts
+ * import { createMemoryIO } from "./io.ts";
+ * const io = createMemoryIO({ "/articles/index.md": "# Welcome" });
+ * const text = await io.readText("/articles/index.md");
+ * ```
  */
 export function createMemoryIO(initialFiles: Record<string, string> = {}): IO {
+
   const files = new Map<string, string>(Object.entries(initialFiles));
   const cache = new Map<string, string>();
 

@@ -4,10 +4,24 @@ import { isSWControlling, resolveDocPath } from "../detect.ts";
 import { loadDoc } from "../core/pipeline.ts";
 
 /**
- * Creates a local client-side fetcher that executes the pipeline in-browser
+ * @description Creates a local client-side fetcher that executes the pipeline in-browser
  * when the Service Worker is not active or when offline.
+ * @param io - IO abstraction instance.
+ * @param options - DocConfig options.
+ * @returns Function that takes a URL/path and returns a parsed WireDoc.
+ * @example
+ * ```ts
+ * import { createLocalFetcher } from "./client.ts";
+ * import { createBrowserIO } from "../core/io.ts";
+ * const io = createBrowserIO();
+ * const fetcher = createLocalFetcher(io);
+ * const doc = await fetcher("/articles/intro.md");
+ * ```
  */
-export function createLocalFetcher(io: IO, options: DocConfig = {}) {
+export function createLocalFetcher(
+  io: IO,
+  options: DocConfig = {},
+): (urlOrPath: string) => Promise<WireDoc> {
   const basePath = options.basePath ?? "./articles";
 
   return async function localFetch(urlOrPath: string): Promise<WireDoc> {
@@ -17,13 +31,25 @@ export function createLocalFetcher(io: IO, options: DocConfig = {}) {
 }
 
 /**
- * Unified client fetcher with transparent Service Worker & fallback support.
+ * @description Unified client fetcher with transparent Service Worker & local pipeline fallback support.
+ * @param urlOrPath - Path to the markdown document.
+ * @param io - IO abstraction instance.
+ * @param options - DocConfig options.
+ * @returns Parsed WireDoc instance.
+ * @example
+ * ```ts
+ * import { mdFetch } from "./client.ts";
+ * import { createBrowserIO } from "../core/io.ts";
+ * const io = createBrowserIO();
+ * const doc = await mdFetch("./articles/index.md", io);
+ * ```
  */
 export async function mdFetch(
   urlOrPath: string,
   io: IO,
   options: DocConfig = {},
 ): Promise<WireDoc> {
+
   const { docPath } = resolveDocPath(
     urlOrPath,
     options.basePath ?? "./articles",

@@ -22,7 +22,18 @@ const config = {
   cacheTTLSeconds: 60,
 };
 
+/**
+ * @description Navigates to a target article markdown route, loading Wire AST and hydrating dynamic islands.
+ * @param path - Relative or hash route (e.g. "#/articles/intro.md" or "intro.md").
+ * @returns Resolves when document is loaded and state is updated.
+ * @example
+ * ```ts
+ * import { navigateTo } from "./router.ts";
+ * await navigateTo("README.md");
+ * ```
+ */
 export async function navigateTo(path: string): Promise<void> {
+
   let clean = (path || "").replace(/^#\/?/, "").replace(/^\.?\//, "");
   clean = clean.replace(/^articles\//, "").replace(/^docs\//, "");
   if (!clean || clean === "/" || clean === "index" || clean === "index.md") {
@@ -67,7 +78,16 @@ export async function navigateTo(path: string): Promise<void> {
   }
 }
 
+/**
+ * @description Initializes hash-based routing, listens to hash changes, and handles pre-rendered wire payloads.
+ * @example
+ * ```ts
+ * import { initRouter } from "./router.ts";
+ * initRouter();
+ * ```
+ */
 export function initRouter(): void {
+
   if (typeof window === "undefined") return;
 
   // Carrega dinamicamente a lista de artigos do blog

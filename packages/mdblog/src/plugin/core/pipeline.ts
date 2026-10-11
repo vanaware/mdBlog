@@ -5,7 +5,16 @@ import { mdastToWire } from "./to-wire.ts";
 import { parseFrontmatter } from "./frontmatter.ts";
 
 /**
- * Pure transformation pipeline: takes raw markdown and returns a complete WireDoc.
+ * @description Pure transformation pipeline: parses markdown and returns a complete WireDoc AST.
+ * Extracts frontmatter and heading title, returning a fully serializable WireDoc.
+ * @param markdown - Raw markdown string to process.
+ * @param url - Relative or absolute path identifier of the document.
+ * @returns Complete WireDoc object with wire AST, title, raw text, and timestamp.
+ * @example
+ * ```ts
+ * import { processMarkdown } from "./pipeline.ts";
+ * const doc = processMarkdown("# My Post\n\nContent", "/articles/post.md");
+ * ```
  */
 export function processMarkdown(
   markdown: string,
@@ -32,13 +41,26 @@ export function processMarkdown(
 }
 
 /**
- * Orchestrates document loading with TTL caching and IO abstraction.
+ * @description Orchestrates document loading with TTL caching and IO abstraction.
+ * Tries cache first, then reads raw text via IO and parses to WireDoc.
+ * @param url - Document path or URL to load.
+ * @param io - IO abstraction instance providing readText and cache operations.
+ * @param config - Optional configuration for cache TTL and options.
+ * @returns Resolves to the loaded and parsed WireDoc.
+ * @example
+ * ```ts
+ * import { loadDoc } from "./pipeline.ts";
+ * import { createMemoryIO } from "./io.ts";
+ * const io = createMemoryIO({ "/doc.md": "# Title" });
+ * const doc = await loadDoc("/doc.md", io);
+ * ```
  */
 export async function loadDoc(
   url: string,
   io: IO,
   config: DocConfig = {},
 ): Promise<WireDoc> {
+
   const ttlMs = (config.cacheTTLSeconds ?? 60) * 1000;
   const cacheKey = `wire:${url}`;
 
