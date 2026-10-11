@@ -1,4 +1,5 @@
 import {
+  Component,
   type ComponentChildren,
   type ComponentType,
   Fragment,
@@ -7,6 +8,7 @@ import {
   render,
   type VNode,
 } from "preact";
+
 import {
   useCallback,
   useContext,
@@ -49,35 +51,38 @@ import {
   type WireToVNodeOptions,
 } from "./render/from-wire.ts";
 import { defaultRegistry } from "./render/registry.ts";
+import { parseMarkdown } from "./plugin/core/parse.ts";
+import { mdastToWire } from "./plugin/core/to-wire.ts";
+import { loadDoc, processMarkdown } from "./plugin/core/pipeline.ts";
+import {
+  type CacheIOOptions,
+  createBrowserIO,
+  createMemoryIO,
+} from "./plugin/core/io.ts";
+import {
+  createSWFetchHandler,
+  type SWPluginOptions,
+} from "./plugin/adapters/sw.ts";
+import { defaultShell } from "./plugin/core/shell.ts";
+import type { DocConfig, IO } from "./plugin/types.ts";
+import {
+  isSWControlling,
+  resolveDocPath,
+  slugify,
+} from "./plugin/detect.ts";
 import {
   countWireIslands,
   countWireNodes,
-  createBrowserIO,
-  createMemoryIO,
-  createSWFetchHandler,
-  defaultShell,
-  isSWControlling,
-  loadDoc,
-  mdastToWire,
-  parseMarkdown,
-  processMarkdown,
-  resolveDocPath,
+  type MdastRoot,
   sanitizeProps,
-  slugify,
-} from "./lib/md-transpiler.ts";
-import type {
-  CacheIOOptions,
-  DocConfig,
-  IO,
-  MdastRoot,
-  SWPluginOptions,
-  Wire,
-  WireComponent,
-  WireDoc,
-  WireElement,
-  WireFragment,
-  WireIsland,
-} from "./lib/md-transpiler.ts";
+  type Wire,
+  type WireComponent,
+  type WireDoc,
+  type WireElement,
+  type WireFragment,
+  type WireIsland,
+} from "./plugin/wire.ts";
+
 
 /**
  * @description Reactive Signal container holding a mutable value.
