@@ -1,4 +1,5 @@
 // Automatically generated file during build
+declare const __APP_VERSION__: string;
 
 /**
  * Current library/application version.
