@@ -11,7 +11,7 @@ export interface HydrateOptions {
 /**
  * @description In-memory registry cache of dynamically imported island components.
  */
-export const dynamicIslandsCache: Record<string, ComponentType<any>> = {};
+export const dynamicIslandsCache: Record<string, unknown> = {};
 
 const inFlightImports: Record<string, Promise<Record<string, any> | null>> = {};
 
@@ -78,7 +78,7 @@ export async function hydrateIslands(
 
     if (cachedComp) {
       try {
-        mountIsland(cachedComp, dynamicProps, el);
+        mountIsland(cachedComp as ComponentType<any>, dynamicProps, el);
         el.dataset.islandHydrated = "true";
         delete el.dataset.islandMissing;
         hydratedCount++;
