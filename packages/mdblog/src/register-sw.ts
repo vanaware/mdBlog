@@ -26,6 +26,7 @@ export async function registerServiceWorker(): Promise<void> {
 
     const registration = await navigator.serviceWorker.register(swUrl, {
       scope: baseUrl,
+      type: "module",
     });
 
     // Check for updates immediately so stale workers are replaced

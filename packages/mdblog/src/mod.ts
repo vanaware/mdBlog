@@ -327,7 +327,7 @@ async function bootstrap() {
     : null;
   if (g && typeof g.mdBlogApp === "function") {
     ComponentToMount = g.mdBlogApp as typeof App;
-  } else {
+  } else if (document.querySelector('script[src*="app.js"]') || g?.mdBlogEnableAppJs) {
     try {
       // Tenta importar dinamicamente app.js em tempo de execução no browser se existir
       const dynamicImport = new Function("path", "return import(path)");
