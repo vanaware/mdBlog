@@ -1,5 +1,3 @@
-/// <reference lib="webworker" />
-
 import type { DocConfig, IO } from "../types.ts";
 import { resolveDocPath } from "../detect.ts";
 import { loadDoc } from "../core/pipeline.ts";
@@ -33,12 +31,12 @@ export interface SWPluginOptions extends DocConfig {
 export function createSWFetchHandler(
   io: IO,
   options: SWPluginOptions = {},
-): (event: FetchEvent) => boolean {
+): (event: any) => boolean {
 
   const basePath = options.basePath ?? "./articles";
   const bundlePath = options.bundlePath ?? "./mdblog.js";
 
-  return function handleFetch(event: FetchEvent): boolean {
+  return function handleFetch(event: any): boolean {
     const request = event.request;
 
     // 1. Only intercept GET requests
