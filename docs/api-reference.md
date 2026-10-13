@@ -80,6 +80,17 @@ const doc = await loadDoc("/articles/guide.md", io, { cacheTTLSeconds: 60 });
 ### `defaultShell(doc: WireDoc, bundlePath?: string): string`
 Generates a complete HTML document shell for initial server or Service Worker responses. Injects BeerCSS styles and embeds the pre-rendered `WireDoc` in an inline `<script id="__md_wire">` tag for zero-latency first paint.
 
+This is the fallback document. A navigation served by the packaged worker reads the application's own `index.html` and injects the payload into it with `injectWireShell`, so the first paint carries the head the build shipped; `defaultShell` answers only when that document cannot be read (offline, or a host that does not serve it). Keep the two on the same BeerCSS release.
+
+### `injectWireShell(html: string, doc: WireDoc): string`
+Splices the pre-rendered payload into an existing HTML document: the `<script id="__md_wire" type="application/json">` goes last in `<head>`, a payload already present is replaced rather than duplicated, and the `<title>` follows the document. Everything else in the template is left exactly as it was.
+
+```ts
+import { injectWireShell, processMarkdown } from "@vanaware/mdblog";
+const doc = processMarkdown("# Welcome", "/articles/welcome.md");
+const html = injectWireShell(await Deno.readTextFile("./index.html"), doc);
+```
+
 ---
 
 ## 💾 I/O & Service Worker Adapters
@@ -96,6 +107,10 @@ Creates an in-memory `IO` implementation for testing, headless runners, and Node
 
 ### `createSWFetchHandler(io: IO, options?: SWPluginOptions): (event: FetchEvent) => boolean`
 Creates a fetch event interceptor for use in a Service Worker (`sw.js`). Intercepts requests for `.md` files and responds with either JSON (`WireDoc`) or pre-rendered HTML shells based on `Accept` headers.
+
+- **Options** (on top of `DocConfig`):
+  - `bundlePath?: string` (default: `"./mdblog.js"`) — the client script the shell loads.
+  - `shellPath?: string` (default: `"./index.html"`) — the document the first-paint payload is injected into, resolved next to the worker. Point it at another entry document when the app ships one; when it cannot be read, `defaultShell` answers instead.
 
 ### `createLocalFetcher(io: IO, options?: DocConfig): (url: string) => Promise<WireDoc>`
 Creates an in-browser fetcher that executes the parsing pipeline locally as a transparent fallback when the Service Worker is inactive.
@@ -126,8 +141,12 @@ Initializes hash-based SPA routing (`#/path.md`). Automatically checks for pre-r
 ### `navigateTo(path: string): Promise<void>`
 Navigates to a target article path (e.g. `"intro.md"` or `"#/articles/intro.md"`), loads the parsed Wire document, updates the document title, and schedules island hydration.
 
+A request that never answers is not allowed to hold the page: the document is waited for up to `NAVIGATION_TIMEOUT_MS` (15s), after which the failure is reported the same way a failed one is — the reader gets the card that explains it and the way back to the start page, instead of a bar that will never finish.
+
 ### `registerServiceWorker(): Promise<void>`
-Registers the Service Worker with dynamically resolved relative base URLs for compatibility with subfolder deployments (e.g., GitHub Pages).
+Registers the offline Service Worker, deriving the scope from the current location so a subfolder deployment (GitHub Pages) works unchanged.
+
+The build stamp travels in the script URL — `sw.js?version=v0.1.8#…` — because a worker is only replaced when its URL or its bytes change, and `sw.js` is copied verbatim from `public/`. Without the stamp, a deploy that rebuilds the bundle alone would leave the previous worker answering every visit with the shell and the engine of a build that no longer exists. `packages/mdblog/public/sw.js` names its cache after the same stamp, so the superseded build's entries are dropped when the new one activates.
 
 ---
 

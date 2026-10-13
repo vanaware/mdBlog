@@ -21,7 +21,12 @@
 
 import mdTranspiler from "./mdblog.js";
 
-const CACHE_NAME = "mdblog-pwa-v2";
+// The build stamp is part of the name on purpose. A worker is replaced by URL
+// (see registerServiceWorker), and every replacement re-runs the install below;
+// naming the cache after the build it was filled by means the superseded build's
+// entries are deleted by the activate step instead of piling up, and the shell
+// stops being whatever the first visit happened to cache.
+const CACHE_NAME = `mdblog-pwa-${mdTranspiler.version || "dev"}`;
 
 // List of assets essential to offline operation
 const STATIC_ASSETS = [
@@ -38,49 +43,49 @@ const STATIC_ASSETS = [
 const io = mdTranspiler.createBrowserIO({
   cacheName: "md-wire-v1",
   useIndexedDB: false,
-});
+},);
 
 // Starts the article request interceptor using the packaged library
 const handleDocFetch = mdTranspiler.createSWFetchHandler(io, {
   basePath: "./articles",
   cacheTTLSeconds: 60,
   bundlePath: "./mdblog.js",
-});
+},);
 
 // Install: pre-loads the assets into the cache
-self.addEventListener("install", (event) => {
+self.addEventListener("install", (event,) => {
   event.waitUntil(
     caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .open(CACHE_NAME,)
+      .then((cache,) => cache.addAll(STATIC_ASSETS,))
       .then(() => self.skipWaiting()),
   );
-});
+},);
 
 // Activation: clears outdated cache versions
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", (event,) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
+      .then((keys,) =>
         Promise.all(
-          keys.map((key) => {
-            if (key !== CACHE_NAME && !key.startsWith("md-wire-")) {
-              return caches.delete(key);
+          keys.map((key,) => {
+            if (key !== CACHE_NAME && !key.startsWith("md-wire-",)) {
+              return caches.delete(key,);
             }
-          }),
+          },),
         )
       )
       .then(() => self.clients.claim()),
   );
-});
+},);
 
 // Request interception
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", (event,) => {
   if (event.request.method !== "GET") return;
 
   // 1. Try to intercept the article route with the mdBlog library
-  if (handleDocFetch(event)) {
+  if (handleDocFetch(event,)) {
     return;
   }
 
@@ -88,26 +93,26 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       try {
-        const networkResponse = await fetch(event.request);
+        const networkResponse = await fetch(event.request,);
         if (networkResponse.ok) {
-          const cache = await caches.open(CACHE_NAME);
-          cache.put(event.request, networkResponse.clone()).catch(() => {});
+          const cache = await caches.open(CACHE_NAME,);
+          cache.put(event.request, networkResponse.clone(),).catch(() => {},);
         }
         return networkResponse;
       } catch (_err) {
         // Offline fallback from the local cache
-        const cached = await caches.match(event.request);
+        const cached = await caches.match(event.request,);
         if (cached) return cached;
 
         // For browser navigations, serve the index.html stored in the cache
         if (event.request.mode === "navigate") {
-          const fallback = (await caches.match("./index.html")) ||
-            (await caches.match("./"));
+          const fallback = (await caches.match("./index.html",)) ||
+            (await caches.match("./",));
           if (fallback) return fallback;
         }
 
-        return new Response("Offline", { status: 503 });
+        return new Response("Offline", { status: 503, },);
       }
     })(),
   );
-});
+},);

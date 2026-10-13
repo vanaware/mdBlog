@@ -46,7 +46,10 @@ describe("Build Script & Distribution", () => {
 
     // Reads the built sw.js and checks its content
     const swContent = await Deno.readTextFile(`${distDir}/sw.js`,);
-    assert(swContent.includes("mdblog-pwa-v2",),);
+    assert(
+      swContent.includes("mdTranspiler.version",),
+      "the cache name must follow the build: a name fixed in the file lets one worker keep serving the shell and the assets of a build that no longer exists",
+    );
 
     // Checks that the default public/sw.js demonstrates the use of the packaged library
     const publicSw = await Deno.readTextFile(`${publicDir}/sw.js`,);

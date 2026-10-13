@@ -45,6 +45,7 @@ import { SearchBox, type SearchBoxProps, } from "./components/SearchBox.ts";
 import { Toc, type TocProps, } from "./components/Toc.ts";
 import { initRouter, navigateTo, } from "./router.ts";
 import { registerServiceWorker, } from "./register-sw.ts";
+import { APP_VERSION, } from "./version.ts";
 import {
   type AdjacentArticles,
   articleHrefFromPath,
@@ -77,7 +78,7 @@ import {
   createSWFetchHandler,
   type SWPluginOptions,
 } from "./plugin/adapters/sw.ts";
-import { defaultShell, } from "./plugin/core/shell.ts";
+import { defaultShell, injectWireShell, } from "./plugin/core/shell.ts";
 import type { DocConfig, IO, } from "./plugin/types.ts";
 import { isSWControlling, resolveDocPath, slugify, } from "./plugin/detect.ts";
 import {
@@ -218,6 +219,7 @@ export {
   findAdjacentArticles,
   hydrateIslands,
   initRouter,
+  injectWireShell,
   isSWControlling,
   loadDoc,
   mdastToWire,
@@ -270,6 +272,7 @@ const mdTranspiler = {
   createMemoryIO,
   createSWFetchHandler,
   defaultShell,
+  injectWireShell,
   isSWControlling,
   loadDoc,
   mdastToWire,
@@ -278,6 +281,9 @@ const mdTranspiler = {
   resolveDocPath,
   sanitizeProps,
   slugify,
+  // The build stamp, so a Service Worker — which imports this bundle instead of
+  // importing the module graph — can name its caches after the build it holds.
+  version: APP_VERSION,
 };
 
 export { mdTranspiler, };

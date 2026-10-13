@@ -1,7 +1,7 @@
 import type { DocConfig, IO, } from "../types.ts";
 import { resolveDocPath, } from "../detect.ts";
 import { loadDoc, } from "../core/pipeline.ts";
-import { defaultShell, } from "../core/shell.ts";
+import { defaultShell, injectWireShell, } from "../core/shell.ts";
 
 /**
  * @description Configuration options for the Service Worker fetch adapter.
@@ -12,6 +12,51 @@ export interface SWPluginOptions extends DocConfig {
    * @default "./mdblog.js"
    */
   bundlePath?: string;
+
+  /**
+   * @description Path to the application document the first-paint payload is
+   * injected into. Served documents get their own head — stylesheets, theme
+   * recovery, the mount deadline — instead of a copy written here, which is how
+   * a shell ends up loading a different framework release than the app.
+   * When it cannot be read, the static fallback document is used instead.
+   * @default "./index.html"
+   */
+  shellPath?: string;
+}
+
+/**
+ * Reads the document the application ships, so a navigation can be answered
+ * with it. Revalidated on every request: a shell served from a cache the reader
+ * cannot see is the one thing a first paint must never be.
+ */
+async function readShellTemplate(
+  shellPath: string,
+  base: string,
+): Promise<string | null> {
+  const templateUrl = new URL(shellPath, base,).href;
+
+  const usable = (html: string,): html is string =>
+    html.includes("<head",) || html.includes("<body",);
+
+  try {
+    const response = await fetch(templateUrl, { cache: "no-cache", },);
+    if (!response.ok) return null;
+    const html = await response.text();
+    return usable(html,) ? html : null;
+  } catch {
+    // Offline, or a host that does not serve the file. The copy the worker
+    // already holds is still the application's own document; anything else would
+    // have to be the fallback written above.
+    if (typeof caches === "undefined") return null;
+    try {
+      const cached = await caches.match(templateUrl,);
+      if (!cached) return null;
+      const html = await cached.text();
+      return usable(html,) ? html : null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 /**
@@ -34,6 +79,13 @@ export function createSWFetchHandler(
 ): (event: any,) => boolean {
   const basePath = options.basePath ?? "./articles";
   const bundlePath = options.bundlePath ?? "./mdblog.js";
+  const shellPath = options.shellPath ?? "./index.html";
+  // The document belongs next to the worker, not next to the request: an article
+  // navigation asks for `../index.html` when resolved against its own path, and
+  // a deep link would then be answered with the fallback shell.
+  const shellBase = (typeof self !== "undefined" && self?.location?.href) ?
+    self.location.href :
+    undefined;
 
   return function handleFetch(event: any,): boolean {
     const request = event.request;
@@ -72,7 +124,13 @@ export function createSWFetchHandler(
           // Content negotiation:
           // If browser navigation (text/html): return HTML shell with embedded wire
           if (accept.includes("text/html",)) {
-            const html = defaultShell(doc, bundlePath,);
+            const template = await readShellTemplate(
+              shellPath,
+              shellBase ?? url.href,
+            );
+            const html = template
+              ? injectWireShell(template, doc,)
+              : defaultShell(doc, bundlePath,);
             return new Response(html, {
               status: 200,
               headers: {

@@ -1,5 +1,6 @@
 import { isSWActive, } from "./state.ts";
 import { getAppBaseUrl, } from "./plugin/detect.ts";
+import { APP_VERSION, } from "./version.ts";
 
 /**
  * @description Registers the mdBlog offline Service Worker with dynamic subfolder scope resolution.
@@ -21,7 +22,16 @@ export async function registerServiceWorker(): Promise<void> {
   try {
     // Derives the base path and scope dynamically for subfolder compatibility (e.g. GitHub Pages)
     const baseUrl = getAppBaseUrl();
-    const swUrl = `${baseUrl}sw.js`;
+    // The build stamp travels in the script URL, and that is the whole point of
+    // it: a worker is only replaced when the bytes of its script change, and
+    // sw.js is copied verbatim from public/ — so a deploy that rebuilds the
+    // bundle alone would leave the previous worker in charge of every visit,
+    // answering navigations with the shell and the engine of a build nobody has
+    // any more. A different URL is a different worker: the install runs, the
+    // assets are re-cached, and the superseded build's caches go with it.
+    const swUrl = APP_VERSION
+      ? `${baseUrl}sw.js?version=${encodeURIComponent(APP_VERSION,)}`
+      : `${baseUrl}sw.js`;
 
     const registration = await navigator.serviceWorker.register(swUrl, {
       scope: baseUrl,

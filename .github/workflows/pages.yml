@@ -35,7 +35,15 @@ jobs:
         run: deno task tests
 
       - name: Build Application
-        run: deno task esbuild noversion
+        # No "noversion": the stamp ("version#buildHash") is written into the
+        # bundle, and the client registers the worker as
+        # "sw.js?version=<stamp>". A worker is only replaced when its script URL
+        # or bytes change, so a deploy that keeps the previous stamp would leave
+        # every returning visitor running the shell and the engine of the build
+        # before it — the stale copy that answers with a page which never
+        # finishes loading. Bumping here gives each deploy its own URL, and each
+        # visitor one clean update.
+        run: deno task esbuild
 
       - name: Prepare static assets for GitHub Pages
         run: |

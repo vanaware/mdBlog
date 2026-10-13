@@ -26,11 +26,13 @@ Happens when the user opens a path directly in the browser (e.g.
                   │     └── Stores the WireDoc in Cache Storage
                   │
                   ▼
-         [ defaultShell(doc) ] ── Builds the complete HTML shell
+         [ the shell ] ── Answers the navigation with a complete HTML document
                   │
-                  ├── Injects BeerCSS through the CDN
+                  ├── Reads ./index.html next to the worker (revalidated, so the
+                  │    head is always the one the application was shipped with)
+                  ├── Falls back to defaultShell(doc) when it cannot be read
                   ├── Injects <script id="__md_wire" type="application/json">
-                  └── Injects <script type="module" src="./dist/bundle.js">
+                  └── Rewrites <title> after the document being rendered
                   │
                   ▼
         [ HTTP 200 response ] ── Hands the HTML back to the browser
@@ -47,6 +49,11 @@ Happens when the user opens a path directly in the browser (e.g.
 - **Zero layout shift:** the text content and the blocks already arrive in the first HTML document.
 - **Fast:** no extra AJAX/Fetch data requests during the initial load.
 - **SEO & accessibility:** search crawlers receive the structured node tree.
+- **One document, one head:** the payload is injected into the `index.html` the
+  application ships, so a served first paint carries the same stylesheets, the
+  same theme restore and the same mount deadline as a plain visit — there is no
+  second copy of the head to keep in step, which is how a shell ends up loading
+  another framework release and hanging on a blank page.
 
 ---
 

@@ -38,6 +38,53 @@ let navigationSeq = 0;
 let selfTriggeredHash: string | null = null;
 
 /**
+ * @description How long a document request may stay unanswered before the
+ * reader reports it as failed, in milliseconds.
+ *
+ * A request that never settles is indistinguishable from a slow one, and the
+ * loading state has no way out of its own: without a budget the reader is left
+ * watching a bar that will never finish instead of the card that explains the
+ * failure and offers the way back to the start page. That is what happens when
+ * a service worker loses its cache underneath an open tab.
+ */
+export const NAVIGATION_TIMEOUT_MS = 15_000;
+
+/**
+ * @description Settles a promise no later than a deadline, rejecting with a
+ * descriptive error when the original one is still pending.
+ * @param pending - The work to guard, typically a document request.
+ * @param ms - How long to wait for it.
+ * @param route - What was asked for, quoted in the rejection message.
+ * @returns The result of the original promise, or a rejection.
+ * @example
+ * ```ts
+ * import { withTimeout } from "./router.ts";
+ * const doc = await withTimeout(mdFetch("./articles/guide.md", io), 500, "guide.md");
+ * ```
+ */
+export function withTimeout<T,>(
+  pending: Promise<T>,
+  ms: number,
+  route: string,
+): Promise<T> {
+  return new Promise<T>((resolve, reject,) => {
+    const timer = setTimeout(() => {
+      reject(
+        new Error(
+          `${route} did not answer within ${
+            Math.round(ms / 1000,)
+          }s. The copy held by the browser may be damaged: reload the page, and if it keeps happening clear the site data.`,
+        ),
+      );
+    }, ms,);
+    // The original work is not cancelled — it is simply no longer waited for. A
+    // late answer still lands, because committing state is guarded by the
+    // navigation token rather than by this timer.
+    pending.then(resolve, reject,).then(() => clearTimeout(timer,));
+  },);
+}
+
+/**
  * @description Navigates to a target article markdown route, loading Wire AST and hydrating dynamic islands.
  * @param path - Relative or hash route (e.g. "#/articles/intro.md" or "intro.md").
  * @returns Resolves when document is loaded and state is updated.
@@ -75,7 +122,11 @@ export async function navigateTo(path: string,): Promise<void> {
 
   try {
     const t0 = performance.now();
-    const doc = await mdFetch(fetchPath, io, config,);
+    const doc = await withTimeout(
+      mdFetch(fetchPath, io, config,),
+      NAVIGATION_TIMEOUT_MS,
+      fetchPath,
+    );
     if (seq !== navigationSeq) return; // superseded by a newer navigation
 
     const t1 = performance.now();

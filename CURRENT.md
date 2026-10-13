@@ -97,9 +97,46 @@ BeerCSS itself gives a button. The chip drops its word and its padding on the
 narrow branch and the brand link drops its 0.75rem of inline padding, which is
 what brings the theme toggle back on screen — measured live: 2px of slack at
 320px, 16px at 360 and 375, 16px on the desktop bar, whose layout is unchanged.
+Those numbers were taken again after the shell fix below, under the release the
+app is built for: unchanged.
+
+**One document, and no load that hangs in silence.** A reported blank page that
+never finished loading traced back to two documents claiming to be the entry.
+The Service Worker answered navigations with `defaultShell()`, a hand-written
+copy of the head that had drifted: it loaded BeerCSS 5.0.3 against the pinned
+3.7.12, signed itself "AiStudio Docs", and carried none of the safeguards
+`public/index.html` has — no theme restore, no stale-cache recovery. With the
+bundle unavailable it rendered an empty `#app` and waited forever. Navigations
+now read the application's own `index.html` (`injectWireShell` splices the
+`#__md_wire` payload into `<head>` and follows the document's title), so there
+is one head to keep correct; `defaultShell` remains only for the case where the
+file cannot be read at all, and is now on the same release. Three ways out of a
+stalled load were added beside it: a mount deadline in the shell (12s with an
+empty `#app` says so and offers "Reload" / "Discard the cached copy"), a
+15-second budget per document request in `router.ts` (a request that never
+answers now ends in the existing error card instead of an endless bar), and
+`shellPath` on `SWPluginOptions` for whoever ships another entry document. The
+worker itself was the other half of the trap: `sw.js` is copied verbatim from
+`public/`, so its bytes never change and the browser never re-installs it —
+every rebuild left the previous worker in charge of the shell and of its own
+engine. The registration is now versioned (`sw.js?version=<build stamp>`, the
+stamp travelling URL-encoded because it contains `#`) and the worker names its
+cache after that same stamp, so a deploy replaces the worker exactly once and
+clears what the superseded build left behind. `.github/workflows/pages.yml`
+dropped `noversion` for that reason: with a frozen stamp no visitor would ever
+be updated. Tests: `tests/shell_test.ts` (payload placement, template preserved,
+no duplicated payload, escaping, and a guard that the fallback document stays on
+the release `index.html` uses) and `tests/router_test.ts` (the budget); the
+`mdblog-pwa-v2` literal assertion in `app_test.ts` became an assertion that the
+cache name follows the build.
 
 ## ⏭️ Next candidates
 
+- `deno task esbuild noversion`, the build every local round and the test suite
+  runs, keeps the stamp frozen — so in development the worker is still not
+  replaced by a rebuild and a stale engine has to be dropped by hand (DevTools,
+  or the shell's own "Discard the cached copy"). A stamp that moves with the
+  content of the bundle would close that gap without touching releases.
 - Old bookmarks pointing at the previous Portuguese file names 404; a legacy alias
   map (or a case-insensitive lookup against the discovered article tree) would keep
   them working.

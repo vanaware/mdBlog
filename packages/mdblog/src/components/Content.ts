@@ -166,8 +166,8 @@ export function Content(): unknown {
   const tags: string[] = Array.isArray(currentArticle?.tags,)
     ? currentArticle!.tags!
     : Array.isArray(doc.frontmatter?.tags,)
-      ? doc.frontmatter.tags as string[]
-      : [];
+    ? doc.frontmatter.tags as string[]
+    : [];
   const readingTime = estimateReadingTimeMinutes(doc.raw || "",);
 
   // Drops the leading h1 of the markdown body when the header already shows it
@@ -214,32 +214,33 @@ export function Content(): unknown {
     <main class="responsive max padding">
       <!-- 1. Discreet compact breadcrumb that wraps -->
       ${breadcrumbs.length > 1
-      ? html`
+        ? html`
           <nav
             class="row wrap no-space small-text secondary-text bottom-margin">
             ${breadcrumbs.map((crumb, idx,) => {
-        const isLast = idx === breadcrumbs.length - 1;
-        const label = (idx === 0 &&
-          (crumb.name === "index.md" ||
-            crumb.path.endsWith("/index.md",)))
-          ? "Start"
-          : crumb.title;
-        return html`
+              const isLast = idx === breadcrumbs.length - 1;
+              const label = (idx === 0 &&
+                  (crumb.name === "index.md" ||
+                    crumb.path.endsWith("/index.md",)))
+                ? "Start"
+                : crumb.title;
+              return html`
                 ${idx > 0
-            ? html`<i class="tiny tiny-margin medium-opacity">chevron_right</i>`
-            : null}
+                  ? html`<i class="tiny tiny-margin medium-opacity">chevron_right</i>`
+                  : null}
                 <a
                   href=${articleHrefFromPath(crumb.path,)}
-                  class=${`wrap ${isLast ? "bold primary-text" : "secondary-text wave"
-          }`}
+                  class=${`wrap ${
+                    isLast ? "bold primary-text" : "secondary-text wave"
+                  }`}
                 >
                   ${label}
                 </a>
               `;
-      },)}
+            },)}
           </nav>
         `
-      : null}
+        : null}
 
       <div class="grid">
         <div class=${showRail ? "s12 m12 l9" : "s12"}>
@@ -256,69 +257,70 @@ export function Content(): unknown {
                 very same level (1.75rem) keeps it above the sections below it
                 instead of collapsing the hierarchy. -->
             <h3
-              class=${`bold no-margin wrap ${isWideScreen.value ? "" : "small"
-    }`}
+              class=${`bold no-margin wrap ${
+                isWideScreen.value ? "" : "small"
+              }`}
             >${title}</h3>
             <div
               class="row wrap small-text secondary-text top-margin small-margin">
               ${author
-      ? html`
+                ? html`
                   <span class="row no-space">
                     <i class="tiny right-margin tiny-margin">person</i>
                     <span>${author}</span>
                   </span>
                 `
-      : null}
+                : null}
               ${date
-      ? html`
+                ? html`
                   <span class="row no-space">
                     <i class="tiny right-margin tiny-margin">calendar_today</i>
                     <span>${date}</span>
                   </span>
                 `
-      : null}
+                : null}
               <span class="row no-space" title="Estimated reading time">
                 <i class="tiny right-margin tiny-margin">schedule</i>
                 <span>${readingTime} min read</span>
               </span>
               <div class="max"></div>
               ${hasToc
-      ? html`
+                ? html`
                   <button
                     class="small tertiary no-margin"
                     onClick=${toggleToc}
                     aria-expanded=${isWideScreen.value
-          ? tocRailOpen.value
-          : tocModalOpen.value}
+                      ? tocRailOpen.value
+                      : tocModalOpen.value}
                     aria-label=${isWideScreen.value
-          ? "Show or hide the table of contents"
-          : "Open or close the table of contents"}
+                      ? "Show or hide the table of contents"
+                      : "Open or close the table of contents"}
                     title=${isWideScreen.value
-          ? (tocRailOpen.value
-            ? "Hide the contents of this page"
-            : "Show the contents of this page")
-          : "Contents of this page"}
+                      ? (tocRailOpen.value
+                        ? "Hide the contents of this page"
+                        : "Show the contents of this page")
+                      : "Contents of this page"}
                   >
                     <i>toc</i>
                     <span>On this page</span>
                   </button>
                 `
-      : null}
+                : null}
             </div>
             ${tags.length > 0
-      ? html`
+              ? html`
                 <div class="row wrap top-margin small-margin">
                   ${tags.map((tag,) =>
-        html`
+                    html`
                       <span key=${tag} class="chip small secondary-container no-margin">
                         <i class="tiny">label</i>
                         ${tag}
                       </span>
                     `
-      )}
+                  )}
                 </div>
               `
-      : null}
+              : null}
           </header>
 
           <!-- The rule that closes the header. BeerCSS has no directional
@@ -340,8 +342,8 @@ export function Content(): unknown {
 
           <!-- 4. Sub-page list (shown right after the article body) -->
           ${currentArticle && currentArticle.children &&
-      currentArticle.children.length > 0
-      ? html`
+              currentArticle.children.length > 0
+            ? html`
               <section class="top-margin large-margin">
                 <p class="bold small-text secondary-text no-margin">
                   Sub-pages (${currentArticle.children.length})
@@ -354,42 +356,42 @@ export function Content(): unknown {
                     touched each other with no gap at all. -->
                 <div class="vertical top-margin small-margin">
                   ${currentArticle.children.map((sub,) =>
-        html`
+                    html`
                       <a
                         key=${sub.path}
                         href=${articleHrefFromPath(sub.path,)}
                         class="row wrap border round small-padding surface-container wave bottom-margin small-margin"
                       >
                         <i class="primary-text small">${sub.icon ||
-          "article"}</i>
+                          "article"}</i>
                         <div class="max wrap">
                           <div class="bold wrap">${sub.title}</div>
                           ${sub.description
-            ? html`
+                            ? html`
                               <div class="small-text secondary-text wrap no-margin">
                                 ${sub.description}
                               </div>
                             `
-            : null}
+                            : null}
                         </div>
                         <i class="secondary-text small">chevron_right</i>
                       </a>
                     `
-      )}
+                  )}
                 </div>
               </section>
             `
-      : null}
+            : null}
 
           <!-- 5. Previous/next pager, following the article tree order -->
           ${prev || next
-      ? html`
+            ? html`
               <nav
                 class="grid top-margin large-margin"
                 aria-label="Article navigation"
               >
                 ${prev
-          ? html`
+                  ? html`
                     <a
                       href=${articleHrefFromPath(prev.path,)}
                       class="s12 m6 l6 row border round padding wave surface-container-low no-margin"
@@ -403,9 +405,9 @@ export function Content(): unknown {
                       </div>
                     </a>
                   `
-          : html`<div class="s12 m6 l6"></div>`}
+                  : html`<div class="s12 m6 l6"></div>`}
                 ${next
-          ? html`
+                  ? html`
                     <a
                       href=${articleHrefFromPath(next.path,)}
                       class="s12 m6 l6 row border round padding wave surface-container-low no-margin"
@@ -419,10 +421,10 @@ export function Content(): unknown {
                       <i class="secondary-text">arrow_forward</i>
                     </a>
                   `
-          : null}
+                  : null}
               </nav>
             `
-      : null}
+            : null}
 
           <!-- 6. Plain footer, separated by the same kind of rule the header
               uses. BeerCSS sets footer{flex-direction:column; padding:0 1rem;
@@ -439,7 +441,7 @@ export function Content(): unknown {
         <!-- Scrollable summary column on wide screens (l), collapsed either by
             the header button or by this close control of the column itself. -->
         ${showRail
-      ? html`
+          ? html`
             <aside class="l l3 left-padding" aria-label="Contents of this page">
               <div class="row no-padding no-space">
                 <p class="bold small-text secondary-text no-margin">
@@ -457,35 +459,36 @@ export function Content(): unknown {
               </div>
               <div
                 class=${railOverflowing.value
-          ? `scroll ${railBudget.heightClass}`
-          : ""}
+                  ? `scroll ${railBudget.heightClass}`
+                  : ""}
               >
                 <!-- Unclamped wrapper: its natural height is what tells whether
                     the entries below the budget exist at all. -->
                 <div
                   ref=${(el: HTMLDivElement | null,) => {
-          railList.value = el;
-        }}
+                    railList.value = el;
+                  }}
                 >
                   <${Toc} headings=${toc} />
                 </div>
               </div>
             </aside>
           `
-      : null}
+          : null}
       </div>
 
       <!-- Summary as a side panel (positioned dialog) on small and medium screens (s/m) -->
       ${showTocPanel
-      ? html`
+        ? html`
           ${tocModalOpen.value
-          ? html`
+            ? html`
               <div class="overlay active" onClick=${closeTocModal}></div>
             `
-          : null}
+            : null}
           <dialog
-            class=${`right medium-width round surface-container scroll small-padding border ${tocModalOpen.value ? "active" : ""
-        }`}
+            class=${`right medium-width round surface-container scroll small-padding border ${
+              tocModalOpen.value ? "active" : ""
+            }`}
             aria-label="Table of contents"
           >
             <!-- The panel's own head: label on the left, control on the right.
@@ -508,7 +511,7 @@ export function Content(): unknown {
             <${Toc} headings=${toc} onNavigate=${closeTocModal} />
           </dialog>
         `
-      : null}
+        : null}
     </main>
   `;
 }
