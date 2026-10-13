@@ -1,28 +1,28 @@
-// Ilha interativa pura HTML+ES (executada diretamente no navegador sem compilação nem bundle)
-// Utiliza os utilitários exportados pelo bundle mdBlog (sem requisições externas de CDN)
+// Pure interactive HTML+ES island (runs directly in the browser, no compilation or bundling)
+// Uses the utilities exported by the mdBlog bundle (no external CDN requests)
 import { html as _html, signal as _signal, useSignal as _useSignal } from "../mdblog.js";
 
 const html = _html || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.html : null);
 const signal = _signal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.signal : null);
 const useSignal = _useSignal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.useSignal : null);
 
-export function DemoWidget({ title = "Ilha Dinâmica HTML+ES", step = 1 }) {
+export function DemoWidget({ title = "Dynamic HTML+ES Island", step = 1 }) {
   const count = typeof useSignal === "function" ? useSignal(0) : signal(0);
 
   return html`
-    <article class="border round medium-padding surface-container margin-bottom">
-      <div class="row wrap items-center justify-between gap">
-        <div>
-          <h6 class="no-margin bold">${title}</h6>
-          <p class="small-text surface-variant-text no-margin">
-            Módulo ES nativo utilizando Preact Signals do bundle mdBlog
+    <article class="border round padding surface-container bottom-margin">
+      <div class="row wrap">
+        <div class="max wrap">
+          <h6 class="no-margin bold small wrap">${title}</h6>
+          <p class="small-text secondary-text no-margin wrap">
+            Native ES module using Preact Signals from the mdBlog bundle
           </p>
         </div>
-        <div class="row items-center gap">
+        <div class="row">
           <button
             class="circle small surface-variant"
             onClick=${() => (count.value -= Number(step))}
-            aria-label="Diminuir"
+            aria-label="Decrease"
           >
             <i>remove</i>
           </button>
@@ -30,7 +30,7 @@ export function DemoWidget({ title = "Ilha Dinâmica HTML+ES", step = 1 }) {
           <button
             class="circle small primary"
             onClick=${() => (count.value += Number(step))}
-            aria-label="Aumentar"
+            aria-label="Increase"
           >
             <i>add</i>
           </button>

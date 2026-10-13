@@ -1,98 +1,107 @@
 ---
-title: "🧪 Guia Prático & Ilhas Reativas"
+title: "🧪 Hands-on Guide & Reactive Islands"
 icon: "science"
 date: "2026-10-09"
 author: "SyntaxMesh Team"
 tags:
-  - "guia"
+  - "guide"
   - "islands"
   - "signals"
-description: "Guia prático com demonstração viva de ilhas reativas em HTML+ES, sub-páginas e frontmatter."
-location: "#/articles/guia.md"
+description: "Hands-on guide with a live demo of reactive HTML+ES islands, sub-pages and frontmatter."
+location: "#/articles/guide.md"
 pages:
-  - "GUIA_DE_ISLANDS.md"
+  - "islands.md"
 ---
 
-# 🧪 Guia Prático e Demonstração de Recursos
+# 🧪 Hands-on Guide and Feature Demo
 
-Bem-vindo à demonstração viva da arquitetura do **mdBlog**!
+Welcome to the live demonstration of the **mdBlog** architecture!
 
-Este documento é processado pelo parser Markdown, transformado em nós JSON serializáveis (*Wire Format AST*) e materializado pelo Preact no navegador com layout responsivo do BeerCSS.
+This document is read by the Markdown parser, turned into serializable JSON nodes
+(*Wire Format AST*) and materialized by Preact in the browser with a responsive
+BeerCSS layout.
 
 ---
 
-## ⚡ Demonstração de Ilhas Interativas (Solução HTML+ES)
+## ⚡ Interactive island demo (the HTML+ES solution)
 
-Abaixo temos uma ilha reativa construída com **HTML+ES (`htm/preact` + ES Modules)**, executada diretamente no navegador sem compilação prévia:
+Below is a reactive island built with **HTML+ES (`htm/preact` + ES Modules)**,
+running directly in the browser with no prior compilation:
 
-::Counter.js{start: 10, step: 1, label: "Contador Interativo Reativo"}
+::Counter.js{start: 10, step: 1, label: "Reactive Interactive Counter"}
 
-### Segunda Ilha com Bloco de Código
+### Second island with a code block
 
-Você também pode instanciar ilhas declarando parâmetros em formato JSON estruturado usando blocos de código:
+You can also instantiate islands by declaring parameters as structured JSON
+inside code blocks:
 
 ```island:Counter.js
 {
   "start": 100,
   "step": 5,
-  "label": "Contador em Lote (+5)"
+  "label": "Batched Counter (+5)"
 }
 ```
 
-Cada instância de ilha gerencia seu próprio estado reativo através de `@preact/signals`. Clicar nos botões de uma ilha não interfere nos valores de outras ilhas presentes na mesma página.
+Each island instance manages its own reactive state through `@preact/signals`.
+Clicking the buttons of one island does not interfere with the values of the
+other islands on the same page.
 
 ---
 
-## 🧭 Configuração de Frontmatter e Sub-Páginas
+## 🧭 Frontmatter and sub-page configuration
 
-Cada documento no mdBlog inicia com um bloco de metadados em YAML:
+Every document in mdBlog starts with a YAML metadata block:
 
 ```yaml
 ---
-title: "Título do Artigo"
-icon: "science"             # Ícone do Material Symbols
+title: "Article Title"
+icon: "science"             # Material Symbols icon
 date: "2026-10-10"
-author: "Equipe de Docs"
+author: "Docs Team"
 pages:
-  - "GUIA_DE_ISLANDS.md"    # Sub-páginas acessíveis a partir daqui
+  - "islands.md"    # Sub-pages reachable from here
 ---
 ```
 
-Ao declarar `pages:`, o mdBlog constrói automaticamente a trilha de breadcrumbs no topo e disponibiliza links de navegação rápida para as sub-páginas ao final da leitura.
+By declaring `pages:`, mdBlog builds the breadcrumb trail at the top
+automatically and offers quick navigation links to the sub-pages at the end of
+the reading.
 
 ---
 
-## 📊 Tabelas Formatadas (GFM)
+## 📊 Formatted tables (GFM)
 
-O Wire Format converte tabelas Markdown em componentes Preact com layout responsivo do BeerCSS:
+The Wire Format converts Markdown tables into Preact components with a responsive
+BeerCSS layout:
 
-| Recurso | Tradicional (Docsify) | Wire Format (mdBlog) |
+| Feature | Traditional (Docsify) | Wire Format (mdBlog) |
 |---|---|---|
-| Injeção HTML | `dangerouslySetInnerHTML` | VNodes Preact puros e tipados |
-| Interceptação SW | Não nativo | Transforma `.md` em AST em segundo plano |
-| Interatividade | Scripts avulsos no DOM | Preact Islands com `@preact/signals` |
-| Proteção XSS | Complexa sem sanitizadores | Imune por arquitetura de AST |
-| Suporte Offline | Básico | CacheStorage + IndexedDB (`idb-keyval`) |
+| HTML injection | `dangerouslySetInnerHTML` | Pure, typed Preact VNodes |
+| SW interception | Not native | Turns `.md` into AST in the background |
+| Interactivity | Loose scripts in the DOM | Preact Islands with `@preact/signals` |
+| XSS protection | Complex without sanitizers | Immune by AST architecture |
+| Offline support | Basic | CacheStorage + IndexedDB (`idb-keyval`) |
 
 ---
 
-## 💻 Blocos de Código com Botão de Copiar
+## 💻 Code blocks with a copy button
 
-Você pode copiar facilmente trechos de código clicando no botão no canto superior direito:
+You can easily copy a snippet by clicking the button in the top right corner:
 
 ```typescript
 import { mdFetch } from "./src/plugin/adapters/client.ts";
 import { createBrowserIO } from "./src/plugin/core/io.ts";
 
 const io = createBrowserIO();
-const doc = await mdFetch("./articles/guia.md", io);
+const doc = await mdFetch("./articles/guide.md", io);
 
-console.log("Título do Documento:", doc.title);
-console.log("Nós no Wire Format:", doc.wire.c?.length);
+console.log("Document title:", doc.title);
+console.log("Wire Format nodes:", doc.wire.c?.length);
 ```
 
 ---
 
-## 📖 Sub-páginas Desta Seção
+## 📖 Sub-pages of this section
 
-- **[🏝️ Guia Avançado de Islands](./GUIA_DE_ISLANDS.md)**: Detalhamento técnico do algoritmo de hidratação e ciclo de vida das ilhas.
+- **[🏝️ Advanced Islands Guide](./islands.md)**: Technical detail of the hydration algorithm and the island lifecycle.

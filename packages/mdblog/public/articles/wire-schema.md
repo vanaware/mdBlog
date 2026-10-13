@@ -1,28 +1,29 @@
 ---
-title: "📐 Schema & Nós do AST"
+title: "📐 AST schema & nodes"
 icon: "account_tree"
 date: "2026-10-06"
-badge: "Nível 3"
+badge: "Level 3"
 author: "SyntaxMesh Team"
 tags:
   - "schema"
   - "ast"
   - "json-spec"
-description: "Detalhamento e contrato formal dos nós do Wire Format AST (elementos, componentes e ilhas)."
-location: "#/articles/WIRE_SCHEMA_DETALHES.md"
+description: "Detail and formal contract of the Wire Format AST nodes (elements, components and islands)."
+location: "#/articles/wire-schema.md"
 ---
 
-# 📐 Especificação Detalhada do Schema AST (Nível 3)
+# 📐 Detailed AST schema specification (level 3)
 
-Esta é uma **sub-sub-página** demonstrando o suporte recursivo multinível a sub-páginas no mdBlog:
+This is a **sub-sub-page** demonstrating the multilevel recursive sub-page support
+of mdBlog:
 
-> **index.md** (Nível 0 - Home) ➔ **README.md** (Nível 1) ➔ **ARQUITETURA_WIRE_FORMAT.md** (Nível 2) ➔ **WIRE_SCHEMA_DETALHES.md** (Nível 3)
+> **index.md** (level 0 - Home) ➔ **overview.md** (level 1) ➔ **wire-format.md** (level 2) ➔ **wire-schema.md** (level 3)
 
 ---
 
-## 🧩 Contrato dos Nós do AST
+## 🧩 The AST node contract
 
-Cada nó na árvore do Wire Format é estritamente tipado e serializável em JSON:
+Every node in the Wire Format tree is strictly typed and serializable to JSON:
 
 ```typescript
 export type WireNode =
@@ -51,8 +52,8 @@ export interface WireText {
 
 ---
 
-## ⚡ Princípios de Segurança e Imunidade a XSS
+## ⚡ Security principles and XSS immunity
 
-1. **Sem HTML Crú**: Strings Markdown nunca são injetadas via `dangerouslySetInnerHTML`.
-2. **Tokens Tipados**: O parser constrói nós do AST sem interpretar tags arbitrárias do navegador.
-3. **Serialização Limpa**: O objeto resultante pode ser salvo no IndexedDB (`idb-keyval`) ou transmitido com segurança via Service Worker.
+1. **No raw HTML**: Markdown strings are never injected through `dangerouslySetInnerHTML`.
+2. **Typed tokens**: the parser builds AST nodes without interpreting arbitrary browser tags.
+3. **Clean serialization**: the resulting object can be saved in IndexedDB (`idb-keyval`) or handed over safely by the Service Worker.

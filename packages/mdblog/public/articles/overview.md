@@ -1,99 +1,108 @@
 ---
-title: "📚 Visão Geral do mdBlog"
+title: "📚 mdBlog Overview"
 icon: "article"
 date: "2026-10-09"
 author: "SyntaxMesh Team"
 tags:
-  - "visão geral"
-  - "arquitetura"
+  - "overview"
+  - "architecture"
   - "islands"
-description: "Visão geral e guia de uso do mdBlog com Preact Signals, BeerCSS e Islands."
+description: "Overview and usage guide of mdBlog with Preact Signals, BeerCSS and Islands."
+location: "#/articles/overview.md"
 pages:
-  - "ARQUITETURA_WIRE_FORMAT.md"
-  - "FLUXOS_E_CICLO_DE_VIDA.md"
+  - "wire-format.md"
+  - "flows.md"
 ---
 
-# 📚 Visão Geral do mdBlog
+# 📚 mdBlog Overview
 
-O **mdBlog** é um motor de documentação e blog estático moderno inspirado na simplicidade do Docsify, mas reconstruído com uma arquitetura de alta performance, segurança rigorosa e suporte a componentes interativos.
+**mdBlog** is a modern static documentation and blog engine inspired by the
+simplicity of Docsify, but rebuilt around a high-performance architecture with
+strict security and support for interactive components.
 
-Diferente de geradores tradicionais que dependem de injeção insegura de HTML (`dangerouslySetInnerHTML`), o mdBlog converte arquivos Markdown em uma árvore de nós serializável em JSON chamada **Wire Format AST**. Essa árvore é materializada pelo Preact no navegador como elementos e componentes nativos seguros contra ataques de XSS.
-
----
-
-## ✨ Principais Funcionalidades
-
-1. **Descoberta Dinâmica por Frontmatter:**
-   Não há índices estáticos ou arquivos de rotas compilados no build. A estrutura de navegação, breadcrumbs e menus é montada lendo as declarações `pages:` nos metadados YAML de cada artigo.
-
-2. **Islands Reativas em HTML+ES (Zero Compilação):**
-   Adicione componentes interativos ao seu Markdown como arquivos `.js` padrão em `public/islands/`. Eles rodam diretamente no navegador usando `htm/preact` e `@preact/signals`, sem a necessidade de compiladores ou transpiladores em tempo de execução.
-
-3. **Arquitetura Wire Format Imune a XSS:**
-   O Markdown nunca é convertido para strings HTML cruas. Todo o conteúdo é estruturado em nós tipados, higienizado e renderizado pelo Preact.
-
-4. **Operação PWA Offline com Service Worker:**
-   O Service Worker intercepta a leitura de artigos `.md`, processa o Wire Format em segundo plano e mantém cópias em cache (`CacheStorage` e IndexedDB via `idb-keyval`).
-
-5. **Interface Material Design 3 com BeerCSS:**
-   Layout fluido, tipografia balanceada, suporte a temas claro/escuro e navegação responsiva em telas móveis e desktop.
+Unlike traditional generators that rely on unsafe HTML injection
+(`dangerouslySetInnerHTML`), mdBlog turns Markdown files into a JSON-serializable
+tree of nodes called the **Wire Format AST**. Preact materializes that tree in the
+browser as native elements and components that are safe against XSS attacks.
 
 ---
 
-## 🧭 Organização de Artigos e Sub-Páginas
+## ✨ Key Features
 
-Para criar uma estrutura hierárquica de documentação, use o campo `pages:` no frontmatter do artigo pai.
+1. **Dynamic discovery through frontmatter:**
+   There are no static indexes or build-time route files. The navigation structure, breadcrumbs and menus are assembled by reading the `pages:` declarations in each article's YAML metadata.
 
-### Exemplo de Configuração de Frontmatter
+2. **Reactive HTML+ES islands (zero compilation):**
+   Add interactive components to your Markdown as plain `.js` files in `public/islands/`. They run straight in the browser using `htm/preact` and `@preact/signals`, with no runtime compiler or transpiler.
+
+3. **XSS-immune Wire Format architecture:**
+   Markdown is never converted into raw HTML strings. All content is structured into typed, sanitized nodes rendered by Preact.
+
+4. **Offline PWA operation with a Service Worker:**
+   The Service Worker intercepts `.md` article reads, processes the Wire Format in the background and keeps cached copies (`CacheStorage` and IndexedDB through `idb-keyval`).
+
+5. **Material Design 3 interface with BeerCSS:**
+   Fluid layout, balanced typography, light/dark theme support and responsive navigation on mobile and desktop.
+
+---
+
+## 🧭 Organizing articles and sub-pages
+
+To build a hierarchical documentation structure, use the `pages:` field in the
+parent article's frontmatter.
+
+### Frontmatter configuration example
 
 ```yaml
 ---
-title: "Meu Artigo Principal"
+title: "My Main Article"
 icon: "book"
 date: "2026-10-10"
-author: "Equipe de Engenharia"
+author: "Engineering Team"
 tags:
   - "docs"
   - "tutorial"
 pages:
-  - "subpagina-1.md"
-  - "subpagina-2.md"
+  - "subpage-1.md"
+  - "subpage-2.md"
 ---
 ```
 
-Cada sub-página listada em `pages:` pode, por sua vez, conter seu próprio frontmatter e declarar suas próprias sub-páginas, gerando árvores de documentação com múltiplos níveis de profundidade de forma intuitiva.
+Each sub-page listed in `pages:` may in turn carry its own frontmatter and
+declare its own sub-pages, intuitively producing documentation trees with
+several levels of depth.
 
 ---
 
-## ⚡ Como Usar Ilhas Interativas
+## ⚡ How to use interactive islands
 
-O mdBlog suporta duas formas expressivas de incluir ilhas interativas no Markdown:
+mdBlog supports two expressive ways of including interactive islands in Markdown:
 
-### 1. Sintaxe de Diretiva
+### 1. Directive syntax
 
-Útil para ilhas compactas e parâmetros inline:
+Handy for compact islands and inline parameters:
 
 ```markdown
-::Counter.js{start: 10, step: 2, label: "Meu Contador"}
+::Counter.js{start: 10, step: 2, label: "My Counter"}
 ```
 
-### 2. Sintaxe de Bloco de Código
+### 2. Code block syntax
 
-Ideal quando a ilha recebe configurações em lote ou objetos JSON estruturados:
+Ideal when the island receives batched configuration or structured JSON objects:
 
 ````markdown
 ```island:Counter.js
 {
   "start": 100,
   "step": 5,
-  "label": "Contador em Lote"
+  "label": "Batched Counter"
 }
 ```
 ````
 
 ---
 
-## 📖 Sub-páginas Desta Seção
+## 📖 Sub-pages of this section
 
-- **[📐 Arquitetura do Wire Format](./ARQUITETURA_WIRE_FORMAT.md)**: Especificação formal do contrato JSON intermediário e tipagem dos nós AST.
-- **[🔄 Fluxos e Ciclo de Vida](./FLUXOS_E_CICLO_DE_VIDA.md)**: Detalhamento do ciclo de carregamento, Service Worker, navegação SPA e fallback offline.
+- **[📐 Wire Format architecture](./wire-format.md)**: Formal specification of the intermediate JSON contract and the AST node typing.
+- **[🔄 Flows and lifecycle](./flows.md)**: Detailed loading cycle, Service Worker, SPA navigation and offline fallback.

@@ -1,69 +1,77 @@
-# 🧪 Guia Prático e Demonstração de Recursos
+# 🧪 Hands-on guide and feature demo
 
-Bem-vindo à demonstração viva da arquitetura **Docsify com Service Worker e Wire Format**!
+Welcome to the live demonstration of the **Docsify-style architecture with a
+Service Worker and the Wire Format**!
 
-Este documento é processado pelo parser Markdown, transformado em nós JSON serializáveis (*Wire Format*) e materializado pelo Preact no navegador sem o uso de `dangerouslySetInnerHTML`.
+This document is read by the Markdown parser, turned into serializable JSON nodes
+(*Wire Format*) and materialized by Preact in the browser without ever using
+`dangerouslySetInnerHTML`.
 
 ---
 
-## ⚡ Demonstração de Ilhas Interativas (Solução HTML+ES)
+## ⚡ Interactive island demo (the HTML+ES solution)
 
-Abaixo temos uma ilha reativa construída com **HTML+ES (`htm/preact` + ES Modules)**, executada diretamente no navegador sem compilação prévia pelo bundle:
+Below is a reactive island built with **HTML+ES (`htm/preact` + ES Modules)**,
+running directly in the browser with no prior compilation by the bundle:
 
-::Counter{start: 10, step: 1, label: "Contador Interativo Reativo"}
+::Counter{start: 10, step: 1, label: "Reactive Interactive Counter"}
 
-### Segunda Ilha (Configuração Diferente)
+### Second island (different configuration)
 
-Você pode instanciar múltiplas ilhas com propriedades independentes isoladas via `@preact/signals`:
+You can instantiate several islands with independent props isolated through
+`@preact/signals`:
 
 ```island:Counter
 {
   "start": 100,
   "step": 5,
-  "label": "Contador em Lote (+5)"
+  "label": "Batched Counter (+5)"
 }
 ```
 
 ---
 
-## 🧩 Ilhas Dinâmicas sob Demanda (Zero Build)
+## 🧩 On-demand dynamic islands (zero build)
 
-Graças ao padrão **HTML+ES**, uma nova ilha pode ser criada como um simples arquivo `.js` (ex.: `public/islands/DemoWidget.js`) e carregada sob demanda via `import()` nativo do navegador sem precisar reexecutar `build.ts`:
+Thanks to the **HTML+ES** pattern, a new island can be created as a plain `.js`
+file (e.g. `public/islands/DemoWidget.js`) and loaded on demand through the
+browser's native `import()`, with no need to rerun `build.ts`:
 
 ```markdown
-::DemoWidget{title: "Minha Ilha Dinâmica", step: 2}
+::DemoWidget{title: "My Dynamic Island", step: 2}
 ```
 
 ---
 
-## 📊 Tabelas Formatadas (GFM)
+## 📊 Formatted tables (GFM)
 
-O Wire Format converte tabelas Markdown em componentes Preact com layout responsivo do BeerCSS:
+The Wire Format turns Markdown tables into Preact components with a responsive
+BeerCSS layout:
 
-| Recurso | Tradicional (Docsify) | Wire Format (Este Projeto) |
+| Feature | Traditional (Docsify) | Wire Format (this project) |
 |---|---|---|
-| Injeção HTML | `dangerouslySetInnerHTML` | Nós VNode Preact puros |
-| Interceptação SW | Não nativo | Transforma `.md` em AST no worker |
-| Interatividade | Requer scripts soltos no DOM | Preact Islands com `@preact/signals` |
-| Risco XSS | Elevado sem DOMPurify | Impossível por arquitetura |
-| Suporte Offline | Básico | Cache Storage + IndexedDB (`idb-keyval`) |
+| HTML injection | `dangerouslySetInnerHTML` | Pure Preact VNodes |
+| SW interception | Not native | Turns `.md` into AST in the worker |
+| Interactivity | Requires loose scripts in the DOM | Preact Islands with `@preact/signals` |
+| XSS risk | High without DOMPurify | Impossible by architecture |
+| Offline support | Basic | Cache Storage + IndexedDB (`idb-keyval`) |
 
 ---
 
-## ✅ Listas de Tarefas (GFM Task Lists)
+## ✅ Task lists (GFM task lists)
 
-- [x] Especificação da arquitetura e contratos no `CURRENT.md`
-- [x] Parser `mdast` com extensões GFM ativas
-- [x] Transformador de AST para Wire Format JSON
-- [x] Hidratação seletiva de Islands (`[data-island]`)
-- [x] Adapters para Service Worker e Fallback Client-side
-- [ ] Novas ilhas customizadas desenvolvidas pela comunidade
+- [x] Architecture specification and contracts in `CURRENT.md`
+- [x] `mdast` parser with the GFM extensions enabled
+- [x] AST to Wire Format JSON transformer
+- [x] Selective hydration of islands (`[data-island]`)
+- [x] Adapters for the Service Worker and the client-side fallback
+- [ ] New custom islands developed by the community
 
 ---
 
-## 💻 Blocos de Código com Botão de Copiar
+## 💻 Code blocks with a copy button
 
-Você pode copiar facilmente os trechos de código clicando no botão no canto superior direito:
+You can easily copy the snippets by clicking the button in the top right corner:
 
 ```ts
 import { mdFetch } from "./src/plugin/adapters/client.ts";
@@ -72,14 +80,14 @@ import { createBrowserIO } from "./src/plugin/core/io.ts";
 const io = createBrowserIO();
 const doc = await mdFetch("/docs/README.md", io);
 
-console.log("Título do Documento:", doc.title);
-console.log("Nós no Wire Format:", doc.wire.c?.length);
+console.log("Document title:", doc.title);
+console.log("Wire Format nodes:", doc.wire.c?.length);
 ```
 
 ---
 
-## 💬 Citações e Notas
+## 💬 Quotes and notes
 
-> **Nota Arquitetural:** O Wire Format é 100% serializável. Nenhuma closure, função ou nó do DOM transita entre o Service Worker e o cliente. Isso garante imunidade a bugs de serialização estruturada (`DataCloneError`).
+> **Architectural note:** the Wire Format is 100% serializable. No closure, function or DOM node ever travels between the Service Worker and the client. That guarantees immunity to structured-clone bugs (`DataCloneError`).
 
-Para explorar mais detalhes do projeto, navegue pelas seções no menu lateral ou consulte a [Arquitetura do Wire Format](./ARQUITETURA_WIRE_FORMAT.md).
+To explore more details of the project, browse the sections in the side menu or read the [Wire Format architecture](./wire-format.md).

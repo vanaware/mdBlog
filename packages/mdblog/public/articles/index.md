@@ -1,6 +1,6 @@
 ---
-title: "mdBlog - Blog & Documentação Estática"
-description: "Motor de documentação estático moderno baseado em Deno, Preact Signals, BeerCSS e Islands em HTML+ES."
+title: "mdBlog - Blog & Static Documentation"
+description: "Modern static documentation engine built on Deno, Preact Signals, BeerCSS and HTML+ES Islands."
 date: "2026-10-09"
 author: "SyntaxMesh Team"
 location: "#/articles/index.md"
@@ -11,66 +11,71 @@ tags:
   - "BeerCSS"
   - "Islands"
 pages:
-  - "README.md"
-  - "guia.md"
-  - "PLANO_DESENVOLVIMENTO.md"
+  - "overview.md"
+  - "guide.md"
+  - "development-plan.md"
 ---
 
-# 📖 mdBlog — Página Inicial
+# 📖 mdBlog — Home Page
 
-Bem-vindo ao **mdBlog**, um gerador de documentação e blog estático moderno construído com **Deno, Preact Signals, BeerCSS e Wire Format AST**.
+Welcome to **mdBlog**, a modern static blog and documentation generator built with
+**Deno, Preact Signals, BeerCSS and a Wire Format AST**.
 
-Esta página principal é carregada a partir do arquivo **`index.md`**. A estrutura do menu e dos breadcrumbs é montada automaticamente a partir da lista de arquivos declarada no frontmatter `pages:`, enquanto títulos, ícones, datas e tags são extraídos dinamicamente de cada artigo individual.
+This main page is loaded from the **`index.md`** file. The menu and breadcrumb
+structure is assembled automatically from the file list declared in the `pages:`
+frontmatter, while titles, icons, dates and tags are extracted dynamically from
+each individual article.
 
 ---
 
-## ⚡ Demonstração Reativa (Ilha Interativa)
+## ⚡ Reactive Demo (Interactive Island)
 
-Abaixo temos uma ilha Preact hidratada dinamicamente via módulo HTML+ES:
+Below is a Preact island hydrated dynamically through an HTML+ES module:
 
-::Counter.js{start: 42, step: 1, label: "Contador Interativo na Home"}
+::Counter.js{start: 42, step: 1, label: "Interactive Counter on the Home Page"}
 
-### Segunda Instância de Ilha via Bloco de Código
+### Second Island Instance Through a Code Block
 
-Você também pode instanciar ilhas informando dados estruturados em JSON:
+You can also instantiate islands by providing structured JSON data:
 
 ```island:Counter.js
 {
   "start": 100,
   "step": 5,
-  "label": "Contador em Lote (+5)"
+  "label": "Batched Counter (+5)"
 }
 ```
 
 ---
 
-## 🚀 Artigos em Destaque
+## 🚀 Featured Articles
 
-Navegue pelos guias e documentações técnicas disponíveis:
+Browse the guides and technical documentation available:
 
-- **[📚 Visão Geral do mdBlog](./README.md)**: Conheça a motivação, o pipeline de dados e os princípios de segurança.
-- **[🧪 Guia Prático & Demonstração de Ilhas](./guia.md)**: Veja componentes interativos (*islands*) funcionando em tempo real.
-- **[⚙️ Arquitetura e Recursos](./PLANO_DESENVOLVIMENTO.md)**: Entenda o funcionamento do frontmatter, sub-páginas recursivas e PWA.
-- **[⚡ Desenvolvimento em HTML+ES (.js)](./PLANO_MIGRACAO_HTML_ES.md)**: Aprenda a criar novas ilhas em arquivos `.js` nativos sem etapas de compilação.
-- **[📐 Especificação do Wire Format AST](./ARQUITETURA_WIRE_FORMAT.md)**: Contrato JSON serializável imune a XSS.
-- **[🏝️ Guia de Islands](./GUIA_DE_ISLANDS.md)**: Manual de hidratação seletiva sob demanda no cliente.
-- **[🔄 Fluxos de Navegação e Cache PWA](./FLUXOS_E_CICLO_DE_VIDA.md)**: Estratégias de Service Worker e IndexedDB (`idb-keyval`).
-
----
-
-## 🌳 Estrutura Hierárquica e Sub-Páginas
-
-O mdBlog suporta **sub-páginas recursivas aninhadas** descobertas diretamente via frontmatter:
-
-1. **Página Raiz (`index.md`)**: Declara as seções principais na lista `pages:`.
-2. **Páginas Principais**: Cada página (ex.: `README.md`) pode ter sua própria lista `pages:` com sub-páginas (ex.: `ARQUITETURA_WIRE_FORMAT.md`).
-3. **Sub-sub-páginas**: Uma sub-página também pode ter `pages:` (ex.: `WIRE_SCHEMA_DETALHES.md`), permitindo múltiplos níveis de profundidade.
-4. **Navegação no Sidebar e Drawer**: As sub-páginas aparecem organizadas com indentação limpa no menu lateral e trilha de breadcrumbs no topo.
+- **[📚 mdBlog Overview](./overview.md)**: Learn about the motivation, the data pipeline and the security principles.
+- **[🧪 Hands-on Guide & Island Demo](./guide.md)**: See interactive components (*islands*) running in real time.
+- **[⚙️ Architecture & Features](./development-plan.md)**: Understand how the frontmatter, recursive sub-pages and the PWA work.
+- **[⚡ Developing in HTML+ES (.js)](./migration-html-es.md)**: Learn to create new islands in native `.js` files with no build step.
+- **[📐 Wire Format AST Specification](./wire-format.md)**: A serializable JSON contract that is immune to XSS.
+- **[🏝️ Islands Guide](./islands.md)**: Manual on-demand client-side selective hydration.
+- **[🔄 Navigation Flows and PWA Cache](./flows.md)**: Service Worker and IndexedDB (`idb-keyval`) strategies.
 
 ---
 
-## 🛠 Como Publicar Novos Artigos ou Sub-Páginas
+## 🌳 Hierarchical Structure and Sub-pages
 
-1. Adicione um novo arquivo `.md` na pasta `public/articles/` (ex.: `public/articles/meu-artigo.md`) com seu próprio bloco de frontmatter (`title`, `icon`, `date`, `tags`, etc.).
-2. Adicione o nome do arquivo na lista `pages:` da página pai onde deseja que ele apareça.
-3. O navegador descobre a hierarquia em tempo de execução e atualiza o Navbar, Sidebar e Breadcrumbs automaticamente sem precisar recompilar o aplicativo.
+mdBlog supports **nested recursive sub-pages** discovered straight from the
+frontmatter:
+
+1. **Root page (`index.md`)**: declares the main sections in the `pages:` list.
+2. **Main pages**: each page (e.g. `overview.md`) may carry its own `pages:` list of sub-pages (e.g. `wire-format.md`).
+3. **Sub-sub-pages**: a sub-page can also declare `pages:` (e.g. `wire-schema.md`), allowing several levels of depth.
+4. **Sidebar and drawer navigation**: sub-pages show up cleanly indented in the side menu, and the breadcrumb trail at the top follows them.
+
+---
+
+## 🛠 How to Publish New Articles or Sub-pages
+
+1. Add a new `.md` file to the `public/articles/` folder (e.g. `public/articles/my-article.md`) with its own frontmatter block (`title`, `icon`, `date`, `tags`, etc.).
+2. Add the file name to the `pages:` list of the parent page where you want it to appear.
+3. The browser discovers the hierarchy at runtime and updates the Navbar, Sidebar and breadcrumbs automatically, with no recompilation.

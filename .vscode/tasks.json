@@ -26,7 +26,7 @@
     },
     {
       "label": "Deno: Check All",
-      "dependsOrder": "sequence", // executa em ordem (padrão: paralelo)
+      "dependsOrder": "sequence", // runs in order (default: parallel)
       "dependsOn": [
         "Deno: Format",
         "Deno: Lint",
@@ -130,7 +130,7 @@
     },
     {
       "label": "Deno: Bump",
-      "dependsOrder": "sequence", // executa em ordem (padrão: paralelo)
+      "dependsOrder": "sequence", // runs in order (default: parallel)
       "dependsOn": [
         "Deno: Check All",
         "Deno: Build noversion",

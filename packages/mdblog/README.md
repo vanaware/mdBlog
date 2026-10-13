@@ -142,7 +142,7 @@ Embed it anywhere in Markdown:
 - **Reactive State:** `html`, `signal`, `useSignal`, `computed`, `effect`, `batch`, `state`
 - **Utilities:** `slugify`, `isSWControlling`, `resolveDocPath`, `countWireNodes`, `countWireIslands`, `sanitizeProps`
 
-See [docs/API_REFERENCE.md](../../docs/API_REFERENCE.md) for full signatures and options.
+See [docs/api-reference.md](../../docs/api-reference.md) for full signatures and options.
 
 ---
 

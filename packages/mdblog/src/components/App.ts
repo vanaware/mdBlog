@@ -15,9 +15,9 @@ import { Content, } from "./Content.ts";
  * ```
  */
 export function App(): unknown {
-  // A gaveta é renderizada antes da barra: ambos usam `z-index: 100` no
-  // BeerCSS, então a ordem no DOM define a sobreposição — assim a barra
-  // superior permanece clicável mesmo com o menu lateral aberto.
+  // The drawer is rendered before the bar: both use `z-index: 100` in BeerCSS,
+  // so the DOM order decides the stacking — this way the top bar stays clickable
+  // even with the side menu open.
   return html`
     <${Sidebar} />
     <${Navbar} />

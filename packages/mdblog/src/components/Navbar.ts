@@ -1,5 +1,5 @@
 import { html, } from "htm/preact";
-import { isOffline, isSWActive, sidebarOpen, } from "../state.ts";
+import { isOffline, isSWActive, isWideScreen, sidebarOpen, } from "../state.ts";
 import { ThemeToggle, } from "./ThemeToggle.ts";
 import { SearchBox, } from "./SearchBox.ts";
 
@@ -15,59 +15,94 @@ import { SearchBox, } from "./SearchBox.ts";
  */
 export function Navbar(): unknown {
   return html`
-    <nav class="top surface-container border-bottom sticky">
+    <!-- BeerCSS gives nav.top a justify-content:space-around below 600px and
+        freezes the bar at 5rem, while every direct child is flex:none and
+        therefore cannot shrink: with the default 1rem gap of a nav the brand,
+        the status chip and the two icon buttons overflowed a 375px screen and
+        the theme toggle fell off the right edge. The no-space class drops the
+        gaps between the bar's own children (the .max spacer still pushes the
+        actions to the end) and the wordmark steps down to h6.small. -->
+    <nav class="top surface-container no-space elevate">
       <button
         class="circle transparent"
         onClick=${() => (sidebarOpen.value = !sidebarOpen.value)}
-        aria-label="Alternar menu lateral"
+        aria-label="Toggle side menu"
         aria-expanded=${sidebarOpen.value}
         title=${sidebarOpen.value
-          ? "Ocultar lista de artigos"
-          : "Mostrar lista de artigos"}
+          ? "Hide the article list"
+          : "Show the article list"}
       >
         <i>${sidebarOpen.value ? "keyboard_arrow_left" : "menu"}</i>
       </button>
 
-      <!-- O BeerCSS trata todo "a" filho direto de nav.top como item de navegação
-          (flex-direction: column, largura fixa de 3.5rem e o ícone com raio de pill
-          e fundo secondary-container em hover) — o que empilha o ícone sobre o nome
-          e o faz parecer um badge. Envolver a marca num contentor neutro mantém o
-          link fora desse seletor, deixando a classe row colocar o ícone à esquerda. -->
-      <div class="row items-center no-margin">
+      <!-- BeerCSS treats every direct "a" child of nav.top as a navigation item
+          (flex-direction: column, a fixed 3.5rem width and an icon that gets a
+          pill radius plus secondary-container background on hover) — which
+          stacks the icon over the name and makes it look like a badge. Wrapping
+          the brand in a neutral container keeps the link out of that selector.
+          The gap between the icon and the wordmark cannot come from a
+          gap-small class (BeerCSS has none: the row keeps its default 1rem),
+          so the icon carries an explicit right margin. The link keeps its
+          vertical padding but not the 0.75rem of padding on each side: that is
+          the one place the bar can lose 16px without anything reading tighter,
+          and the space it frees is what keeps the theme toggle on screen when
+          the phone is narrow or the user has the system text size turned up. -->
+      <div class="row no-margin no-space">
         <a
           href="#/"
-          class="row items-center gap-small wave transparent surface-text no-margin"
-          title="Página Inicial"
+          class="row wave transparent no-margin horizontal-padding tiny-padding"
+          title="Home page"
         >
-          <i class="primary-text bold">menu_book</i>
-          <h6 class="bold no-margin">mdBlog</h6>
+          <i class="primary-text bold right-margin small-margin">menu_book</i>
+          <h6 class="bold no-margin small">mdBlog</h6>
         </a>
       </div>
 
       <div class="max"></div>
 
-      <div class="row items-center gap-small">
-        <!-- Chip de status de conectividade: texto visível em telas médias/grandes -->
+      <div class="row no-space">
+        <!-- The status chip, the search and the theme toggle are one group at the
+            end of the bar, not three stations spread over it. The 1rem gap of a
+            row cost 32px of the bar and, on the narrowest phones, pushed the
+            theme toggle past the right edge — a nav does not wrap and clips what
+            falls off. The no-space class drops the gap and the two items after
+            the chip take the 0.5rem inline margin BeerCSS itself gives a button:
+            enough separation to read as distinct targets, half of what it was. -->
+        <!-- Connectivity status chip. The word and the roomy padding come with
+            the wide layout and the icon alone with the narrow one: the two
+            states branch in the DOM on the same signal, the way the search
+            trigger already does, instead of through BeerCSS's s/m/l classes.
+            A chip holding only an icon is mostly padding, and on the phone that
+            padding is the difference between the bar fitting and the theme
+            toggle falling off the edge, so the icon-only state keeps 0.25rem of
+            it and the labelled state keeps the framework's own. -->
         <span
           class=${`chip small no-margin ${
+            isWideScreen.value ? "" : "horizontal-padding tiny-padding"
+          } ${
             isOffline.value ? "error-container" : "surface-container-highest"
           }`}
           title=${isOffline.value
-            ? "Offline (Sem conexão)"
+            ? "Offline (no connection)"
             : isSWActive.value
-            ? "Online (Service Worker Ativo)"
+            ? "Online (Service Worker active)"
             : "Online"}
         >
-          <i class=${isOffline.value ? "error-text" : "success-text"}>
+          <i class=${isOffline.value ? "error-text" : "green-text"}>
             ${isOffline.value ? "cloud_off" : "cloud_done"}
           </i>
-          <span class="m l">${isOffline.value ? "Offline" : "Online"}</span>
+          ${isWideScreen.value
+            ? html`<span>${isOffline.value ? "Offline" : "Online"}</span>`
+            : null}
         </span>
 
-        <!-- Busca responsiva: campo em m/l, botão compacto em s -->
-        <${SearchBox} placeholder="Buscar artigos..." />
+        <!-- Responsive search: field on m/l, compact button on s -->
+        <${SearchBox}
+          placeholder="Search articles..."
+          class="left-margin small-margin"
+        />
 
-        <${ThemeToggle} />
+        <${ThemeToggle} class="left-margin small-margin" />
       </div>
     </nav>
   `;

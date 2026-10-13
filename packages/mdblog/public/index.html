@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -51,7 +51,7 @@
     </script>
 
 
-    <!-- BeerCSS e Material Symbols -->
+    <!-- BeerCSS and Material Symbols -->
     <link
       href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.css"
       rel="stylesheet" />
@@ -61,7 +61,7 @@
       src="https://cdn.jsdelivr.net/npm/material-dynamic-colors@1.1.2/dist/cdn/material-dynamic-colors.min.js"></script>
   </head>
   <body class="auto">
-    <!-- Restaura o tema salvo antes da pintura inicial (evita flash de tema) -->
+    <!-- Restores the saved theme before the first paint (avoids a theme flash) -->
     <script>
     try {
       var savedTheme = localStorage.getItem("mdblog-theme");
@@ -72,10 +72,10 @@
     } catch (e) {}
     </script>
 
-    <!-- Ponto de montagem da aplicação mdBlog -->
+    <!-- mdBlog application mount point -->
     <div id="app"></div>
 
-    <!-- Biblioteca mdBlog empacotada (inclui componentes padrão automaticamente se app.js não existir) -->
+    <!-- Bundled mdBlog library (automatically includes the default components when there is no app.js) -->
     <script type="module" src="./mdblog.js"></script>
   </body>
 </html>

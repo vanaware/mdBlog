@@ -12,7 +12,7 @@
         "**/.git/**"
       ],
       "includeVersion": true,
-      "customInstruction": "O texto abaixo contém os arquivos de CÓDIGO FONTE principais da aplicação exemplo (example).",
+      "customInstruction": "The text below contains the main SOURCE CODE files of the example application (example).",
       "default": true
     },
     "docs": {
@@ -26,7 +26,7 @@
         "**/.git/**"
       ],
       "includeVersion": false,
-      "customInstruction": "O texto abaixo contém a DOCUMENTAÇÃO e diretrizes arquiteturais do projeto.",
+      "customInstruction": "The text below contains the project DOCUMENTATION and architectural guidelines.",
       "default": true
     },
     "server": {
@@ -40,7 +40,7 @@
         "**/.git/**"
       ],
       "includeVersion": true,
-      "customInstruction": "O texto abaixo contém os arquivos de configuração e execução do SERVER @vanaware/server",
+      "customInstruction": "The text below contains the configuration and runtime files of the SERVER @vanaware/server",
       "default": true
     },
     "utils": {
@@ -55,7 +55,7 @@
         "**/.git/**"
       ],
       "includeVersion": true,
-      "customInstruction": "O texto abaixo contém o código de utilidades usadas no projeto @vanaware/mdblog como scripts de build e configuração do CI/CD.",
+      "customInstruction": "The text below contains the utility code used in the @vanaware/mdblog project, such as build scripts and CI/CD configuration.",
       "default": true
     },
     "mdblog": {
@@ -69,7 +69,7 @@
         "**/.git/**"
       ],
       "includeVersion": true,
-      "customInstruction": "O texto abaixo contém os arquivos de CÓDIGO FONTE principais da aplicação mdblog.",
+      "customInstruction": "The text below contains the main SOURCE CODE files of the mdblog application.",
       "default": true
     }
   }

@@ -1,8 +1,8 @@
-import type { DocConfig, IO } from "../types.ts";
-import type { WireDoc } from "../wire.ts";
-import { parseMarkdown } from "./parse.ts";
-import { mdastToWire } from "./to-wire.ts";
-import { parseFrontmatter } from "./frontmatter.ts";
+import type { DocConfig, IO, } from "../types.ts";
+import type { WireDoc, } from "../wire.ts";
+import { parseMarkdown, } from "./parse.ts";
+import { mdastToWire, } from "./to-wire.ts";
+import { parseFrontmatter, } from "./frontmatter.ts";
 
 /**
  * @description Pure transformation pipeline: parses markdown and returns a complete WireDoc AST.
@@ -20,9 +20,9 @@ export function processMarkdown(
   markdown: string,
   url: string,
 ): WireDoc {
-  const { frontmatter, body } = parseFrontmatter(markdown);
-  const root = parseMarkdown(body);
-  const { wire, title: astTitle } = mdastToWire(root);
+  const { frontmatter, body, } = parseFrontmatter(markdown,);
+  const root = parseMarkdown(body,);
+  const { wire, title: astTitle, } = mdastToWire(root,);
 
   // Use frontmatter.title if defined, fallback to AST heading title
   const finalTitle =
@@ -60,35 +60,34 @@ export async function loadDoc(
   io: IO,
   config: DocConfig = {},
 ): Promise<WireDoc> {
-
   const ttlMs = (config.cacheTTLSeconds ?? 60) * 1000;
   const cacheKey = `wire:${url}`;
 
   // 1. Try cache
   try {
-    const cachedJson = await io.cacheGet(cacheKey);
+    const cachedJson = await io.cacheGet(cacheKey,);
     if (cachedJson) {
-      const cachedDoc: WireDoc = JSON.parse(cachedJson);
+      const cachedDoc: WireDoc = JSON.parse(cachedJson,);
       const isFresh = Date.now() - cachedDoc.renderedAt < ttlMs;
       if (isFresh) {
         return cachedDoc;
       }
     }
   } catch (err) {
-    console.warn(`[pipeline] Cache lookup warning for ${url}:`, err);
+    console.warn(`[pipeline] Cache lookup warning for ${url}:`, err,);
   }
 
   // 2. Fetch raw markdown
-  const markdown = await io.readText(url);
+  const markdown = await io.readText(url,);
 
   // 3. Process into WireDoc
-  const doc = processMarkdown(markdown, url);
+  const doc = processMarkdown(markdown, url,);
 
   // 4. Update cache
   try {
-    await io.cachePut(cacheKey, JSON.stringify(doc));
+    await io.cachePut(cacheKey, JSON.stringify(doc,),);
   } catch (err) {
-    console.warn(`[pipeline] Cache write warning for ${url}:`, err);
+    console.warn(`[pipeline] Cache write warning for ${url}:`, err,);
   }
 
   return doc;

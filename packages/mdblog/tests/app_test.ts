@@ -22,33 +22,33 @@ describe("Build Script & Distribution", () => {
   it("bundles packages/mdblog and outputs dist with esbuild", async () => {
     await runBuild();
 
-    // Verifica se o index.html existe em dist
+    // Checks that index.html exists in dist
     const indexStat = await Deno.stat(`${distDir}/index.html`,);
     assertEquals(indexStat.isFile, true,);
 
-    // Verifica se sw.js existe em dist
+    // Checks that sw.js exists in dist
     const swStat = await Deno.stat(`${distDir}/sw.js`,);
     assertEquals(swStat.isFile, true,);
 
-    // Verifica se mdblog.js foi gerado a partir do bundle da biblioteca
+    // Checks that mdblog.js was generated from the library bundle
     const mdblogStat = await Deno.stat(`${distDir}/mdblog.js`,);
     assertEquals(mdblogStat.isFile, true,);
 
-    // Lê o conteúdo do HTML e verifica script mdblog.js, título e ausência de tags <style>
+    // Reads the HTML and checks the mdblog.js script, the title and the absence of <style> tags
     const htmlContent = await Deno.readTextFile(`${distDir}/index.html`,);
     assert(htmlContent.includes("<title>mdBlog</title>",),);
     assert(htmlContent.includes('src="./mdblog.js"',),);
     assert(!htmlContent.includes("<style>",),);
     assert(!htmlContent.includes("style=",),);
 
-    // Verifica se o manifest está devidamente linkado
+    // Checks that the manifest is properly linked
     assert(htmlContent.includes('rel="manifest"',),);
 
-    // Lê o sw.js compilado e verifica o conteúdo
+    // Reads the built sw.js and checks its content
     const swContent = await Deno.readTextFile(`${distDir}/sw.js`,);
     assert(swContent.includes("mdblog-pwa-v2",),);
 
-    // Verifica se o arquivo public/sw.js padrão demonstra o uso da biblioteca empacotada
+    // Checks that the default public/sw.js demonstrates the use of the packaged library
     const publicSw = await Deno.readTextFile(`${publicDir}/sw.js`,);
     assert(
       publicSw.includes('from "./mdblog.js"',),
@@ -59,7 +59,7 @@ describe("Build Script & Distribution", () => {
       "sw.js must use createBrowserIO",
     );
 
-    // Verifica se src/mod.ts inclui a biblioteca com fallback quando não existe app.js
+    // Checks that src/mod.ts includes the library as a fallback when no app.js exists
     const mainSrc = await Deno.readTextFile(`${srcDir}/mod.ts`,);
     assert(
       mainSrc.includes("export {",),

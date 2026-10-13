@@ -2,28 +2,28 @@
 
 /**
  * =========================================================================
- * sw.js - Service Worker Padrão do mdBlog
+ * sw.js - mdBlog default Service Worker
  * =========================================================================
  *
- * Este arquivo demonstra como o Service Worker utiliza a biblioteca
- * empacotada (./lib/md-transpiler.js) para fornecer:
+ * This file shows how the Service Worker uses the packaged library
+ * (./mdblog.js) to provide:
  *
- * 1. 📦 Cache de Assets Estáticos (PWA Offline):
- *    Armazena index.html, folhas de estilo do BeerCSS e o bundle da biblioteca.
+ * 1. 📦 Static asset cache (offline PWA):
+ *    Stores index.html, the BeerCSS stylesheet and the library bundle.
  *
- * 2. ⚡ Interceptação Inteligente de Documentação:
- *    Intercepta requisições de artigos (/articles/*.md) e transforma o
- *    Markdown bruto em Wire Format AST diretamente em background.
+ * 2. ⚡ Smart documentation interception:
+ *    Picks up article requests (/articles/*.md) and turns the raw Markdown
+ *    into a Wire Format AST right in the background.
  *
- * 3. 🛡️ Resiliência Network-First:
- *    Busca atualizações em rede e recorre ao cache local se desconectado.
+ * 3. 🛡️ Network-first resilience:
+ *    Looks for updates on the network and falls back to the local cache when offline.
  */
 
 import mdTranspiler from "./mdblog.js";
 
 const CACHE_NAME = "mdblog-pwa-v2";
 
-// Lista de assets fundamentais para operação offline
+// List of assets essential to offline operation
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -34,20 +34,20 @@ const STATIC_ASSETS = [
   "./islands/DemoWidget.js",
 ];
 
-// Camada de I/O em memória e cache do Service Worker
+// In-memory and Service Worker cache I/O layer
 const io = mdTranspiler.createBrowserIO({
   cacheName: "md-wire-v1",
   useIndexedDB: false,
 });
 
-// Inicializa o interceptador de requisições de artigos usando a biblioteca empacotada
+// Starts the article request interceptor using the packaged library
 const handleDocFetch = mdTranspiler.createSWFetchHandler(io, {
   basePath: "./articles",
   cacheTTLSeconds: 60,
   bundlePath: "./mdblog.js",
 });
 
-// Instalação: pré-carrega os assets no cache
+// Install: pre-loads the assets into the cache
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -57,7 +57,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Ativação: limpa versões obsoletas do cache
+// Activation: clears outdated cache versions
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -75,16 +75,16 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Interceptação de requisições
+// Request interception
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  // 1. Tenta interceptar rota de artigo usando a biblioteca mdBlog
+  // 1. Try to intercept the article route with the mdBlog library
   if (handleDocFetch(event)) {
     return;
   }
 
-  // 2. Estratégia Network-First com Fallback no Cache para assets estáticos e navegação
+  // 2. Network-first with cache fallback for static assets and navigation
   event.respondWith(
     (async () => {
       try {
@@ -95,11 +95,11 @@ self.addEventListener("fetch", (event) => {
         }
         return networkResponse;
       } catch (_err) {
-        // Fallback offline a partir do cache local
+        // Offline fallback from the local cache
         const cached = await caches.match(event.request);
         if (cached) return cached;
 
-        // Se for navegação no browser, entrega index.html armazenado no cache
+        // For browser navigations, serve the index.html stored in the cache
         if (event.request.mode === "navigate") {
           const fallback = (await caches.match("./index.html")) ||
             (await caches.match("./"));

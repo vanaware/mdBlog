@@ -6,6 +6,7 @@ import {
 } from "preact";
 import { html, } from "htm/preact";
 import { useSignal, } from "@preact/signals";
+import { isWideScreen, } from "../state.ts";
 
 export interface HeadingProps {
   depth?: number | string;
@@ -19,17 +20,24 @@ export function Heading(
   const headingTags = ["h4", "h5", "h6", "h6", "h6", "h6",];
   const clampedDepth = Math.min(Math.max(Number(depth,) || 1, 1,), 6,);
   const tag = headingTags[clampedDepth - 1] ?? "h6";
-  const isSmall = clampedDepth >= 4;
+  // BeerCSS sets the heading scale one level above what a phone can carry (an
+  // `h4` is 2rem, 32px, and wraps a short title over three lines), but it also
+  // ships a `.small` variant for every level: h4 1.5rem, h5 1.25rem, h6 1rem.
+  // Narrow screens therefore take the small variant of their own level instead
+  // of only the two deepest ones, which keeps the ladder even — 28px for the
+  // document title, 24 for a section, 20 for a sub-section, 16 below that —
+  // rather than a huge title over titles smaller than the body text.
+  const isSmall = clampedDepth >= 4 || !isWideScreen.value;
 
   const anchor = id
     ? html`
       <a
         href="#${id}"
-        class="surface-variant-text link small-text opacity-50 margin-left"
-        title="Link direto para esta seção"
-        aria-label="Link direto"
+        class="secondary-text link small-text medium-opacity left-margin small-margin"
+        title="Direct link to this section"
+        aria-label="Direct link"
         onClick=${(e: Event,) => {
-          // Evita que o hash da âncora acione o roteador de artigos
+          // Keeps the anchor hash from driving the article router
           e.preventDefault();
           if (typeof document !== "undefined") {
             document.getElementById(id,)?.scrollIntoView({
@@ -44,12 +52,17 @@ export function Heading(
     `
     : null;
 
+  // Every margin class of an element reads one and the same custom property, so
+  // a heading can only be spaced symmetrically: .large-margin sets the value both
+  // .top-margin and .bottom-margin read. Adjacent block margins then collapse,
+  // which is what keeps the rhythm at 1.5rem instead of 3rem.
   return h(
     tag as any,
     {
       id,
-      class: `wrap bold margin-top margin-bottom ${isSmall ? "small" : ""}`
-        .trim(),
+      class: `wrap bold top-margin bottom-margin large-margin ${
+        isSmall ? "small" : ""
+      }`.trim(),
     },
     children,
     anchor,
@@ -61,7 +74,7 @@ export interface ParagraphProps {
 }
 
 export function Paragraph({ children, }: ParagraphProps = {},): VNode {
-  return html`<p class="margin-bottom wrap">${children}</p>`;
+  return html`<p class="bottom-margin large-margin wrap">${children}</p>`;
 }
 
 export interface CodeBlockProps {
@@ -88,21 +101,29 @@ export function CodeBlock({ lang, value = "", }: CodeBlockProps = {},): VNode {
 
   return html`
     <article class="no-padding surface-container-highest border round margin">
+      <!-- The card's head: language chip on the left, copy button on the right.
+          BeerCSS has no justify-between, so a .max spacer does the pushing. The
+          strip is padded with the two directional classes rather than a size
+          class: a size class would pad it on all four sides and open a gap
+          between the strip and the rounded edge of the card it sits in. -->
       <div
-        class="row items-center justify-between padding-left padding-right small-padding surface-container border-bottom">
+        class="row left-padding right-padding small-padding surface-container">
         <span class="chip small primary-container bold">
           ${lang || "text"}
         </span>
+        <div class="max"></div>
         <button
           class="circle small transparent"
           onClick=${handleCopy}
-          title="Copiar código"
-          aria-label="Copiar código"
+          title="Copy code"
+          aria-label="Copy code"
         >
           <i>${copied.value ? "check" : "content_copy"}</i>
         </button>
       </div>
-      <div class="padding scroll">
+      <!-- The <pre> keeps its own 1rem of padding: it is what holds the code off
+          the card's border, so the wrapper adds none of its own. -->
+      <div class="scroll">
         <pre class="no-margin"><code class="small-text">${value}</code></pre>
       </div>
     </article>
@@ -122,9 +143,13 @@ export interface BlockquoteProps {
 }
 
 export function Blockquote({ children, }: BlockquoteProps = {},): VNode {
+  // BeerCSS already styles the element: blockquote{padding:1rem;
+  // border-inline-start:.25rem solid var(--primary)} — the left accent is part of
+  // the tag, which is why no "left-border"/"border-primary" class is added here
+  // (neither exists). Only the card outline, the corner radius and the outer
+  // spacing come from the classes.
   return html`
-    <blockquote
-      class="surface-container-low border left-border border-primary padding round margin wrap">
+    <blockquote class="border round margin wrap">
       ${children}
     </blockquote>
   `;
@@ -138,9 +163,16 @@ export interface ListProps {
 
 export function List({ ordered, start, children, }: ListProps = {},): VNode {
   if (ordered) {
-    return html`<ol start=${start} class="padding-left margin-bottom wrap">${children}</ol>`;
+    return html`
+      <ol
+        start=${start}
+        class="left-padding bottom-margin large-margin wrap"
+      >${children}</ol>
+    `;
   }
-  return html`<ul class="padding-left margin-bottom wrap">${children}</ul>`;
+  return html`
+    <ul class="left-padding bottom-margin large-margin wrap">${children}</ul>
+  `;
 }
 
 export interface ListItemProps {
@@ -151,7 +183,7 @@ export interface ListItemProps {
 export function ListItem({ checked, children, }: ListItemProps = {},): VNode {
   if (typeof checked === "boolean") {
     return html`
-      <li class="row wrap items-center gap margin-bottom">
+      <li class="row wrap bottom-margin">
         <label class="checkbox">
           <input type="checkbox" checked=${checked} disabled />
           <span></span>
@@ -160,7 +192,7 @@ export function ListItem({ checked, children, }: ListItemProps = {},): VNode {
       </li>
     `;
   }
-  return html`<li class="margin-bottom wrap">${children}</li>`;
+  return html`<li class="bottom-margin wrap">${children}</li>`;
 }
 
 export interface TableProps {
@@ -168,17 +200,18 @@ export interface TableProps {
 }
 
 export function Table({ children, }: TableProps = {},): VNode {
-  // "stripes" pinta --active (um cinza de 19% de opacidade, definido uma única
-  // vez em :root e por igual nos dois temas) nas linhas ímpares do tbody: é a
-  // rasca par/ímpar pedida. "border" acrescenta o fio separador entre as linhas
-  // do corpo; a do cabeçalho o BeerCSS já põe por regra própria em thead>tr>th.
-  // Ambas exigem a estrutura thead/tbody que "to-wire.ts" emite. Não se põe
-  // "round" na tabela: sem fundo nem caixa próprios o raio dela não se pintaria
-  // (e :is(...,table,...):not(.round)) já o zera), e o canto arredondado que se
-  // vê vem do "border-radius:inherit" do BeerCSS sobre o div, que com overflow
-  // recorta a faixa de cabeçalho a 0.75rem, o raio do <article>.
+  // "stripes" paints --active (a gray at 19% opacity, declared once in :root
+  // and identical in both themes) on the odd rows of the tbody: that is the
+  // requested even/odd banding. "border" adds the hairline between the body
+  // rows; the one under the header, BeerCSS already applies through its own
+  // thead>tr>th rule. Both need the thead/tbody structure that "to-wire.ts"
+  // emits. No "round" on the table: with no background or box of its own its
+  // radius would not paint anyway (and :is(...,table,...):not(.round) zeroes
+  // it), while the rounded corners one does see come from BeerCSS's
+  // "border-radius:inherit" on the wrapper div, whose overflow clips the
+  // header band down to 0.75rem, the <article>'s own radius.
   return html`
-    <div class="responsive scroll margin">
+    <div class="responsive scroll vertical-margin large-margin">
       <table class="border stripes">${children}</table>
     </div>
   `;
@@ -199,7 +232,7 @@ export interface TableCellProps {
   children?: ComponentChildren;
 }
 
-/** Classes de alinhamento do BeerCSS para o alinhamento de coluna do GFM. */
+/** @description BeerCSS alignment classes for the GFM per-column alignment. */
 const CELL_ALIGN_CLASS: Record<string, string> = {
   left: "left-align",
   center: "center-align",
@@ -212,8 +245,8 @@ export function TableCell({
   children,
 }: TableCellProps = {},): VNode {
   const cellClass = [
-    // O cabeçalho leva primary-container, não um tom de surface: as riscas do
-    // corpo são cinza translúcido, e um cinza opaco perder-se-ia entre elas.
+    // The header gets primary-container rather than a surface tone: the body
+    // bands are translucent gray, and an opaque gray would vanish among them.
     header ? "primary-container" : "",
     align ? CELL_ALIGN_CLASS[align] ?? "" : "",
   ].filter(Boolean,).join(" ",);
@@ -266,13 +299,19 @@ export interface ImageProps {
 
 export function Image({ src, alt, title, }: ImageProps = {},): VNode {
   return html`
-    <figure class="no-margin margin-top margin-bottom">
+    <!-- no-margin is not decoration: it cancels the user-agent figure margin
+        (one em vertically, 40px inline), which would otherwise inset the image
+        far more than the prose. The space around the figure then comes from the
+        paragraphs before and after it, exactly as it does for every other block. -->
+    <figure class="no-margin">
       <img src=${src} alt=${alt ||
         ""} title=${title} class="responsive round border" loading="lazy" />
       ${alt
         ? html`
           <figcaption
-            class="small-text surface-variant-text center-align margin-top">${alt}</figcaption>
+            class="small-text secondary-text center-align top-margin tiny-margin">
+            ${alt}
+          </figcaption>
         `
         : null}
     </figure>

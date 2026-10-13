@@ -1,39 +1,48 @@
-# 📚 Documentação do mdBlog
+# 📚 mdBlog documentation
 
-Bem-vindo ao portal de documentação e guias técnicos do **mdBlog** (`@vanaware/mdblog`).
-
----
-
-## 📑 Índice dos Documentos
-
-1. **[Guia Completo, Instalação e Publicação no JSR](publish-jsr-rules.md)**
-   - O que é o mdBlog, pré-requisitos e instalação via JSR.
-   - Estrutura de pastas, configuração do Service Worker e PWA.
-   - Padrões de qualidade do Deno, JSDoc e automação CI/CD.
-
-2. **[Referência da API TypeScript](API_REFERENCE.md)**
-   - Assinaturas completas de todos os componentes (`App`, `Navbar`, `Sidebar`, `Content`...).
-   - Pipeline de transpilação (`parseMarkdown`, `mdastToWire`, `processMarkdown`, `loadDoc`).
-   - Abstrações de I/O (`createBrowserIO`, `createMemoryIO`) e interceptador do Service Worker.
-   - Primitivas reativas de sinais e tipos do Wire Format.
-
-3. **[Guia de Sintaxe e Dynamic Islands](SYNTAX_AND_ISLANDS.md)**
-   - Sintaxe CommonMark e extensões GFM (tabelas, checklists, tachado).
-   - Metadados YAML Frontmatter e navegação recursiva.
-   - Criação e incorporação de Dynamic Islands (HTML+ES) sem bundle.
-
-4. **[Arquitetura do Wire Format](ARQUITETURA_WIRE_FORMAT.md)**
-   - Especificação do formato intermediário JSON agnóstico (AST -> Wire).
-   - Tabela de mapeamento canônica de nós e imunidade completa a XSS.
-
-5. **[Fluxos de Navegação e Ciclo de Vida](FLUXOS_E_CICLO_DE_VIDA.md)**
-   - First Paint com HTML Shell e payload embutido (`<script id="__md_wire">`).
-   - Navegação SPA com Content Negotiation (`Accept: application/json`).
-   - Estratégias de cache unificado (`CacheStorage` + `IndexedDB`).
+Welcome to the documentation portal and technical guides of **mdBlog** (`@vanaware/mdblog`).
 
 ---
 
-## 🧭 Diagrama de Arquitetura
+## 📑 Document index
+
+1. **[Complete guide, installation and JSR publication](publish-jsr-rules.md)**
+   - What mdBlog is, prerequisites and installation through JSR.
+   - Folder structure, Service Worker and PWA configuration.
+   - Deno quality standards, JSDoc and CI/CD automation.
+
+2. **[TypeScript API reference](api-reference.md)**
+   - Full signatures of every component (`App`, `Navbar`, `Sidebar`, `Content`...).
+   - Transpilation pipeline (`parseMarkdown`, `mdastToWire`, `processMarkdown`, `loadDoc`).
+   - I/O abstractions (`createBrowserIO`, `createMemoryIO`) and the Service Worker interceptor.
+   - Reactive signal primitives and Wire Format types.
+
+3. **[Syntax and Dynamic Islands guide](syntax-and-islands.md)**
+   - CommonMark syntax and the GFM extensions (tables, checklists, strikethrough).
+   - YAML frontmatter metadata and recursive navigation.
+   - Creating and embedding Dynamic Islands (HTML+ES) with no bundle.
+
+4. **[Wire Format architecture](wire-format.md)**
+   - Specification of the framework-agnostic intermediate JSON format (AST -> Wire).
+   - Canonical node mapping table and full XSS immunity.
+
+5. **[Navigation flows and lifecycle](flows.md)**
+   - First paint with the HTML shell and the embedded payload (`<script id="__md_wire">`).
+   - SPA navigation with content negotiation (`Accept: application/json`).
+   - Unified cache strategies (`CacheStorage` + `IndexedDB`).
+
+6. **[Islands architecture](islands.md)**
+   - Why HTML+ES (`htm/preact`) instead of TSX or MDX.
+   - The `data-island` / `data-props` contract and the selective hydration pass.
+   - Fallback behavior for islands that are declared but not registered.
+
+7. **[Hands-on guide and feature demo](guide.md)**
+   - The pipeline walked through on a live document (frontmatter, sub-pages, islands).
+   - Comparison table against the conventional server-rendered generators.
+
+---
+
+## 🧭 Architecture diagram
 
 ```
                      ┌───────────────────────────────┐
@@ -58,7 +67,7 @@ Bem-vindo ao portal de documentação e guias técnicos do **mdBlog** (`@vanawar
                 │   from-wire.ts (Preact Registry)     │
                 └───────────────────┬──────────────────┘
                                     │
-                        VNodes estáticos iniciais
+                     Static initial VNodes
                                     │
                                     ▼
                 ┌──────────────────────────────────────┐

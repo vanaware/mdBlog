@@ -111,10 +111,10 @@ export function wireToVNode(
         dynamicIslandsCache[islandFileName] ||
         dynamicIslandsCache[baseName];
       const propsJson = JSON.stringify(node.p ?? {},);
-      // Somente um registry explícito (SSG / pré-render) assume a posse do
-      // container. Na navegação normal o slot é deixado vazio para
-      // `hydrateIslands`: montar pelos dois caminhos coloca duas raízes Preact
-      // no mesmo elemento e duplica o widget assim que o módulo entra em cache.
+      // Only an explicit registry (SSG / pre-render) takes ownership of the
+      // container. On normal navigation the slot is left empty for
+      // `hydrateIslands`: mounting through both paths puts two Preact roots on
+      // the same element and duplicates the widget as soon as the module is cached.
       const externallyOwned = options.islands !== undefined;
       const eagerlyMounted = externallyOwned && Boolean(Comp,);
       const isMissing = externallyOwned && !Comp;
@@ -144,8 +144,8 @@ export function wireToVNode(
       return h("div", {
         "data-island": node.n,
         "data-props": propsJson,
-        // A árvore principal assumiu o container (SSG/pré-render): a
-        // hidratação seletiva deve sempre pular estes nós.
+        // The main tree took over the container (SSG/pre-render): selective
+        // hydration must always skip these nodes.
         "data-island-prerendered": eagerlyMounted ? "true" : undefined,
         "data-island-missing": isMissing ? "true" : undefined,
         children: innerContent,

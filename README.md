@@ -77,10 +77,13 @@ deno task --cwd packages/mdblog lint:doc
 │   │   └── tests/                # BDD test suites (@std/testing/bdd)
 │   └── server/                   # Native Deno file server (port 3000)
 ├── docs/                         # Architecture, API references, and guides
-│   ├── API_REFERENCE.md          # Comprehensive TypeScript API reference
-│   ├── SYNTAX_AND_ISLANDS.md     # Markdown, GFM, and Islands syntax guide
-│   ├── ARQUITETURA_WIRE_FORMAT.md# Wire Format JSON AST specification
-│   ├── FLUXOS_E_CICLO_DE_VIDA.md # Service Worker lifecycle and cache strategy
+│   ├── README.md                 # Documentation index and reading order
+│   ├── guide.md                  # Hands-on guide with a live island demo
+│   ├── api-reference.md          # Comprehensive TypeScript API reference
+│   ├── syntax-and-islands.md     # Markdown, GFM, and Islands syntax guide
+│   ├── wire-format.md            # Wire Format JSON AST specification
+│   ├── flows.md                  # Service Worker lifecycle and cache strategy
+│   ├── islands.md                # Selective hydration and island lifecycle
 │   └── publish-jsr-rules.md      # Installation, configuration, and JSR guide
 └── deno.jsonc                    # Deno workspace & tasks configuration
 ```

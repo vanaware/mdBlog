@@ -30,46 +30,56 @@ describe("Articles Architecture & Dynamic Blog", () => {
       "index.md must be present in public/articles as home page",
     );
     assert(
-      files.includes("README.md",),
-      "README.md must be present in public/articles",
+      files.includes("overview.md",),
+      "overview.md must be present in public/articles",
     );
     assert(
-      files.includes("guia.md",),
-      "guia.md must be present in public/articles",
+      files.includes("guide.md",),
+      "guide.md must be present in public/articles",
     );
     assert(
-      files.includes("PLANO_MIGRACAO_HTML_ES.md",),
-      "PLANO_MIGRACAO_HTML_ES.md must be in public/articles",
+      files.includes("migration-html-es.md",),
+      "migration-html-es.md must be in public/articles",
     );
+
+    // Shipped articles use plain lowercase ASCII slugs: an uppercase or accented
+    // file name survives on a case-sensitive filesystem and silently 404s on a
+    // case-insensitive one (and inside a URL it is a percent-encoded mess).
+    for (const name of files) {
+      assert(
+        /^[a-z0-9][a-z0-9._-]*\.md$/.test(name,),
+        `${name} must be a lowercase ASCII slug (letters, digits, dot, dash and underscore only)`,
+      );
+    }
   });
 
   it("parses YAML frontmatter correctly (scalars, lists, and dates)", () => {
     const sample = `---
-title: "Título de Teste"
+title: "Test Title"
 date: "2026-10-09"
 author: "Vanaware"
 location: "#/articles/test.md"
 pages:
-  - path: "README.md"
-    title: "Visão Geral"
+  - path: "overview.md"
+    title: "Overview"
     icon: "article"
-  - path: "guia.md"
-    title: "Guia"
+  - path: "guide.md"
+    title: "Guide"
     icon: "science"
 ---
-# Corpo do Markdown
-Texto normal aqui.`;
+# Markdown Body
+Plain text here.`;
 
     const { frontmatter, body, } = parseFrontmatter(sample,);
-    assertEquals(frontmatter.title, "Título de Teste",);
+    assertEquals(frontmatter.title, "Test Title",);
     assertEquals(frontmatter.date, "2026-10-09",);
     assertEquals(frontmatter.author, "Vanaware",);
     assertEquals(frontmatter.location, "#/articles/test.md",);
     assertEquals(Array.isArray(frontmatter.pages,), true,);
     assertEquals(frontmatter.pages.length, 2,);
-    assertEquals(frontmatter.pages[0].path, "README.md",);
-    assertEquals(frontmatter.pages[0].title, "Visão Geral",);
-    assert(body.includes("# Corpo do Markdown",),);
+    assertEquals(frontmatter.pages[0].path, "overview.md",);
+    assertEquals(frontmatter.pages[0].title, "Overview",);
+    assert(body.includes("# Markdown Body",),);
     assert(!body.includes("---",),);
   });
 
@@ -94,51 +104,64 @@ Texto normal aqui.`;
       "index.md pages list must contain main sections",
     );
     assert(
-      body.includes("# 📖 mdBlog — Página Inicial",),
+      body.includes("# 📖 mdBlog — Home Page",),
       "index.md body must contain content",
     );
   });
 
   it("verifies child pages contain their own sub-pages in frontmatter (recursive nesting)", async () => {
-    // README.md (Nível 1) tem sub-páginas (Nível 2)
-    const readmeRaw = await Deno.readTextFile(
-      `${publicDir}/articles/README.md`,
+    // overview.md (level 1) declares sub-pages (level 2)
+    const overviewRaw = await Deno.readTextFile(
+      `${publicDir}/articles/overview.md`,
     );
-    const { frontmatter: readmeFm, } = parseFrontmatter(readmeRaw,);
+    const { frontmatter: overviewFm, } = parseFrontmatter(overviewRaw,);
     assert(
-      Array.isArray(readmeFm.pages,),
-      "README.md must declare sub-pages in frontmatter",
+      Array.isArray(overviewFm.pages,),
+      "overview.md must declare sub-pages in frontmatter",
     );
-    assert(readmeFm.pages.includes("ARQUITETURA_WIRE_FORMAT.md",),);
-    assert(readmeFm.pages.includes("FLUXOS_E_CICLO_DE_VIDA.md",),);
+    assert(overviewFm.pages.includes("wire-format.md",),);
+    assert(overviewFm.pages.includes("flows.md",),);
 
-    // ARQUITETURA_WIRE_FORMAT.md (Nível 2) tem sub-sub-página (Nível 3)
+    // wire-format.md (level 2) declares a sub-sub-page (level 3)
     const wireRaw = await Deno.readTextFile(
-      `${publicDir}/articles/ARQUITETURA_WIRE_FORMAT.md`,
+      `${publicDir}/articles/wire-format.md`,
     );
     const { frontmatter: wireFm, } = parseFrontmatter(wireRaw,);
     assert(
       Array.isArray(wireFm.pages,),
-      "ARQUITETURA_WIRE_FORMAT.md must declare sub-sub-pages in frontmatter",
+      "wire-format.md must declare sub-sub-pages in frontmatter",
     );
-    assert(wireFm.pages.includes("WIRE_SCHEMA_DETALHES.md",),);
+    assert(wireFm.pages.includes("wire-schema.md",),);
 
-    // guia.md tem sub-página
-    const guiaRaw = await Deno.readTextFile(`${publicDir}/articles/guia.md`,);
-    const { frontmatter: guiaFm, } = parseFrontmatter(guiaRaw,);
-    assert(Array.isArray(guiaFm.pages,), "guia.md must declare sub-pages",);
-    assert(guiaFm.pages.includes("GUIA_DE_ISLANDS.md",),);
+    // guide.md declares a sub-page
+    const guideRaw = await Deno.readTextFile(`${publicDir}/articles/guide.md`,);
+    const { frontmatter: guideFm, } = parseFrontmatter(guideRaw,);
+    assert(Array.isArray(guideFm.pages,), "guide.md must declare sub-pages",);
+    assert(guideFm.pages.includes("islands.md",),);
 
-    // PLANO_DESENVOLVIMENTO.md tem sub-página
-    const planoRaw = await Deno.readTextFile(
-      `${publicDir}/articles/PLANO_DESENVOLVIMENTO.md`,
+    // development-plan.md declares a sub-page
+    const planRaw = await Deno.readTextFile(
+      `${publicDir}/articles/development-plan.md`,
     );
-    const { frontmatter: planoFm, } = parseFrontmatter(planoRaw,);
+    const { frontmatter: planFm, } = parseFrontmatter(planRaw,);
     assert(
-      Array.isArray(planoFm.pages,),
-      "PLANO_DESENVOLVIMENTO.md must declare sub-pages",
+      Array.isArray(planFm.pages,),
+      "development-plan.md must declare sub-pages",
     );
-    assert(planoFm.pages.includes("PLANO_MIGRACAO_HTML_ES.md",),);
+    assert(planFm.pages.includes("migration-html-es.md",),);
+
+    // Every declared sub-page must exist on disk, and every link of the body
+    // must point at a real file: the hierarchy is discovered at runtime, so a
+    // typo here is a 404 in the sidebar instead of a compile error.
+    const declared = [
+      ...overviewFm.pages,
+      ...wireFm.pages,
+      ...guideFm.pages,
+      ...planFm.pages,
+    ];
+    for (const page of declared) {
+      await Deno.stat(`${publicDir}/articles/${page}`,);
+    }
   });
 
   it("verifies flattenArticles preserves depth, parentPath and recursive hierarchy", async () => {
@@ -243,22 +266,22 @@ Texto normal aqui.`;
   });
 
   it("resolves /articles/ routes correctly via resolveDocPath", () => {
-    const res1 = resolveDocPath("/articles/guia", "/articles",);
+    const res1 = resolveDocPath("/articles/guide", "/articles",);
     assertEquals(res1.isDoc, true,);
-    assertEquals(res1.docPath, "/articles/guia.md",);
+    assertEquals(res1.docPath, "/articles/guide.md",);
 
     const res2 = resolveDocPath("/articles", "/articles",);
     assertEquals(res2.isDoc, true,);
     assertEquals(res2.docPath, "/articles/index.md",);
 
-    const res3 = resolveDocPath("/articles/README.md", "/articles",);
+    const res3 = resolveDocPath("/articles/overview.md", "/articles",);
     assertEquals(res3.isDoc, true,);
-    assertEquals(res3.docPath, "/articles/README.md",);
+    assertEquals(res3.docPath, "/articles/overview.md",);
 
     // Backward compatibility for /docs/
-    const resDocs = resolveDocPath("/docs/guia.md", "/articles",);
+    const resDocs = resolveDocPath("/docs/guide.md", "/articles",);
     assertEquals(resDocs.isDoc, true,);
-    assertEquals(resDocs.docPath, "/docs/guia.md",);
+    assertEquals(resDocs.docPath, "/docs/guide.md",);
   });
 
   it("verifies Navbar and Sidebar render articles dynamically, with Sidebar handling indented tree and Navbar without select box", async () => {
@@ -317,9 +340,9 @@ Texto normal aqui.`;
     );
     const brandIndex = navbarSrc.indexOf('href="#/"',);
     assert(brandIndex > -1, "Navbar must expose the home link",);
-    // Um `a` filho direto de nav.top é tratado pelo BeerCSS como item de
-    // navegação (flex-direction: column e ícone dentro de uma pill), o que
-    // empilha o ícone sobre o nome. A marca tem de viver num contentor próprio.
+    // An `a` that is a direct child of nav.top is treated by BeerCSS as a
+    // navigation item (flex-direction: column and the icon inside a pill), which
+    // stacks the icon on top of the name. The brand must live in its own box.
     const beforeBrand = navbarSrc.slice(0, brandIndex,);
     assert(
       beforeBrand.lastIndexOf("<div",) > beforeBrand.lastIndexOf("<nav",),
@@ -375,12 +398,12 @@ Texto normal aqui.`;
     const searchSrc = await Deno.readTextFile(
       `${srcDir}/components/SearchBox.ts`,
     );
-    // Os comentários explicam precisamente as classes proibidas, por isso são
-    // removidos antes de qualquer verificação de markup.
+    // The comments name the very classes that are forbidden, so they are
+    // stripped before any markup check runs.
     const markup = searchSrc.replace(/<!--[\s\S]*?-->/g, "",);
 
     // O BeerCSS define header como flex-direction:column + justify-content:center,
-    // o que empilhava o chip "Esc" e o botão de fecho no meio do painel.
+    // which stacked the "Esc" chip and the close button in the middle of the panel.
     assertEquals(
       /<header[\s>]/.test(markup,),
       false,
@@ -448,10 +471,10 @@ Texto normal aqui.`;
   it("verifies search indexing cleans markdown content dynamically for full-text search", async () => {
     const { cleanMarkdownText, } = await import("../src/state.ts");
     const sample =
-      "# Título Principal\n\nTexto com `código` e [link](https://exemplo.com).\n\n```js\nconst x = 1;\n```";
+      "# Main Title\n\nText with `code` and [link](https://example.com).\n\n```js\nconst x = 1;\n```";
     const cleaned = cleanMarkdownText(sample,);
-    assert(cleaned.includes("Título Principal",),);
-    assert(cleaned.includes("Texto com código e link",),);
+    assert(cleaned.includes("Main Title",),);
+    assert(cleaned.includes("Text with code and link",),);
     assert(!cleaned.includes("```",),);
     assert(!cleaned.includes("#",),);
   });
@@ -471,7 +494,7 @@ Texto normal aqui.`;
       "Content.js must use subtle chevron_right divider",
     );
     assert(
-      contentSrc.includes("small-text surface-variant-text",),
+      contentSrc.includes("small-text secondary-text",),
       "Breadcrumb must be subtle and discreet",
     );
     assert(
@@ -491,9 +514,31 @@ Texto normal aqui.`;
     assert(contentSrc.includes("author",), "Header must include author",);
     assert(contentSrc.includes("date",), "Header must include date",);
 
+    // 2b. Narrow-screen spacing contract. BeerCSS has no directional border and
+    // no gap-* utility, and a name shaped like one (border-top, gap-small) is
+    // silently ignored — that is what let the content sit flush against the
+    // card's edge. Separators are dividers, and the article keeps the padding
+    // the framework gives the <article> element itself.
+    assert(
+      contentSrc.includes("medium-divider",),
+      "Header and footer must be separated by a real BeerCSS divider",
+    );
+    assert(
+      !/class="[^"]*\bborder-(top|bottom|left|right)\b/.test(contentSrc,),
+      "Content.ts must not use the non-existent border-* classes",
+    );
+    assert(
+      !/class="[^"]*\bgap-(tiny|small|medium|large)\b/.test(contentSrc,),
+      "Content.ts must not use the non-existent gap-* classes",
+    );
+    assert(
+      contentSrc.includes(`<article class="wrap">`,),
+      "The article body must keep the padding BeerCSS gives an <article> card",
+    );
+
     // 3. Article content before sub-pages list
     const articleIdx = contentSrc.indexOf("wireToVNode",);
-    const subpagesIdx = contentSrc.indexOf("Sub-páginas",);
+    const subpagesIdx = contentSrc.indexOf("Sub-pages",);
     assert(articleIdx > 0, "Content.js must render wireToVNode",);
     assert(subpagesIdx > 0, "Content.js must render sub-pages list",);
     assert(
@@ -507,12 +552,21 @@ Texto normal aqui.`;
       "Sub-pages must not use indentation icons",
     );
     assert(
-      contentSrc.includes("bold small-text wrap",),
-      "Sub-page titles must be compact and wrapped",
+      contentSrc.includes("bold wrap",) &&
+        !contentSrc.includes("bold small-text wrap",),
+      "Sub-page and pager titles must be bold at the size of the body text: a title smaller than the prose it introduces reads as a caption",
     );
     assert(
       contentSrc.includes("row wrap",),
       "Sub-page cards must wrap on small screens",
+    );
+    assert(
+      contentSrc.includes(`class="vertical top-margin small-margin"`,),
+      "Sub-pages must stack with .vertical (BeerCSS has no .column)",
+    );
+    assert(
+      contentSrc.includes("bottom-margin small-margin",),
+      "Each sub-page card must carry its own bottom margin: a flex column has no gap",
     );
 
     // 5. Clean footer with only 'Made with mdBlog'
@@ -554,8 +608,8 @@ Texto normal aqui.`;
       footer.includes("versionSuffix",),
       "the version must be rendered in the footer",
     );
-    // O BeerCSS dá ao <footer> flex-direction:column, por isso nome e versão
-    // partilham um único <span>; um segundo elemento cairia para outra linha.
+    // BeerCSS gives <footer> flex-direction:column, so the name and the version
+    // share a single <span>; a second element would drop onto another line.
     assertEquals(
       footer.match(/<(?!\/)/g,)?.length ?? 0,
       2,

@@ -70,7 +70,7 @@ export function mdastToWire(
       }
 
       case "paragraph": {
-        // Suporte a ilhas dinâmicas por arquivo no markdown: ::NomeDoArquivo.js{start: 5} ou ::NomeDoArquivo.js
+        // Dynamic per-file island support in the markdown: ::FileName.js{start: 5} or ::FileName.js
         const text = extractText(node,).trim();
         const islandDirectiveMatch = text.match(
           /^:{2,3}\s*([A-Za-z0-9_.-]+)\s*(?:\{([\s\S]*)\})?\s*(?::{2,3})?$/,
@@ -258,10 +258,10 @@ export function mdastToWire(
       }
 
       case "table": {
-        // O alinhamento GFM vive no nó "table", um valor por coluna, e só as
-        // células sabem em que coluna caem: é aqui que as duas coisas se
-        // cruzam. O cabeçalho também é posicional (primeiro linha), porque o
-        // mdast não marca as suas células de outra forma.
+        // GFM alignment lives on the "table" node, one value per column, and only
+        // the cells know which column they fall into: this is where the two meet.
+        // The header is positional too (first row), because mdast does not mark
+        // its cells any other way.
         const align = node.align ?? [];
         const wireRows: WireComponent[] = node.children.map((
           row,
@@ -281,11 +281,11 @@ export function mdastToWire(
         }));
         const [headRow, ...bodyRows] = wireRows;
 
-        // thead/tbody não são decorativos: as regras do BeerCSS para linhas
-        // alternadas (table.stripes > tbody > tr:nth-child(odd)) e para a borda
-        // do cabeçalho (thead > tr > th) exigem esta estrutura, e o Preact, ao
-        // criar nós por API, não inventa o tbody implícito que o parser de HTML
-        // criaria.
+        // thead/tbody are not decorative: BeerCSS's rules for alternating rows
+        // (table.stripes > tbody > tr:nth-child(odd)) and for the header border
+        // (thead > tr > th) require this structure, and Preact, creating nodes
+        // through the API, does not invent the implicit tbody an HTML parser
+        // would.
         const sections: WireElement[] = [];
         if (headRow) {
           sections.push({ t: "e", n: "thead", c: [headRow,], },);

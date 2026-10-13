@@ -25,14 +25,18 @@ Responsive left navigation drawer displaying the hierarchical article tree disco
 ### `Content(): unknown`
 Main document reader component. Renders breadcrumbs, article metadata, the materialised Wire AST body, sub-page links, and footer. Automatically schedules selective island hydration upon article changes.
 
-### `ThemeToggle(): unknown`
+### `ThemeToggle(props?: ThemeToggleProps): unknown`
 Toggles between BeerCSS light and dark themes on `document.body`.
+
+- **Props:**
+  - `class?: string` — Extra classes added to the button, so the bar holding it can space it.
 
 ### `SearchBox(props?: SearchBoxProps): unknown`
 Interactive search bar and modal dialog with live search against pre-indexed article content cached in IndexedDB.
 
 - **Props:**
-  - `placeholder?: string` — Placeholder text for the search input (default: `"Buscar artigos..."`).
+  - `placeholder?: string` — Placeholder text for the search input (default: `"Search articles..."`).
+  - `class?: string` — Extra classes added to the trigger element, so the bar holding it can space it.
 
 ---
 

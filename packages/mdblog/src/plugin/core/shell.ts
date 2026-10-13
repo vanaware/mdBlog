@@ -1,10 +1,10 @@
-import type { WireDoc } from "../wire.ts";
+import type { WireDoc, } from "../wire.ts";
 
 /**
  * Escapes characters that could terminate or corrupt a script tag.
  */
-function safeJsonSerialize(data: unknown): string {
-  return JSON.stringify(data).replace(/</g, "\\u003c");
+function safeJsonSerialize(data: unknown,): string {
+  return JSON.stringify(data,).replace(/</g, "\\u003c",);
 }
 
 /**
@@ -21,16 +21,18 @@ function safeJsonSerialize(data: unknown): string {
  * const html = defaultShell(doc, "./mdblog.js");
  * ```
  */
-export function defaultShell(doc: WireDoc, bundlePath = "./mdblog.js"): string {
-
-  const serializedWire = safeJsonSerialize(doc);
+export function defaultShell(
+  doc: WireDoc,
+  bundlePath = "./mdblog.js",
+): string {
+  const serializedWire = safeJsonSerialize(doc,);
 
   return `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${escapeHtml(doc.title)} - AiStudio Docs</title>
+    <title>${escapeHtml(doc.title,)} - AiStudio Docs</title>
     <meta name="description" content="Documentation powered by Service Worker, Wire Format and Preact Islands" />
     <meta name="theme-color" content="#6750a4" />
 
@@ -59,11 +61,11 @@ export function defaultShell(doc: WireDoc, bundlePath = "./mdblog.js"): string {
 </html>`;
 }
 
-function escapeHtml(str: string): string {
+function escapeHtml(str: string,): string {
   return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, "&amp;",)
+    .replace(/</g, "&lt;",)
+    .replace(/>/g, "&gt;",)
+    .replace(/"/g, "&quot;",)
+    .replace(/'/g, "&#39;",);
 }

@@ -1,99 +1,105 @@
 ---
-title: "⚙️ Arquitetura e Recursos do mdBlog"
+title: "⚙️ mdBlog architecture and features"
 icon: "settings"
 date: "2026-10-09"
 author: "SyntaxMesh Team"
 tags:
-  - "arquitetura"
-  - "recursos"
+  - "architecture"
+  - "features"
   - "islands"
-description: "Guia completo sobre os recursos essenciais do mdBlog: frontmatter, sub-páginas, islands e PWA."
+description: "Complete guide to the essential features of mdBlog: frontmatter, sub-pages, islands and PWA."
+location: "#/articles/development-plan.md"
 pages:
-  - "PLANO_MIGRACAO_HTML_ES.md"
+  - "migration-html-es.md"
 ---
 
-# ⚙️ Arquitetura e Recursos do mdBlog
+# ⚙️ mdBlog architecture and features
 
-Este documento detalha o funcionamento técnico do **mdBlog**, demonstrando como os recursos de **frontmatter**, **sub-páginas recursivas**, **ilhas reativas** e **armazenamento offline** operam em conjunto no navegador.
+This document details how **mdBlog** works technically, showing how **frontmatter
+metadata**, **recursive sub-pages**, **reactive islands** and **offline storage**
+operate together in the browser.
 
 ---
 
-## 📑 Metadados via Frontmatter
+## 📑 Metadata through frontmatter
 
-O frontmatter no mdBlog é processado através de um parser YAML embutido e suporta escalares, listas, datas e metadados de apresentação.
+Frontmatter in mdBlog is read by a built-in YAML parser and supports scalars,
+lists, dates and presentation metadata.
 
-### Estrutura Completa de Campos
+### Full field structure
 
 ```yaml
 ---
-title: "Título Principal do Artigo"
-icon: "article"              # Ícone do Material Symbols exibido na navegação
-date: "2026-10-10"           # Data de publicação ou revisão
-author: "Nome do Autor"      # Exibido no cabeçalho do artigo
-description: "Resumo curto"  # Usado para descrição e metatags
+title: "Main Article Title"
+icon: "article"              # Material Symbols icon shown in the navigation
+date: "2026-10-10"           # Publication or revision date
+author: "Author Name"        # Shown in the article header
+description: "Short summary" # Used as description and meta tag
 tags:
   - "tutorial"
   - "frontend"
 pages:
-  - "subpagina-exemplo.md"    # Sub-páginas pertencentes a este artigo
+  - "subpage-example.md"      # Sub-pages belonging to this article
 ---
 ```
 
-Quando um artigo é carregado, esses metadados alimentam os componentes de interface:
-- **Navbar & Sidebar:** Apresentam o título e o ícone correspondente.
-- **Cabeçalho do Leitor (`Content`):** Renderiza o título, data de publicação e autor de forma harmoniosa com o design do BeerCSS.
-- **Breadcrumbs:** Mostram o caminho hierárquico até a página atual.
+When an article loads, this metadata feeds the interface components:
+- **Navbar & Sidebar:** show the title and its matching icon.
+- **Reader header (`Content`):** render the title, publication date and author in harmony with the BeerCSS design.
+- **Breadcrumbs:** show the hierarchical path up to the current page.
 
 ---
 
-## 🌳 Sub-Páginas e Navegação Hierárquica
+## 🌳 Sub-pages and hierarchical navigation
 
-O mdBlog adota um modelo de **descoberta dinâmica** em que a estrutura do site é montada por relação de pertencimento:
+mdBlog uses a **dynamic discovery** model in which the site structure is built by
+belonging:
 
-1. **Página Inicial (`index.md`):** É o ponto de entrada da documentação e lista as seções ou páginas principais em seu frontmatter.
-2. **Páginas Filhas:** Cada página listada pode ter seus próprios artigos declarados na propriedade `pages:`.
-3. **Sub-páginas Recursivas:** O aninhamento pode ter múltiplos níveis de profundidade. O roteador descobre os nós dinamicamente conforme navega ou indexa os artigos.
-4. **Navegação no Sidebar:** Sub-páginas recebem recuo visual limpo no menu lateral e são listadas ao final do artigo pai em cartões de navegação rápida.
+1. **Home page (`index.md`):** the documentation entry point; it lists the main sections or pages in its frontmatter.
+2. **Child pages:** every listed page may declare its own articles in the `pages:` property.
+3. **Recursive sub-pages:** nesting can reach several levels of depth. The router discovers the nodes dynamically as it navigates or indexes the articles.
+4. **Sidebar navigation:** sub-pages get a clean visual indent in the side menu and are listed at the end of the parent article as quick-navigation cards.
 
 ---
 
-## 🏝 Ilhas Interativas (Islands)
+## 🏝 Interactive islands
 
-Uma ilha é um componente Preact que se isola dentro do documento Markdown estático, recebendo propriedades e mantendo seu próprio estado reativo.
+An island is a Preact component isolated inside the static Markdown document: it
+receives props and keeps its own reactive state.
 
-### Exemplo 1: Sintaxe de Diretiva
+### Example 1: directive syntax
 
 ```markdown
-::Counter.js{start: 10, step: 2, label: "Contador Rápido"}
+::Counter.js{start: 10, step: 2, label: "Quick Counter"}
 ```
 
-### Exemplo 2: Sintaxe com Bloco de Código
+### Example 2: code block syntax
 
 ````markdown
 ```island:Counter.js
 {
   "start": 50,
   "step": 10,
-  "label": "Contador em Lote"
+  "label": "Batched Counter"
 }
 ```
 ````
 
-### Como uma Ilha é Hidratada:
-1. O transformador converte a declaração Markdown em um nó `{ t: "i", n: "Counter.js", p: { ... } }`.
-2. O Preact renderiza um contêiner `<div data-island="Counter.js" data-props="..."></div>`.
-3. A rotina `hydrateIslands()` carrega o módulo `./islands/Counter.js` nativamente no navegador e monta o componente no elemento alvo.
+### How an island is hydrated:
+1. The transformer turns the Markdown declaration into a `{ t: "i", n: "Counter.js", p: { ... } }` node.
+2. Preact renders a `<div data-island="Counter.js" data-props="..."></div>` container.
+3. The `hydrateIslands()` routine loads the `./islands/Counter.js` module natively in the browser and mounts the component into the target element.
 
 ---
 
-## 🛡️ Segurança e Execução Offline
+## 🛡️ Security and offline execution
 
-- **Sem injeção de HTML cru:** Tags HTML digitadas no Markdown são descartadas para proteger o usuário de vulnerabilidades de XSS.
-- **Service Worker e CacheStorage:** O arquivo `sw.js` intercepta requisições de leitura de arquivos `.md`, transformando o Markdown em AST em segundo plano e armazenando as respostas no cache `md-wire-v1`.
-- **IndexedDB:** O cliente utiliza `idb-keyval` para persistência durável no navegador, permitindo leitura completa mesmo sem conexão de rede.
+- **No raw HTML injection:** HTML tags typed in the Markdown are discarded to protect the user from XSS vulnerabilities.
+- **Service Worker and CacheStorage:** `sw.js` intercepts the `.md` read requests, turns Markdown into AST in the background and stores the responses in the `md-wire-v1` cache.
+- **IndexedDB:** the client uses `idb-keyval` for durable storage in the browser, so reading works completely even with no network connection.
 
 ---
 
-## 📖 Sub-páginas
+## 📖 Sub-pages
 
-- **[⚡ Desenvolvimento em HTML+ES](./PLANO_MIGRACAO_HTML_ES.md)**: Como escrever ilhas e componentes sem compilação prévia usando módulos ES e `htm/preact`.
+- **[⚡ Developing in HTML+ES](./migration-html-es.md)**: How to write islands and components with no prior compilation, using ES modules and `htm/preact`.

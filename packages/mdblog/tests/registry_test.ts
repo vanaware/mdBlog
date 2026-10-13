@@ -13,11 +13,11 @@ import type {
 describe("Render Layer & Registry", () => {
   it("slugifies heading text into URL-friendly IDs", () => {
     assertEquals(
-      slugify("Meu Título com Acentuação!",),
-      "meu-titulo-com-acentuacao",
+      slugify("Crème Brûlée — Résumé!",),
+      "creme-brulee-resume",
     );
     assertEquals(slugify("Getting Started & Setup",), "getting-started-setup",);
-    assertEquals(slugify("   Espaços extras   ",), "espacos-extras",);
+    assertEquals(slugify("   Extra spaces   ",), "extra-spaces",);
   });
 
   it("converts WireFragment into Preact VNodes without dangerouslySetInnerHTML", () => {
@@ -27,14 +27,14 @@ describe("Render Layer & Registry", () => {
         {
           t: "c",
           n: "Heading",
-          p: { depth: 2, id: "subtitulo", },
-          c: ["Subtítulo Teste",],
+          p: { depth: 2, id: "subtitle", },
+          c: ["Test Subtitle",],
         } as WireComponent,
         {
           t: "c",
           n: "Paragraph",
           p: {},
-          c: ["Texto do parágrafo.",],
+          c: ["Paragraph text.",],
         } as WireComponent,
       ],
     };
@@ -50,13 +50,13 @@ describe("Render Layer & Registry", () => {
     const { Heading, } = await import("../src/render/registry.ts");
     const h1Node = Heading({
       depth: 1,
-      id: "titulo-principal",
-      children: "Título Principal",
+      id: "main-title",
+      children: "Main Title",
     },) as VNode<{ class: string }>;
     const h2Node = Heading({
       depth: 2,
-      id: "secao",
-      children: "Subseção",
+      id: "section",
+      children: "Subsection",
     },) as VNode<{ class: string }>;
 
     // depth 1 maps to h4 with wrap class
@@ -79,20 +79,21 @@ describe("Render Layer & Registry", () => {
     }>;
     const table = wrapper.props.children;
     assertEquals(table.type, "table",);
-    // "stripes" é a única fonte do fundo alternado (table.stripes > tbody >
-    // tr:nth-child(odd) usa --active, o mesmo cinza translúcido nos dois temas).
+    // "stripes" is the only source of the alternating background (table.stripes >
+    // tbody > tr:nth-child(odd) uses --active, the same translucent gray in both
+    // themes).
     assert(table.props.class.includes("stripes",),);
     assert(table.props.class.includes("border",),);
 
     const head = TableCell({
       header: true,
       align: "center",
-      children: "Qtde",
+      children: "Qty",
     },) as VNode<{ class: string }>;
     assertEquals(head.type, "th",);
     assert(head.props.class.includes("primary-container",),);
-    // O alinhamento GFM só chega ao ecrã através das classes do BeerCSS, que
-    // são exatamente estas três; qualquer outro nome seria ignorado em silêncio.
+    // GFM alignment only reaches the screen through the BeerCSS classes, which
+    // are exactly these three; any other name would be silently ignored.
     assert(head.props.class.includes("center-align",),);
 
     const unknownAlign = TableCell({
@@ -139,8 +140,9 @@ describe("Render Layer & Registry", () => {
       c: [],
     };
 
-    // Mesmo com o módulo já em cache (hidratado antes), a árvore principal não
-    // toma o container para si: dois donos no mesmo slot duplicariam o widget.
+    // Even with the module already cached (hydrated before), the main tree does
+    // not take ownership of the container: two owners in the same slot would
+    // duplicate the widget.
     dynamicIslandsCache["CounterLazy.js"] = function CounterLazy() {
       return null;
     };

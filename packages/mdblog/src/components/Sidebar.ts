@@ -18,65 +18,77 @@ export function Sidebar(): unknown {
 
   if (!sidebarOpen.value) return null;
 
-  // Em telas estreitas a gaveta sobrescreve o conteúdo: um `dialog.left` é
-  // fixo e não aciona as regras `*:has(>nav...drawer.left)`, então nenhuma
-  // largura é reservada ao artigo. Em telas largas ela fica inline via
-  // `nav.drawer` (exatamente 20rem reservados), alinhando o texto ao menu.
+  // On narrow screens the drawer overlaps the content: a `dialog.left` is fixed
+  // and does not trigger the `*:has(>nav...drawer.left)` rules, so no width is
+  // reserved for the article. On wide screens it stays inline through
+  // `nav.drawer` (exactly 20rem reserved), aligning the text with the menu.
   const overlayMode = !isWideScreen.value;
 
-  // O `<header>` vazio ocupa a faixa que a barra superior cobriria, mantendo
-  // o topo do painel visível e clicável logo abaixo dela.
+  // The empty `<header>` occupies the strip the top bar would cover, keeping the
+  // top of the panel visible and clickable right below it.
   const panel = html`
     <header class="no-padding no-margin"></header>
 
-    <div class="row items-center justify-between no-padding border-bottom">
-      <div class="row items-center">
-        <i class="primary-text tiny">menu_book</i>
-        <span class="bold tiny-text truncate">Artigos</span>
-      </div>
+    <!-- Panel head: label on the left, close control on the right. There is no
+        justify-between in BeerCSS — the .max spacer (flex:1) is the mechanism —
+        and no directional border, so the separator below is a divider. -->
+    <div class="row no-padding no-space">
+      <i class="primary-text tiny right-margin tiny-margin">menu_book</i>
+      <span class="bold small-text truncate">Articles</span>
+      <div class="max"></div>
       <button
         class="circle tiny transparent"
         onClick=${() => (sidebarOpen.value = false)}
-        aria-label="Fechar navegação lateral"
-        title="Fechar menu lateral"
+        aria-label="Close the side navigation"
+        title="Close the side menu"
       >
         <i class="small">close</i>
       </button>
     </div>
 
-    <div class="no-padding no-margin margin-top-small">
+    <div class="medium-divider"></div>
+
+    <div class="no-margin">
       ${list.map((item,) => {
         const isActive = normalizePath(current,) === normalizePath(item.path,);
         const depth = item.depth || 0;
-        const indentClass = depth === 1
-          ? "left-margin"
-          : depth >= 2
-          ? "small-margin left-margin"
+        // The depth is shown as padding on the label, not as a margin on the entry:
+        // the entries keep no-margin (which is what zeroes the 1rem BeerCSS puts
+        // between consecutive blocks), and one size class feeds every margin class
+        // of the element at once, so an indent could not be sized independently.
+        const indentClass = depth >= 2
+          ? "left-padding"
+          : depth === 1
+          ? "left-padding small-padding"
           : "";
 
         return html`
           <a
             key=${item.path}
             href=${articleHrefFromPath(item.path,)}
-            class=${`row items-center wave round tiny-padding no-margin ${
-              isActive ? "primary-container bold" : "transparent surface-text"
-            } ${indentClass}`}
+            class=${`row no-space wave round tiny-padding no-margin ${
+              isActive ? "primary-container bold" : "transparent"
+            }`}
             onClick=${() => {
               if (!isWideScreen.value) sidebarOpen.value = false;
             }}
             title=${item.title}
           >
             <i
-              class=${`tiny ${
-                isActive ? "primary-text" : "surface-variant-text"
+              class=${`tiny right-margin tiny-margin ${
+                isActive ? "primary-text" : "secondary-text"
               }`}
             >
               ${item.icon || "article"}
             </i>
-            <span class="max truncate tiny-text">${item.title}</span>
+            <span class=${`max truncate small-text ${indentClass}`}>
+              ${item.title}
+            </span>
             ${item.badge
               ? html`
-                <span class="chip tiny primary-container no-margin">
+                <span
+                  class="chip small primary-container left-margin tiny-margin"
+                >
                   ${item.badge}
                 </span>
               `
@@ -96,8 +108,8 @@ export function Sidebar(): unknown {
       ></div>
 
       <dialog
-        class="left small drawer active scroll surface-container-low border-right small-padding"
-        aria-label="Navegação de artigos"
+        class="left small drawer active scroll surface-container-low small-padding"
+        aria-label="Article navigation"
       >
         ${panel}
       </dialog>
@@ -106,8 +118,8 @@ export function Sidebar(): unknown {
 
   return html`
     <nav
-      class="left drawer scroll surface-container-low border-right small-padding"
-      aria-label="Navegação de artigos"
+      class="left drawer scroll surface-container-low elevate small-padding"
+      aria-label="Article navigation"
     >
       ${panel}
     </nav>

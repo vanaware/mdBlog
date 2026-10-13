@@ -23,7 +23,18 @@ function applyTheme(dark: boolean,): void {
 }
 
 /**
+ * @description Properties accepted by the ThemeToggle component.
+ */
+export interface ThemeToggleProps {
+  /**
+   * @description Extra classes added to the button, so the bar it sits in can space it (BeerCSS rows keep a 1rem gap unless the row is told to have none).
+   */
+  class?: string;
+}
+
+/**
  * @description Button component toggling BeerCSS light and dark color themes on document.body, persisting the choice in localStorage.
+ * @param props - Toggle configuration, including the spacing classes of the container.
  * @returns Preact VNode representing the theme toggle button.
  * @example
  * ```ts
@@ -32,7 +43,9 @@ function applyTheme(dark: boolean,): void {
  * const node = html`<${ThemeToggle} />`;
  * ```
  */
-export function ThemeToggle(): unknown {
+export function ThemeToggle({
+  class: extraClass = "",
+}: ThemeToggleProps = {},): unknown {
   const saved = readSavedTheme();
   const isDark = useSignal(
     saved ??
@@ -40,7 +53,7 @@ export function ThemeToggle(): unknown {
         document.body.classList.contains("dark",)),
   );
 
-  // Garante que a preferência salva prevaleça sobre o modo "auto" do sistema
+  // Makes sure the saved preference wins over the system "auto" mode
   if (saved !== null) {
     applyTheme(saved,);
   }
@@ -53,16 +66,16 @@ export function ThemeToggle(): unknown {
         localStorage.setItem(STORAGE_KEY, isDark.value ? "dark" : "light",);
       }
     } catch {
-      // Persistência indisponível (modo privado): mantém apenas em memória
+      // Persistence unavailable (private mode): stays in memory only
     }
   }
 
   return html`
     <button
-      class="circle transparent"
+      class=${`circle transparent ${extraClass}`.trim()}
       onClick=${toggle}
-      title=${isDark.value ? "Mudar para modo claro" : "Mudar para modo escuro"}
-      aria-label="Alternar tema"
+      title=${isDark.value ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label="Toggle theme"
     >
       <i>${isDark.value ? "light_mode" : "dark_mode"}</i>
     </button>

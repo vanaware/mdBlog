@@ -1,7 +1,7 @@
-import { fromMarkdown } from "mdast-util-from-markdown";
-import { gfmFromMarkdown } from "mdast-util-gfm";
-import { gfm } from "micromark-extension-gfm";
-import type { MdastRoot } from "../wire.ts";
+import { fromMarkdown, } from "mdast-util-from-markdown";
+import { gfmFromMarkdown, } from "mdast-util-gfm";
+import { gfm, } from "micromark-extension-gfm";
+import type { MdastRoot, } from "../wire.ts";
 
 /**
  * @description Parses a raw Markdown string into an mdast Root AST.
@@ -15,11 +15,9 @@ import type { MdastRoot } from "../wire.ts";
  * const root = parseMarkdown("# Hello World\n\n- [x] Done");
  * ```
  */
-export function parseMarkdown(markdown: string): MdastRoot {
+export function parseMarkdown(markdown: string,): MdastRoot {
   return fromMarkdown(markdown, {
-    extensions: [gfm()],
-    mdastExtensions: [gfmFromMarkdown()],
-  }) as unknown as MdastRoot;
+    extensions: [gfm(),],
+    mdastExtensions: [gfmFromMarkdown(),],
+  },) as unknown as MdastRoot;
 }
-
-

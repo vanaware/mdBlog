@@ -7,37 +7,41 @@ tags:
   - "wire-format"
   - "ast"
   - "json"
-description: "Especificação formal do formato intermediário JSON agnóstico (Wire Format)."
-location: "#/articles/ARQUITETURA_WIRE_FORMAT.md"
+description: "Formal specification of the framework-agnostic intermediate JSON format (Wire Format)."
+location: "#/articles/wire-format.md"
 pages:
-  - "WIRE_SCHEMA_DETALHES.md"
+  - "wire-schema.md"
 ---
 
-# 📐 Arquitetura do Wire Format
+# 📐 Wire Format architecture
 
-O **Wire Format** é a representação intermediária (IR) entre o analisador Markdown e o renderizador de interface, garantindo desacoplamento, segurança e alta performance no mdBlog.
-
----
-
-## 🎯 Por que usar Wire Format?
-
-Em geradores convencionais de documentação, o fluxo padrão converte Markdown em strings HTML e as injeta no DOM via `innerHTML`:
-
-- **Vulnerabilidade a XSS:** Exige sanitizadores complexos (como DOMPurify) para tentar bloquear scripts injetados.
-- **Perda de Reatividade:** Strings HTML não se conectam a componentes reativos sem scripts soltos no DOM.
-- **Redundância:** HTML cru duplica atributos, classes e marcações desnecessárias.
-
-No mdBlog, o fluxo é totalmente estruturado:
-
-1. **Markdown** é analisado pela biblioteca `mdast` com extensões GFM.
-2. A AST resultante é transformada em **Wire Format JSON puro**.
-3. O cliente converte os nós Wire diretamente em **VNodes Preact tipados**.
-
-Como nenhum HTML cru é gerado ou aceito, a aplicação é imune a ataques de XSS por arquitetura.
+The **Wire Format** is the intermediate representation (IR) between the Markdown
+parser and the interface renderer, keeping the mdBlog pipeline decoupled, secure
+and fast.
 
 ---
 
-## 🧩 Tipagem Formal dos Nós (TypeScript)
+## 🎯 Why use a Wire Format?
+
+In conventional documentation generators the standard flow turns Markdown into
+HTML strings and injects them into the DOM through `innerHTML`:
+
+- **XSS vulnerability:** it demands complex sanitizers (such as DOMPurify) to try to block injected scripts.
+- **Lost reactivity:** HTML strings cannot connect to reactive components without loose scripts in the DOM.
+- **Redundancy:** raw HTML duplicates attributes, classes and unnecessary markup.
+
+In mdBlog the flow is fully structured:
+
+1. **Markdown** is parsed by the `mdast` library with its GFM extensions.
+2. The resulting AST is turned into **pure Wire Format JSON**.
+3. The client converts the Wire nodes straight into **typed Preact VNodes**.
+
+Since no raw HTML is ever produced or accepted, the application is immune to XSS
+attacks by architecture.
+
+---
+
+## 🧩 Formal node typing (TypeScript)
 
 ```typescript
 export type Wire =
@@ -46,10 +50,10 @@ export type Wire =
   | boolean
   | null
   | Wire[]
-  | WireElement      // Elementos HTML intrínsecos (strong, em, hr...)
-  | WireComponent    // Componentes de bloco (Heading, CodeBlock, Table...)
-  | WireIsland       // Ilhas reativas ([data-island])
-  | WireFragment;    // Fragmentos agrupadores
+  | WireElement      // Intrinsic HTML elements (strong, em, hr...)
+  | WireComponent    // Block components (Heading, CodeBlock, Table...)
+  | WireIsland       // Reactive islands ([data-island])
+  | WireFragment;    // Grouping fragments
 
 export interface WireElement {
   t: "e";
@@ -75,15 +79,15 @@ export interface WireIsland {
 
 ---
 
-## 🛡️ Propriedades Higienizadas (Prop Sanitization)
+## 🛡️ Sanitized properties (prop sanitization)
 
-Todas as propriedades de nós no Wire Format passam por uma função de higienização que:
-- Remove funções e referências a objetos não serializáveis.
-- Garante conformidade total com o formato JSON.
-- Permite que a árvore seja armazenada com segurança no `CacheStorage` do Service Worker ou no IndexedDB do navegador.
+Every node property in the Wire Format goes through a sanitizing function that:
+- Drops functions and references to non-serializable objects.
+- Guarantees full JSON compliance.
+- Lets the tree be stored safely in the Service Worker `CacheStorage` or in the browser's IndexedDB.
 
 ---
 
-## 📖 Sub-páginas
+## 📖 Sub-pages
 
-- **[📐 Schema & Nós do AST](./WIRE_SCHEMA_DETALHES.md)**: Detalhamento específico da hierarquia e especificações de cada tipo de nó.
+- **[📐 AST schema & node reference](./wire-schema.md)**: Specific detail on the hierarchy and the specification of each node type.

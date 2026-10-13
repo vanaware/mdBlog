@@ -39,22 +39,34 @@ export function Toc({ headings = [], onNavigate, }: TocProps = {},): unknown {
   }
 
   return html`
-    <nav class="vertical margin-top-small" aria-label="Sumário">
+    <!-- A plain .vertical box, not a nav: BeerCSS gives every nav
+        display:flex with align-items:center, so entries inside nav.vertical
+        shrink-wrap to their text and float in the middle of the column instead
+        of filling it. The accessible name already comes from the aside or the
+        dialog this list lives in. -->
+    <div class="vertical">
       ${headings.map((heading,) =>
         html`
           <a
             key=${heading.id}
             href="#${heading.id}"
             onClick=${scrollTo(heading.id,)}
-            class=${`wave round tiny-padding small-text surface-variant-text truncate no-margin ${
-              heading.depth >= 3 ? "left-margin" : ""
-            }`}
+            class="row no-space wave round tiny-padding small-text secondary-text no-margin"
             title=${heading.text}
           >
-            ${heading.text}
+            <!-- The indent is padding on the label, not a margin on the entry:
+                .vertical zeroes the inline margins of its children, so a
+                left-margin class would silently do nothing here. -->
+            <span
+              class=${`max truncate ${
+                heading.depth >= 3 ? "left-padding small-padding" : ""
+              }`}
+            >
+              ${heading.text}
+            </span>
           </a>
         `
       )}
-    </nav>
+    </div>
   `;
 }

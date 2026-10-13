@@ -155,3 +155,46 @@ export function findAdjacentArticles(
     next: index < list.length - 1 ? (list[index + 1] ?? null) : null,
   };
 }
+
+/** @description Height budget of the table of contents rail, in the units BeerCSS understands. */
+export interface TocRailHeight {
+  /** @description BeerCSS fixed-height class to clamp the rail box with. */
+  heightClass: string;
+  /** @description Pixel height that class sets, i.e. the budget cut-off entries are measured against. */
+  maxHeightPx: number;
+}
+
+/** @description One rail height tier: the BeerCSS class, the pixels it sets, and the screen height from which it still leaves room for the article header above the rail. */
+export interface TocRailHeightTier extends TocRailHeight {
+  /** @description Minimum viewport height (CSS pixels) this tier needs. */
+  minViewportPx: number;
+}
+
+/**
+ * @description The three height utilities BeerCSS ships, from the tallest down, exported so that the viewport watchers can build one media query per threshold instead of repeating the pixel numbers. There is no viewport-relative height class and no custom CSS is allowed, so the rail can only be clamped to one of these.
+ */
+export const TOC_RAIL_HEIGHT_TIERS: TocRailHeightTier[] = [
+  { heightClass: "large-height", maxHeightPx: 576, minViewportPx: 720, },
+  { heightClass: "medium-height", maxHeightPx: 384, minViewportPx: 480, },
+  { heightClass: "small-height", maxHeightPx: 192, minViewportPx: 0, },
+];
+
+/**
+ * @description Picks the height the table of contents rail is clamped to from the available screen height, so scrolling depends on the viewport instead of on the number of entries.
+ * @param viewportHeightPx - Viewport height in CSS pixels (`window.innerHeight`).
+ * @returns The tallest BeerCSS height class that fits the screen, together with its pixel value.
+ * @example
+ * ```ts
+ * import { tocRailHeight } from "./utils.ts";
+ * tocRailHeight(900); // { heightClass: "large-height", maxHeightPx: 576 }
+ * tocRailHeight(400); // { heightClass: "small-height", maxHeightPx: 192 }
+ * ```
+ */
+export function tocRailHeight(viewportHeightPx: number,): TocRailHeight {
+  const tier = TOC_RAIL_HEIGHT_TIERS.find(
+    (candidate,) => viewportHeightPx >= candidate.minViewportPx,
+  );
+  return tier
+    ? { heightClass: tier.heightClass, maxHeightPx: tier.maxHeightPx, }
+    : { heightClass: "small-height", maxHeightPx: 192, };
+}

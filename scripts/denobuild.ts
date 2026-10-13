@@ -3,9 +3,9 @@
 
 /**
  * @file build.ts
- * @description CLI do orquestrador de build baseado em Deno.bundle (denobuild).
- * Delega a execução para a biblioteca @vanaware/buildit
- * e carrega as configurações declarativas de denobuild.jsonc.
+ * @description CLI of the build orchestrator based on Deno.bundle (denobuild).
+ * Delegates execution to the @vanaware/buildit library
+ * and loads the declarative configuration from denobuild.jsonc.
  */
 
 import { denoBuildCli, } from "@vanaware/buildit/cli/denobuild";

@@ -2,9 +2,9 @@
 
 /**
  * @file esbuild.ts
- * @description CLI do orquestrador de build baseado em esbuild nativo.
- * Delega a execução para a biblioteca @vanaware/buildit
- * e carrega as configurações declarativas de esbuild.jsonc.
+ * @description CLI of the build orchestrator based on native esbuild.
+ * Delegates execution to the @vanaware/buildit library
+ * and loads the declarative configuration from esbuild.jsonc.
  */
 
 import { esBuildCli, } from "@vanaware/buildit/cli/esbuild";

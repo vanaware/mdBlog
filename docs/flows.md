@@ -1,128 +1,132 @@
-# 🔄 Fluxos de Navegação e Ciclo de Vida
+# 🔄 Navigation flows and lifecycle
 
-Este documento detalha o comportamento do sistema durante os diferentes cenários de uso: primeira carga no navegador, navegação interna via SPA, operação offline e fallback em ambientes onde o Service Worker não está ativo.
-
----
-
-## 1. Fluxo 1: Navegação Direta / First Paint (F5 ou Digitar URL)
-
-Ocorre quando o usuário acessa diretamente um caminho no navegador (ex.: `https://site.com/docs/guia` com cabeçalho `Accept: text/html`).
-
-```
-[ Usuário digita URL / Pressiona F5 ]
-                  │
-                  ▼
-         [ Service Worker ] ── (Intercepta FetchEvent com Accept: text/html)
-                  │
-                  ├── Consulta Cache Storage ('md-wire-v1')
-                  │     └── Cache Hit válido? Se sim, utiliza WireDoc cacheado.
-                  │
-                  ├── Cache Miss ou Expirado:
-                  │     ├── Fetch interno: '/docs/guia.md?_md_raw=1'
-                  │     ├── Parse Markdown -> AST mdast -> WireDoc
-                  │     └── Salva WireDoc no Cache Storage
-                  │
-                  ▼
-         [ defaultShell(doc) ] ── Constrói HTML Shell completo
-                  │
-                  ├── Injeta BeerCSS via CDN
-                  ├── Injeta <script id="__md_wire" type="application/json">
-                  └── Injeta <script type="module" src="./dist/bundle.js">
-                  │
-                  ▼
-        [ Resposta HTTP 200 ] ── Devolve HTML ao Navegador
-                  │
-                  ▼
-         [ bundle.js executa ]
-                  │
-                  ├── Componente Content consome e remove #__md_wire do DOM
-                  ├── wireToVNode() materializa VNodes Preact instantaneamente
-                  └── hydrateIslands() hidrata os nós com [data-island]
-```
-
-### Vantagens deste fluxo:
-- **Zero layout shift:** O conteúdo textual e os blocos já chegam no primeiro documento HTML.
-- **Rápido:** Não requer requisições adicionais de dados via AJAX/Fetch na carga inicial.
-- **SEO & Acessibilidade:** Rastreadores de busca recebem a árvore de nós estruturada.
+This document details how the system behaves in each usage scenario: the first
+load in the browser, internal SPA navigation, offline operation, and the fallback
+in environments where the Service Worker is not active.
 
 ---
 
-## 2. Fluxo 2: Navegação SPA (Transição entre Páginas)
+## 1. Flow 1: direct navigation / first paint (F5 or typing a URL)
 
-Ocorre quando o usuário clica em um link interno ou quando a rota hash é alterada (`#/docs/outra`).
+Happens when the user opens a path directly in the browser (e.g.
+`https://site.com/docs/guide` with the `Accept: text/html` header).
 
 ```
-[ Usuário clica em link / Hash altera ]
+[ User types a URL / Presses F5 ]
                   │
                   ▼
-        [ Router / Signals ] ── Atualiza 'currentPath.value'
+         [ Service Worker ] ── (Intercepts the FetchEvent with Accept: text/html)
+                  │
+                  ├── Queries Cache Storage ('md-wire-v1')
+                  │     └── Valid cache hit? If so, uses the cached WireDoc.
+                  │
+                  ├── Cache miss or expired:
+                  │     ├── Internal fetch: '/docs/guide.md?_md_raw=1'
+                  │     ├── Parse Markdown -> mdast AST -> WireDoc
+                  │     └── Stores the WireDoc in Cache Storage
                   │
                   ▼
-       [ mdFetch('/docs/outra') ] ── Envia requisição com Accept: application/json
+         [ defaultShell(doc) ] ── Builds the complete HTML shell
+                  │
+                  ├── Injects BeerCSS through the CDN
+                  ├── Injects <script id="__md_wire" type="application/json">
+                  └── Injects <script type="module" src="./dist/bundle.js">
                   │
                   ▼
-         [ Service Worker ] ── Intercepta e processa
-                  │
-                  ├── Content Negotiation: Identifica 'Accept: application/json'
-                  ├── Consulta ou processa WireDoc
-                  └── Retorna Response JSON com headers (x-title, x-source, etc.)
+        [ HTTP 200 response ] ── Hands the HTML back to the browser
                   │
                   ▼
-        [ Componente Content ] ── Recebe objeto JSON
+         [ bundle.js runs ]
+                  │
+                  ├── The Content component consumes and removes #__md_wire from the DOM
+                  ├── wireToVNode() materializes the Preact VNodes instantly
+                  └── hydrateIslands() hydrates the nodes carrying [data-island]
+```
+
+### Advantages of this flow:
+- **Zero layout shift:** the text content and the blocks already arrive in the first HTML document.
+- **Fast:** no extra AJAX/Fetch data requests during the initial load.
+- **SEO & accessibility:** search crawlers receive the structured node tree.
+
+---
+
+## 2. Flow 2: SPA navigation (moving between pages)
+
+Happens when the user clicks an internal link or the hash route changes (`#/docs/other`).
+
+```
+[ User clicks a link / Hash changes ]
+                  │
+                  ▼
+        [ Router / Signals ] ── Updates 'currentPath.value'
+                  │
+                  ▼
+       [ mdFetch('/docs/other') ] ── Sends the request with Accept: application/json
+                  │
+                  ▼
+         [ Service Worker ] ── Intercepts and processes
+                  │
+                  ├── Content negotiation: recognizes 'Accept: application/json'
+                  ├── Queries or processes the WireDoc
+                  └── Returns the JSON Response with the metadata headers (x-title, x-source, etc.)
+                  │
+                  ▼
+        [ Content component ] ── Receives the JSON object
                   │
                   ├── wireToVNode(doc.wire, registry)
-                  ├── Preact reconcilia o DOM sem recarregar a página
-                  └── hydrateIslands() hidrata apenas as novas ilhas criadas
+                  ├── Preact reconciles the DOM without reloading the page
+                  └── hydrateIslands() hydrates only the newly created islands
 ```
 
 ---
 
-## 3. Fluxo 3: Fallback Sem Service Worker (Client-Side Puro)
+## 3. Flow 3: fallback without a Service Worker (pure client-side)
 
-Ocorre quando:
-- O navegador não suporta Service Workers.
-- O Service Worker ainda está em processo de instalação e ainda não tomou controle da página.
-- O usuário desmarcou ou cancelou o registro do Service Worker nas ferramentas de desenvolvedor.
+Happens when:
+- The browser does not support Service Workers.
+- The Service Worker is still installing and has not taken control of the page yet.
+- The user unchecked or unregistered the Service Worker in the developer tools.
 
 ```
-[ mdFetch(url) é invocado pelo componente Content ]
+[ mdFetch(url) is called by the Content component ]
                   │
                   ▼
-     [ detect.ts: isSWControlling() ] ── Retorna false!
+     [ detect.ts: isSWControlling() ] ── Returns false!
                   │
                   ▼
-       [ createLocalFetcher() ] ── Ativa o Pipeline Client-Side
+       [ createLocalFetcher() ] ── Activates the client-side pipeline
                   │
-                  ├── IO Client lê o arquivo .md diretamente via window.fetch
-                  ├── Parser client-side gera mdast -> WireDoc
-                  ├── Salva no Cache Storage compartilhado 'md-wire-v1'
-                  └── Retorna Response JSON
+                  ├── The client IO reads the .md file directly through window.fetch
+                  ├── The client-side parser produces mdast -> WireDoc
+                  ├── Stores it in the shared 'md-wire-v1' Cache Storage
+                  └── Returns the JSON Response
                   │
                   ▼
-         [ Renderização Idêntica ] ── O usuário não percebe diferença!
+         [ Identical rendering ] ── The user notices no difference!
 ```
 
 ---
 
-## 4. Estratégia de Cache Compartilhado (`md-wire-v1`)
+## 4. Shared cache strategy (`md-wire-v1`)
 
-O Service Worker e o Client Adapter compartilham **o mesmo `cacheName`** no Cache Storage do navegador.
+The Service Worker and the client adapter share **the same `cacheName`** in the
+browser's Cache Storage.
 
-### Regras de Cache:
-1. **Chave de Cache:** A chave é o caminho canônico do arquivo Markdown resolvido (ex.: `/docs/guia.md`).
-2. **TTL (Time-to-Live):** Configurado em segundos (default: `60s`).
-   - Ao ler do cache, o pipeline verifica se:
+### Cache rules:
+1. **Cache key:** the key is the resolved canonical path of the Markdown file (e.g. `/docs/guide.md`).
+2. **TTL (time-to-live):** configured in seconds (default: `60s`).
+   - When reading from the cache, the pipeline checks whether:
      $$\text{Date.now()} - \text{doc.renderedAt} < \text{cacheTTL} \times 1000$$
-   - Se expirado, o arquivo `.md` é buscado novamente com cabeçalho `Cache-Control: no-cache`.
-3. **Invalidação e Limpeza:** No evento `activate` do Service Worker, todos os caches que iniciam com o prefixo `md-wire-` mas diferem do `cacheName` ativo são eliminados automaticamente.
+   - On an expired entry, the `.md` file is fetched again with the `Cache-Control: no-cache` header.
+3. **Invalidation and cleanup:** in the Service Worker `activate` event, every cache whose name starts with the `md-wire-` prefix but differs from the active `cacheName` is dropped automatically.
 
 ---
 
-## 5. Medidas de Segurança no Service Worker
+## 5. Security measures in the Service Worker
 
-### 5.1 Prevenção de Recursão Infinita
-Quando o Service Worker precisa buscar o arquivo `.md` para processamento, o `fetch` acionado dentro do worker poderia ser interceptado por ele mesmo, gerando um loop infinito.
-- **Solução:** Toda requisição interna para o `.md` cru recebe o parâmetro de busca `?_md_raw=1`. O `fetchHandler` detecta esse parâmetro e imediatamente pula a interceptação (`return`).
+### 5.1 Preventing infinite recursion
+When the Service Worker must fetch the `.md` file for processing, the `fetch` issued inside the worker could be intercepted by the worker itself, producing an infinite loop.
+- **Solution:** every internal request for the raw `.md` carries the `?_md_raw=1` search parameter. The `fetchHandler` sees that parameter and skips interception right away (`return`).
 
-### 5.2 Filtragem de Streaming e Mídia
-Requisições que possuem o cabeçalho `Range` (comuns em áudio, vídeo ou streaming) são ignoradas pelo plugin para evitar interceptar tráfego binário impróprio.
+### 5.2 Streaming and media filtering
+Requests carrying the `Range` header (common in audio, video or streaming) are ignored by the plugin, so improper binary traffic is never intercepted.

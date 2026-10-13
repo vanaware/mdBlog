@@ -19,7 +19,7 @@ export async function registerServiceWorker(): Promise<void> {
   }
 
   try {
-    // Deriva caminho base e escopo dinamicamente para compatibilidade com subpastas (ex: GitHub Pages)
+    // Derives the base path and scope dynamically for subfolder compatibility (e.g. GitHub Pages)
     const baseUrl = getAppBaseUrl();
     const swUrl = `${baseUrl}sw.js`;
 
@@ -52,10 +52,10 @@ export async function registerServiceWorker(): Promise<void> {
       },);
     }
   } catch (err) {
-    // Pode ser apenas um ambiente sem Service Workers (preview isolado), mas uma
-    // "script evaluation failed" é um bug do bundle: o sw.js importa o mesmo
-    // ficheiro da aplicação e um worker não tem `document`. Declarar isto como
-    // normal à partida esconde a falha real, pelo que se mantém o aviso neutro.
+    // It may simply be an environment without Service Worker support (isolated
+    // preview), but a "script evaluation failed" is a bundle bug: sw.js imports
+    // the same file as the app and a worker has no `document`. Treating that up
+    // front as normal would hide the real failure, so the warning stays neutral.
     console.warn("[SW] Registration failed:", err,);
     isSWActive.value = false;
   }

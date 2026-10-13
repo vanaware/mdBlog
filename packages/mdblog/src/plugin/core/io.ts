@@ -1,5 +1,5 @@
-import type { IO } from "../types.ts";
-import { del, get, set } from "idb-keyval";
+import type { IO, } from "../types.ts";
+import { del, get, set, } from "idb-keyval";
 
 /**
  * @description Options for browser CacheStorage and IndexedDB IO configuration.
@@ -28,42 +28,41 @@ export interface CacheIOOptions {
  * const io = createBrowserIO({ cacheName: "docs-v1", useIndexedDB: true });
  * ```
  */
-export function createBrowserIO(options: CacheIOOptions = {}): IO {
-
+export function createBrowserIO(options: CacheIOOptions = {},): IO {
   const cacheName = options.cacheName ?? "md-wire-v1";
   const useIdb = options.useIndexedDB !== false &&
     typeof indexedDB !== "undefined";
 
   return {
-    async readText(url: string): Promise<string> {
-      const cleanPath = url.replace(/[?#].*$/, "");
+    async readText(url: string,): Promise<string> {
+      const cleanPath = url.replace(/[?#].*$/, "",);
 
       // 1. Candidate paths to try (/articles/)
-      const candidatePaths = [cleanPath];
+      const candidatePaths = [cleanPath,];
 
       for (const candidate of candidatePaths) {
         try {
           let target = candidate;
-          if (target.startsWith("/") && typeof globalThis !== "undefined") {
+          if (target.startsWith("/",) && typeof globalThis !== "undefined") {
             target = `.${target}`;
           }
-          const separator = target.includes("?") ? "&" : "?";
+          const separator = target.includes("?",) ? "&" : "?";
           const fetchUrl = `${target}${separator}_md_raw=1`;
 
           let response: Response;
           try {
-            response = await fetch(fetchUrl);
+            response = await fetch(fetchUrl,);
           } catch {
             const fallback = `${candidate}${
-              candidate.includes("?") ? "&" : "?"
+              candidate.includes("?",) ? "&" : "?"
             }_md_raw=1`;
-            response = await fetch(fallback);
+            response = await fetch(fallback,);
           }
 
           if (response.ok) {
             const text = await response.text();
             if (useIdb) {
-              set(`raw:${cleanPath}`, text).catch(() => {});
+              set(`raw:${cleanPath}`, text,).catch(() => {},);
             }
             return text;
           }
@@ -75,21 +74,21 @@ export function createBrowserIO(options: CacheIOOptions = {}): IO {
       // 2. Check IndexedDB cached raw text if offline
       if (useIdb) {
         try {
-          const cached = await get<string>(`raw:${cleanPath}`);
+          const cached = await get<string>(`raw:${cleanPath}`,);
           if (cached) return cached;
         } catch {
           // ignore
         }
       }
 
-      throw new Error(`Failed to load markdown: document not found (${url})`);
+      throw new Error(`Failed to load markdown: document not found (${url})`,);
     },
 
-    async cacheGet(key: string): Promise<string | null> {
+    async cacheGet(key: string,): Promise<string | null> {
       // 1. First check IndexedDB via idb-keyval if available
       if (useIdb) {
         try {
-          const val = await get<string>(key);
+          const val = await get<string>(key,);
           if (val) return val;
         } catch {
           // Fallback to Cache Storage
@@ -99,11 +98,11 @@ export function createBrowserIO(options: CacheIOOptions = {}): IO {
       // 2. Check Cache Storage
       if (typeof caches !== "undefined") {
         try {
-          const cache = await caches.open(cacheName);
+          const cache = await caches.open(cacheName,);
           const req = new Request(
-            `https://md-wire.local/${encodeURIComponent(key)}`,
+            `https://md-wire.local/${encodeURIComponent(key,)}`,
           );
-          const match = await cache.match(req);
+          const match = await cache.match(req,);
           if (match) {
             return await match.text();
           }
@@ -115,11 +114,11 @@ export function createBrowserIO(options: CacheIOOptions = {}): IO {
       return null;
     },
 
-    async cachePut(key: string, val: string): Promise<void> {
+    async cachePut(key: string, val: string,): Promise<void> {
       // 1. Store in IndexedDB via idb-keyval
       if (useIdb) {
         try {
-          await set(key, val);
+          await set(key, val,);
         } catch {
           // Non-fatal
         }
@@ -128,35 +127,35 @@ export function createBrowserIO(options: CacheIOOptions = {}): IO {
       // 2. Store in Cache Storage
       if (typeof caches !== "undefined") {
         try {
-          const cache = await caches.open(cacheName);
+          const cache = await caches.open(cacheName,);
           const req = new Request(
-            `https://md-wire.local/${encodeURIComponent(key)}`,
+            `https://md-wire.local/${encodeURIComponent(key,)}`,
           );
           const res = new Response(val, {
-            headers: { "Content-Type": "application/json" },
-          });
-          await cache.put(req, res);
+            headers: { "Content-Type": "application/json", },
+          },);
+          await cache.put(req, res,);
         } catch {
           // Non-fatal
         }
       }
     },
 
-    async cacheDelete(key: string): Promise<void> {
+    async cacheDelete(key: string,): Promise<void> {
       if (useIdb) {
         try {
-          await del(key);
+          await del(key,);
         } catch {
           // Non-fatal
         }
       }
       if (typeof caches !== "undefined") {
         try {
-          const cache = await caches.open(cacheName);
+          const cache = await caches.open(cacheName,);
           const req = new Request(
-            `https://md-wire.local/${encodeURIComponent(key)}`,
+            `https://md-wire.local/${encodeURIComponent(key,)}`,
           );
-          await cache.delete(req);
+          await cache.delete(req,);
         } catch {
           // Non-fatal
         }
@@ -176,31 +175,30 @@ export function createBrowserIO(options: CacheIOOptions = {}): IO {
  * const text = await io.readText("/articles/index.md");
  * ```
  */
-export function createMemoryIO(initialFiles: Record<string, string> = {}): IO {
-
-  const files = new Map<string, string>(Object.entries(initialFiles));
+export function createMemoryIO(initialFiles: Record<string, string> = {},): IO {
+  const files = new Map<string, string>(Object.entries(initialFiles,),);
   const cache = new Map<string, string>();
 
   return {
-    async readText(url: string): Promise<string> {
-      const cleanUrl = url.replace(/[?#].*$/, "");
-      const content = files.get(cleanUrl) ?? files.get(url);
+    async readText(url: string,): Promise<string> {
+      const cleanUrl = url.replace(/[?#].*$/, "",);
+      const content = files.get(cleanUrl,) ?? files.get(url,);
       if (content !== undefined) {
         return content;
       }
-      throw new Error(`File not found: ${url}`);
+      throw new Error(`File not found: ${url}`,);
     },
 
-    async cacheGet(key: string): Promise<string | null> {
-      return cache.get(key) ?? null;
+    async cacheGet(key: string,): Promise<string | null> {
+      return cache.get(key,) ?? null;
     },
 
-    async cachePut(key: string, val: string): Promise<void> {
-      cache.set(key, val);
+    async cachePut(key: string, val: string,): Promise<void> {
+      cache.set(key, val,);
     },
 
-    async cacheDelete(key: string): Promise<void> {
-      cache.delete(key);
+    async cacheDelete(key: string,): Promise<void> {
+      cache.delete(key,);
     },
   };
 }

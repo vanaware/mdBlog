@@ -6,6 +6,7 @@ import {
   extractTocHeadings,
   findAdjacentArticles,
   normalizePath,
+  tocRailHeight,
 } from "../src/utils.ts";
 import type { ArticleItem, } from "../src/state.ts";
 import type { WireFragment, } from "../src/plugin/wire.ts";
@@ -16,11 +17,11 @@ describe("normalizePath", () => {
   });
 
   it("normalizes relative paths with docs prefix", () => {
-    assertEquals(normalizePath("./docs/guia.md",), "guia.md",);
+    assertEquals(normalizePath("./docs/guide.md",), "guide.md",);
   });
 
   it("normalizes plain relative paths", () => {
-    assertEquals(normalizePath("./articles/README.md",), "README.md",);
+    assertEquals(normalizePath("./articles/overview.md",), "overview.md",);
   });
 
   it("falls back to index.md for empty or root variants", () => {
@@ -128,5 +129,24 @@ describe("findAdjacentArticles", () => {
     const { prev, next, } = findAdjacentArticles(list, "missing.md",);
     assertEquals(prev, null,);
     assertEquals(next, null,);
+  });
+});
+
+describe("tocRailHeight", () => {
+  it("grows the box with the screen instead of with the entry count", () => {
+    assertEquals(tocRailHeight(900,).heightClass, "large-height",);
+    assertEquals(tocRailHeight(600,).heightClass, "medium-height",);
+    assertEquals(tocRailHeight(400,).heightClass, "small-height",);
+  });
+
+  it("reports the pixel height each class sets", () => {
+    assertEquals(tocRailHeight(900,).maxHeightPx, 576,);
+    assertEquals(tocRailHeight(600,).maxHeightPx, 384,);
+    assertEquals(tocRailHeight(400,).maxHeightPx, 192,);
+  });
+
+  it("falls back to the shortest box on tiny viewports", () => {
+    assertEquals(tocRailHeight(0,).heightClass, "small-height",);
+    assertEquals(tocRailHeight(0,).maxHeightPx, 192,);
   });
 });

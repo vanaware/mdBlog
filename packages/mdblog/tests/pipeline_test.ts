@@ -13,11 +13,11 @@ import type { WireComponent, WireElement, } from "../src/plugin/wire.ts";
 
 describe("Pipeline & Wire Format Core", () => {
   it("parses markdown and extracts the first h1 title", () => {
-    const md = "# Meu Título Incrível\n\nEste é um parágrafo.";
+    const md = "# My Amazing Title\n\nThis is a paragraph.";
     const root = parseMarkdown(md,);
     const { wire, title, } = mdastToWire(root,);
 
-    assertEquals(title, "Meu Título Incrível",);
+    assertEquals(title, "My Amazing Title",);
     assertEquals(wire.t, "f",);
     assert(Array.isArray(wire.c,),);
     assertEquals(wire.c.length, 2,);
@@ -30,7 +30,7 @@ describe("Pipeline & Wire Format Core", () => {
 
   it("discards raw HTML nodes completely for safety", () => {
     const md =
-      "Texto seguro <script>alert('xss')</script> e <div onclick='bad()'>teste</div> final.";
+      "Safe text <script>alert('xss')</script> and <div onclick='bad()'>test</div> ending.";
     const root = parseMarkdown(md,);
     const { wire, } = mdastToWire(root,);
 
@@ -42,12 +42,12 @@ describe("Pipeline & Wire Format Core", () => {
 
   it("processes GFM tables, task lists, and code blocks", () => {
     const md = `
-| Nome | Tipo |
+| Name | Type |
 |---|---|
-| Item 1 | Valor |
+| Item 1 | Value |
 
-- [x] Tarefa Concluída
-- [ ] Tarefa Pendente
+- [x] Done task
+- [ ] Pending task
 
 \`\`\`ts
 const x = 42;
@@ -66,7 +66,7 @@ const x = 42;
 
   it("splits GFM tables into thead/tbody and marks header cells", () => {
     const md =
-      "| Nome | Tipo | Qtde |\n|:---|:---:|---:|\n| Item 1 | Valor | 3 |\n";
+      "| Name | Type | Qty |\n|:---|:---:|---:|\n| Item 1 | Value | 3 |\n";
     const { wire, } = mdastToWire(parseMarkdown(md,),);
     assert(Array.isArray(wire.c,),);
 
@@ -76,7 +76,7 @@ const x = 42;
     const sections = table.c as unknown as WireElement[];
     const [headSection, bodySection,] = sections;
 
-    // As riscas e a borda do cabeçalho do BeerCSS só existem sobre tbody/thead.
+    // BeerCSS stripes and the header border only exist over tbody/thead.
     assertEquals(
       sections.map((s,) => `${s.t}:${s.n}`),
       ["e:thead", "e:tbody",],
@@ -110,13 +110,13 @@ const x = 42;
 
   it("handles document caching and TTL expiration via IO", async () => {
     const memoryIO = createMemoryIO({
-      "/docs/cached.md": "# Versão 1\n\nConteúdo inicial.",
+      "/docs/cached.md": "# Version 1\n\nInitial content.",
     },);
 
     const doc1 = await loadDoc("/docs/cached.md", memoryIO, {
       cacheTTLSeconds: 10,
     },);
-    assertEquals(doc1.title, "Versão 1",);
+    assertEquals(doc1.title, "Version 1",);
 
     // Manually overwrite file in IO without waiting for TTL
     const cacheKey = "wire:/docs/cached.md";
@@ -143,7 +143,7 @@ const x = 42;
 
   it("calculates node counts and detects islands in Wire tree", () => {
     const markdown =
-      `# Título\n\nTexto de teste com [link](https://deno.com)\n\n::Counter{start: 10}`;
+      `# Title\n\nTest text with [link](https://deno.com)\n\n::Counter{start: 10}`;
     const doc = processMarkdown(markdown, "/test.md",);
 
     const totalNodes = countWireNodes(doc.wire,);

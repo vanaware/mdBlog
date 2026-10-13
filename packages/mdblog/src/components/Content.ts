@@ -4,12 +4,16 @@ import { useEffect, } from "preact/hooks";
 import {
   type ArticleItem,
   articles,
+  closeTocModal,
   currentDoc,
   currentPath,
   errorMessage,
   isLoading,
   isWideScreen,
+  tocModalOpen,
   tocRailOpen,
+  toggleTocModal,
+  viewportHeight,
 } from "../state.ts";
 import { wireToVNode, } from "../render/from-wire.ts";
 import { hydrateIslands, } from "../render/hydrate-islands.ts";
@@ -21,6 +25,7 @@ import {
   extractTocHeadings,
   findAdjacentArticles,
   normalizePath,
+  tocRailHeight,
 } from "../utils.ts";
 import type { WireComponent, WireFragment, } from "../plugin/wire.ts";
 
@@ -35,22 +40,38 @@ import type { WireComponent, WireFragment, } from "../plugin/wire.ts";
  * ```
  */
 export function Content(): unknown {
-  const tocOpen = useSignal(false,);
-
   const doc = currentDoc.value;
   const path = currentPath.value;
   const loading = isLoading.value;
   const error = errorMessage.value;
 
-  // A versão vai no rodapé para se conferir, sem abrir a consola, que o bundle
-  // servido é o da última compilação: "major.minor.patch#buildHash", sendo o
-  // sufixo o instante da build. Fica vazio quando o módulo é consumido sem
-  // bundle (sem o define da compilação), pelo que se omite em vez de deixar um
-  // espaço solto no texto.
+  // The footer carries the build version so that one can tell, without opening
+  // the console, that the bundle being served is the latest compile: it reads
+  // "major.minor.patch#buildHash", and the suffix is the build instant. It comes
+  // out empty when the module is consumed without a bundle (no build-time
+  // define), so it is dropped rather than leaving a loose space in the text.
   const versionSuffix = APP_VERSION ? ` ${APP_VERSION}` : "";
 
+  // The rail column is only as tall as the screen allows, and it scrolls solely
+  // when entries fall out of that budget: BeerCSS `.scroll` is `overflow:auto`,
+  // so a short summary keeps its natural height instead of leaving a tall empty
+  // box in the column, and a long one gets the bar as soon as items are cut off.
+  // The inner box is never clamped, so it keeps reporting the natural height of
+  // the list even after the outer one already scrolls.
+  const railList = useSignal<HTMLDivElement | null>(null,);
+  const railOverflowing = useSignal(false,);
+  const railBudget = tocRailHeight(viewportHeight.value,);
+
+  // Measured after every render on purpose: the rail mounts only once the
+  // document arrives, which changes neither the route nor the viewport, so a
+  // dependency list would miss exactly the render that creates the list.
   useEffect(() => {
-    tocOpen.value = false;
+    const list = railList.value;
+    railOverflowing.value = !!list &&
+      list.offsetHeight > railBudget.maxHeightPx;
+  },);
+
+  useEffect(() => {
     if (doc) {
       hydrateIslands();
       if (typeof globalThis !== "undefined" && globalThis.scrollTo) {
@@ -59,19 +80,19 @@ export function Content(): unknown {
     }
   }, [doc, path,],);
 
-  // O painel modal só existe em telas estreitas: ao alargar a janela fecha-o,
-  // para que um estreitamento posterior não o reabra sozinho sobre o artigo.
-  useEffect(() => {
-    if (tocOpen.value && isWideScreen.value) tocOpen.value = false;
-  }, [isWideScreen.value,],);
+  // Two rules that used to live here as component effects are now derived state
+  // in state.ts: "widening dismisses the summary modal" and "a new document
+  // starts with it closed". Both are consequences of signals this component
+  // already reads, so tocModalOpen is a computed — and a component effect that
+  // only writes global state would also depend on this view being mounted.
 
   if (loading && !doc) {
     return html`
-      <main class="responsive max padding center-align margin-top">
+      <main class="responsive max padding center-align top-margin">
         <i class="large primary-text">menu_book</i>
         <progress class="circle large"></progress>
-        <p class="margin-top surface-variant-text">
-          Carregando...
+        <p class="top-margin secondary-text">
+          Loading...
         </p>
       </main>
     `;
@@ -80,17 +101,19 @@ export function Content(): unknown {
   if (error && !doc) {
     return html`
       <main class="responsive max padding">
-        <article class="border error-container round medium-padding margin">
-          <div class="row items-center gap">
+        <article class="border error-container round padding margin">
+          <div class="row">
             <i class="error-text large">error</i>
             <div>
-              <h5 class="no-margin bold">Falha ao carregar o artigo</h5>
-              <p class="margin-top">${error}</p>
+              <h5
+                class=${`no-margin bold ${isWideScreen.value ? "" : "small"}`}
+              >Could not load the article</h5>
+              <p class="top-margin">${error}</p>
             </div>
           </div>
-          <div class="margin-top">
+          <div class="top-margin">
             <a class="button primary" href="#/">
-              <i>home</i> Ir para Início
+              <i>home</i> Go to start
             </a>
           </div>
         </article>
@@ -101,7 +124,7 @@ export function Content(): unknown {
   if (!doc) {
     return html`
       <main class="responsive max padding center-align">
-        <p class="surface-variant-text">Nenhum artigo selecionado.</p>
+        <p class="secondary-text">No article selected.</p>
       </main>
     `;
   }
@@ -110,7 +133,7 @@ export function Content(): unknown {
     (a,) => normalizePath(a.path,) === normalizePath(path,),
   );
 
-  // Monta o breadcrumb discreto a partir da hierarquia do artigo
+  // Builds the discreet breadcrumb out of the article hierarchy
   const breadcrumbs: ArticleItem[] = [];
   let curr: ArticleItem | undefined = currentArticle;
   while (curr) {
@@ -135,19 +158,19 @@ export function Content(): unknown {
     breadcrumbs.unshift(rootArticle,);
   }
 
-  // Título, autor e data extraídos do frontmatter ou metadados
+  // Title, author and date taken from the frontmatter or from the metadata
   const title = doc.frontmatter?.title || currentArticle?.title || doc.title ||
-    "Artigo";
+    "Article";
   const author = doc.frontmatter?.author || currentArticle?.author;
   const date = doc.frontmatter?.date || currentArticle?.date;
   const tags: string[] = Array.isArray(currentArticle?.tags,)
     ? currentArticle!.tags!
     : Array.isArray(doc.frontmatter?.tags,)
-    ? doc.frontmatter.tags as string[]
-    : [];
+      ? doc.frontmatter.tags as string[]
+      : [];
   const readingTime = estimateReadingTimeMinutes(doc.raw || "",);
 
-  // Evita duplicar o título h1 do topo do markdown se já estiver no cabeçalho
+  // Drops the leading h1 of the markdown body when the header already shows it
   let renderWire = doc.wire;
   if (
     renderWire &&
@@ -173,287 +196,319 @@ export function Content(): unknown {
   const hasToc = toc.length >= 2;
   const { prev, next, } = findAdjacentArticles(articles.value, path,);
 
-  // O sumário tem sempre um ponto de controlo, em qualquer largura: nas telas
-  // largas o botão alterna a coluna própria (preferência persistida); nas
-  // estreitas abre o painel modal, que não pode ficar aberto entre artigos.
+  // The summary always has one control point, at any width: on wide screens the
+  // header button toggles its own column (persisted preference); on narrow ones
+  // it opens the modal panel, which must not stay open between articles.
   const showRail = hasToc && isWideScreen.value && tocRailOpen.value;
   const showTocPanel = hasToc && !isWideScreen.value;
-  // Somente sumários longos recebem altura fixa com barra de rolagem (igual à
-  // gaveta lateral); os curtos ficam na altura natural para não sobrar espaço
-  // vazio na coluna.
-  const railScrollClass = toc.length > 8 ? "scroll medium-height" : "";
 
   function toggleToc(): void {
     if (isWideScreen.value) {
       tocRailOpen.value = !tocRailOpen.value;
     } else {
-      tocOpen.value = !tocOpen.value;
+      toggleTocModal();
     }
   }
 
   return html`
     <main class="responsive max padding">
-      <!-- 1. Breadcrumb discreto e compacto com wrap -->
+      <!-- 1. Discreet compact breadcrumb that wraps -->
       ${breadcrumbs.length > 1
-        ? html`
+      ? html`
           <nav
-            class="row wrap no-space items-center small-text surface-variant-text margin-bottom">
+            class="row wrap no-space small-text secondary-text bottom-margin">
             ${breadcrumbs.map((crumb, idx,) => {
-              const isLast = idx === breadcrumbs.length - 1;
-              const label = (idx === 0 &&
-                  (crumb.name === "index.md" ||
-                    crumb.path.endsWith("/index.md",)))
-                ? "Início"
-                : crumb.title;
-              return html`
+        const isLast = idx === breadcrumbs.length - 1;
+        const label = (idx === 0 &&
+          (crumb.name === "index.md" ||
+            crumb.path.endsWith("/index.md",)))
+          ? "Start"
+          : crumb.title;
+        return html`
                 ${idx > 0
-                  ? html`<i class="tiny tiny-margin opacity-50">chevron_right</i>`
-                  : null}
+            ? html`<i class="tiny tiny-margin medium-opacity">chevron_right</i>`
+            : null}
                 <a
                   href=${articleHrefFromPath(crumb.path,)}
-                  class=${`wrap ${
-                    isLast ? "bold primary-text" : "surface-variant-text wave"
-                  }`}
+                  class=${`wrap ${isLast ? "bold primary-text" : "secondary-text wave"
+          }`}
                 >
                   ${label}
                 </a>
               `;
-            },)}
+      },)}
           </nav>
         `
-        : null}
+      : null}
 
       <div class="grid">
         <div class=${showRail ? "s12 m12 l9" : "s12"}>
-          <!-- 2. Cabeçalho limpo: Título, metadados, tags e tempo de leitura -->
-          <header class="margin-bottom-large padding-bottom border-bottom">
-            <h3 class="bold no-margin-bottom wrap">${title}</h3>
+          <!-- 2. Clean header: title, metadata, tags and reading time -->
+          <!-- The title block is a real <header>, which BeerCSS renders as a
+              flex column carrying its own 1rem of horizontal padding and a
+              surface-container tint. Both are neutralised here: the <main>
+              already supplies the page margin, and a coloured band behind the
+              title would read as a second card above the article one. The
+              spacing below it is the divider's own 1rem, so no margin here. -->
+          <header class="no-padding transparent no-margin">
+            <!-- Same scale as the document headings: BeerCSS's h3 is 2.25rem,
+                which no phone needs as a page title. The .small variant of the
+                very same level (1.75rem) keeps it above the sections below it
+                instead of collapsing the hierarchy. -->
+            <h3
+              class=${`bold no-margin wrap ${isWideScreen.value ? "" : "small"
+    }`}
+            >${title}</h3>
             <div
-              class="row wrap items-center gap-medium small-text surface-variant-text margin-top-small">
+              class="row wrap small-text secondary-text top-margin small-margin">
               ${author
-                ? html`
-                  <span class="row items-center gap-tiny">
-                    <i class="tiny">person</i>
+      ? html`
+                  <span class="row no-space">
+                    <i class="tiny right-margin tiny-margin">person</i>
                     <span>${author}</span>
                   </span>
                 `
-                : null}
+      : null}
               ${date
-                ? html`
-                  <span class="row items-center gap-tiny">
-                    <i class="tiny">calendar_today</i>
+      ? html`
+                  <span class="row no-space">
+                    <i class="tiny right-margin tiny-margin">calendar_today</i>
                     <span>${date}</span>
                   </span>
                 `
-                : null}
-              <span
-                class="row items-center gap-tiny"
-                title="Tempo estimado de leitura"
-              >
-                <i class="tiny">schedule</i>
-                <span>${readingTime} min de leitura</span>
+      : null}
+              <span class="row no-space" title="Estimated reading time">
+                <i class="tiny right-margin tiny-margin">schedule</i>
+                <span>${readingTime} min read</span>
               </span>
               <div class="max"></div>
               ${hasToc
-                ? html`
+      ? html`
                   <button
                     class="small tertiary no-margin"
                     onClick=${toggleToc}
                     aria-expanded=${isWideScreen.value
-                      ? tocRailOpen.value
-                      : tocOpen.value}
+          ? tocRailOpen.value
+          : tocModalOpen.value}
                     aria-label=${isWideScreen.value
-                      ? "Mostrar ou ocultar o sumário"
-                      : "Abrir ou fechar o sumário"}
+          ? "Show or hide the table of contents"
+          : "Open or close the table of contents"}
                     title=${isWideScreen.value
-                      ? (tocRailOpen.value
-                        ? "Ocultar sumário desta página"
-                        : "Mostrar sumário desta página")
-                      : "Sumário desta página"}
+          ? (tocRailOpen.value
+            ? "Hide the contents of this page"
+            : "Show the contents of this page")
+          : "Contents of this page"}
                   >
                     <i>toc</i>
-                    <span>Nesta página</span>
+                    <span>On this page</span>
                   </button>
                 `
-                : null}
+      : null}
             </div>
             ${tags.length > 0
-              ? html`
-                <div class="row wrap items-center gap-tiny margin-top-small">
+      ? html`
+                <div class="row wrap top-margin small-margin">
                   ${tags.map((tag,) =>
-                    html`
+        html`
                       <span key=${tag} class="chip small secondary-container no-margin">
                         <i class="tiny">label</i>
                         ${tag}
                       </span>
                     `
-                  )}
+      )}
                 </div>
               `
-              : null}
+      : null}
           </header>
 
-          <!-- 3. Conteúdo do artigo -->
-          <article class="no-border no-padding wrap">
+          <!-- The rule that closes the header. BeerCSS has no directional
+              border utility: the former border-bottom class simply did not
+              exist, and a *divider* is the framework's own separator —
+              [class*=divider] paints the 1px line and .medium-divider gives it
+              1rem above and below, which is also what keeps the header off the
+              first line of the body. -->
+          <div class="medium-divider"></div>
+
+          <!-- 3. Article body. BeerCSS styles the bare <article> element as a
+              card: 1rem of padding, an elevate1 shadow, a surface-container-low
+              background and rounded corners. The view used to cancel that
+              padding, which is exactly why the text ran against the card's own
+              edge; the card now keeps its padding and the prose sits inside it. -->
+          <article class="wrap">
             ${wireToVNode(renderWire,)}
           </article>
 
-          <!-- 4. Lista de Sub-páginas (exibida após o conteúdo do artigo) -->
+          <!-- 4. Sub-page list (shown right after the article body) -->
           ${currentArticle && currentArticle.children &&
-              currentArticle.children.length > 0
-            ? html`
-              <section class="margin-top-large padding-top border-top">
-                <p class="bold small-text surface-variant-text uppercase margin-bottom-small">
-                  Sub-páginas (${currentArticle.children.length})
+      currentArticle.children.length > 0
+      ? html`
+              <section class="top-margin large-margin">
+                <p class="bold small-text secondary-text no-margin">
+                  Sub-pages (${currentArticle.children.length})
                 </p>
-                <div class="column gap-small">
+                <!-- ".vertical" is the stacking utility BeerCSS actually has
+                    ("column" is not one of them). A flex column has no gap of
+                    its own — the 1rem of a row only runs along the main axis,
+                    which here is vertical — so each card carries its own bottom
+                    margin: that is what separates the entries, which previously
+                    touched each other with no gap at all. -->
+                <div class="vertical top-margin small-margin">
                   ${currentArticle.children.map((sub,) =>
-                    html`
+        html`
                       <a
                         key=${sub.path}
                         href=${articleHrefFromPath(sub.path,)}
-                        class="row wrap items-center justify-between border round padding-small surface-container wave gap-small"
+                        class="row wrap border round small-padding surface-container wave bottom-margin small-margin"
                       >
-                        <div class="row wrap items-center gap-small max min">
-                          <i class="primary-text small">${sub.icon ||
-                            "article"}</i>
-                          <div class="max min wrap">
-                            <div class="bold small-text wrap">${sub.title}</div>
-                            ${sub.description
-                              ? html`
-                                <div class="small-text surface-variant-text wrap no-margin">
-                                  ${sub.description}
-                                </div>
-                              `
-                              : null}
-                          </div>
+                        <i class="primary-text small">${sub.icon ||
+          "article"}</i>
+                        <div class="max wrap">
+                          <div class="bold wrap">${sub.title}</div>
+                          ${sub.description
+            ? html`
+                              <div class="small-text secondary-text wrap no-margin">
+                                ${sub.description}
+                              </div>
+                            `
+            : null}
                         </div>
-                        <div class="row items-center gap-small">
-                          <i class="surface-variant-text small">chevron_right</i>
-                        </div>
+                        <i class="secondary-text small">chevron_right</i>
                       </a>
                     `
-                  )}
+      )}
                 </div>
               </section>
             `
-            : null}
+      : null}
 
-          <!-- 5. Paginação Anterior/Próximo seguindo a ordem da árvore de artigos -->
+          <!-- 5. Previous/next pager, following the article tree order -->
           ${prev || next
-            ? html`
+      ? html`
               <nav
-                class="grid margin-top-large"
-                aria-label="Navegação entre artigos"
+                class="grid top-margin large-margin"
+                aria-label="Article navigation"
               >
                 ${prev
-                  ? html`
+          ? html`
                     <a
                       href=${articleHrefFromPath(prev.path,)}
-                      class="s12 m6 l6 border round padding wave surface-container-low row items-center gap-small no-margin"
+                      class="s12 m6 l6 row border round padding wave surface-container-low no-margin"
                     >
-                      <i class="surface-variant-text">arrow_back</i>
-                      <div class="max min">
-                        <div class="tiny-text surface-variant-text uppercase">
-                          Anterior
+                      <i class="secondary-text">arrow_back</i>
+                      <div class="max wrap">
+                        <div class="small-text secondary-text">
+                          Previous
                         </div>
-                        <div class="bold small-text wrap">${prev.title}</div>
+                        <div class="bold wrap">${prev.title}</div>
                       </div>
                     </a>
                   `
-                  : html`<div class="s12 m6 l6"></div>`}
+          : html`<div class="s12 m6 l6"></div>`}
                 ${next
-                  ? html`
+          ? html`
                     <a
                       href=${articleHrefFromPath(next.path,)}
-                      class="s12 m6 l6 border round padding wave surface-container-low row items-center gap-small no-margin"
+                      class="s12 m6 l6 row border round padding wave surface-container-low no-margin"
                     >
-                      <div class="max min right-align">
-                        <div class="tiny-text surface-variant-text uppercase">
-                          Próximo
+                      <div class="max wrap right-align">
+                        <div class="small-text secondary-text">
+                          Next
                         </div>
-                        <div class="bold small-text wrap">${next.title}</div>
+                        <div class="bold wrap">${next.title}</div>
                       </div>
-                      <i class="surface-variant-text">arrow_forward</i>
+                      <i class="secondary-text">arrow_forward</i>
                     </a>
                   `
-                  : null}
+          : null}
               </nav>
             `
-            : null}
+      : null}
 
-          <!-- 6. Rodapé simplificado. O nome e a versão partilham o mesmo span
-              porque o BeerCSS define footer{flex-direction:column} e ".row" não
-              desfaz isso: um segundo filho cairia para a linha de baixo. -->
-          <footer class="margin-top-large padding-top padding-bottom border-top center-align surface-variant-text small-text">
+          <!-- 6. Plain footer, separated by the same kind of rule the header
+              uses. BeerCSS sets footer{flex-direction:column; padding:0 1rem;
+              background-color:var(--surface-container)}: name and version share
+              one span because a second child would drop onto the line below, and
+              the padding and the tint are cancelled here for the same reason they
+              are cancelled on the header. -->
+          <div class="medium-divider"></div>
+          <footer class="no-padding transparent vertical-margin small-margin center-align secondary-text small-text">
             <span>Made with mdBlog${versionSuffix}</span>
           </footer>
         </div>
 
-        <!-- Sumário rolável em telas largas (l), recolhível pelo botão do cabeçalho
-            ou por este fecho próprio da coluna. -->
+        <!-- Scrollable summary column on wide screens (l), collapsed either by
+            the header button or by this close control of the column itself. -->
         ${showRail
-          ? html`
-            <aside class="l l3 padding-left" aria-label="Sumário desta página">
-              <div class="row items-center justify-between no-padding">
-                <p class="bold small-text surface-variant-text uppercase no-margin">
-                  Nesta página
+      ? html`
+            <aside class="l l3 left-padding" aria-label="Contents of this page">
+              <div class="row no-padding no-space">
+                <p class="bold small-text secondary-text no-margin">
+                  On this page
                 </p>
+                <div class="max"></div>
                 <button
                   class="circle tiny transparent"
                   onClick=${() => (tocRailOpen.value = false)}
-                  aria-label="Fechar sumário"
-                  title="Ocultar sumário desta página"
+                  aria-label="Close the table of contents"
+                  title="Hide the contents of this page"
                 >
                   <i class="small">close</i>
                 </button>
               </div>
-              <div class=${railScrollClass}>
-                <${Toc} headings=${toc} />
+              <div
+                class=${railOverflowing.value
+          ? `scroll ${railBudget.heightClass}`
+          : ""}
+              >
+                <!-- Unclamped wrapper: its natural height is what tells whether
+                    the entries below the budget exist at all. -->
+                <div
+                  ref=${(el: HTMLDivElement | null,) => {
+          railList.value = el;
+        }}
+                >
+                  <${Toc} headings=${toc} />
+                </div>
               </div>
             </aside>
           `
-          : null}
+      : null}
       </div>
 
-      <!-- Sumário em painel lateral (dialog posicionado) para telas pequenas e médias (s/m) -->
+      <!-- Summary as a side panel (positioned dialog) on small and medium screens (s/m) -->
       ${showTocPanel
-        ? html`
-          ${tocOpen.value
-            ? html`
-              <div
-                class="overlay active"
-                onClick=${() => (tocOpen.value = false)}
-              ></div>
+      ? html`
+          ${tocModalOpen.value
+          ? html`
+              <div class="overlay active" onClick=${closeTocModal}></div>
             `
-            : null}
+          : null}
           <dialog
-            class=${`right medium-width round surface-container scroll small-padding border ${
-              tocOpen.value ? "active" : ""
-            }`}
-            aria-label="Sumário"
+            class=${`right medium-width round surface-container scroll small-padding border ${tocModalOpen.value ? "active" : ""
+        }`}
+            aria-label="Table of contents"
           >
-            <div
-              class="row items-center justify-between no-padding border-bottom no-margin">
-              <div class="row items-center gap-tiny">
-                <i class="primary-text tiny">toc</i>
-                <span class="bold tiny-text">Nesta página</span>
-              </div>
+            <!-- The panel's own head: label on the left, control on the right.
+                BeerCSS has no justify-between — the .max spacer is the only
+                mechanism that pushes a row's last child to the far edge — and no
+                directional border, so the separator below is a divider. -->
+            <div class="row no-padding no-space no-margin">
+              <i class="primary-text tiny right-margin tiny-margin">toc</i>
+              <span class="bold small-text">On this page</span>
+              <div class="max"></div>
               <button
                 class="circle tiny transparent"
-                onClick=${() => (tocOpen.value = false)}
-                aria-label="Fechar sumário"
+                onClick=${closeTocModal}
+                aria-label="Close the table of contents"
               >
                 <i class="small">close</i>
               </button>
             </div>
-            <${Toc}
-              headings=${toc}
-              onNavigate=${() => (tocOpen.value = false)}
-            />
+            <div class="medium-divider"></div>
+            <${Toc} headings=${toc} onNavigate=${closeTocModal} />
           </dialog>
         `
-        : null}
+      : null}
     </main>
   `;
 }

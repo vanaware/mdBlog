@@ -1,7 +1,7 @@
-import type { DocConfig, IO } from "../types.ts";
-import type { WireDoc } from "../wire.ts";
-import { isSWControlling, resolveDocPath } from "../detect.ts";
-import { loadDoc } from "../core/pipeline.ts";
+import type { DocConfig, IO, } from "../types.ts";
+import type { WireDoc, } from "../wire.ts";
+import { isSWControlling, resolveDocPath, } from "../detect.ts";
+import { loadDoc, } from "../core/pipeline.ts";
 
 /**
  * @description Creates a local client-side fetcher that executes the pipeline in-browser
@@ -21,12 +21,12 @@ import { loadDoc } from "../core/pipeline.ts";
 export function createLocalFetcher(
   io: IO,
   options: DocConfig = {},
-): (urlOrPath: string) => Promise<WireDoc> {
+): (urlOrPath: string,) => Promise<WireDoc> {
   const basePath = options.basePath ?? "./articles";
 
-  return async function localFetch(urlOrPath: string): Promise<WireDoc> {
-    const { docPath } = resolveDocPath(urlOrPath, basePath);
-    return await loadDoc(docPath, io, options);
+  return async function localFetch(urlOrPath: string,): Promise<WireDoc> {
+    const { docPath, } = resolveDocPath(urlOrPath, basePath,);
+    return await loadDoc(docPath, io, options,);
   };
 }
 
@@ -49,8 +49,7 @@ export async function mdFetch(
   io: IO,
   options: DocConfig = {},
 ): Promise<WireDoc> {
-
-  const { docPath } = resolveDocPath(
+  const { docPath, } = resolveDocPath(
     urlOrPath,
     options.basePath ?? "./articles",
   );
@@ -59,11 +58,11 @@ export async function mdFetch(
   if (isSWControlling()) {
     try {
       const response = await fetch(docPath, {
-        headers: { Accept: "application/json" },
-      });
+        headers: { Accept: "application/json", },
+      },);
       if (response.ok) {
-        const contentType = response.headers.get("content-type") ?? "";
-        if (contentType.includes("application/json")) {
+        const contentType = response.headers.get("content-type",) ?? "";
+        if (contentType.includes("application/json",)) {
           const doc: WireDoc = await response.json();
           return doc;
         }
@@ -77,6 +76,6 @@ export async function mdFetch(
   }
 
   // 2. Fallback: process directly via local client pipeline
-  const localFetcher = createLocalFetcher(io, options);
-  return await localFetcher(docPath);
+  const localFetcher = createLocalFetcher(io, options,);
+  return await localFetcher(docPath,);
 }

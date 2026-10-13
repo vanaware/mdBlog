@@ -1,4 +1,4 @@
-import type { WireDoc, WireFragment } from "./wire.ts";
+import type { WireDoc, WireFragment, } from "./wire.ts";
 
 /**
  * @description Pure I/O abstraction interface for document loading and caching.
@@ -11,14 +11,14 @@ export interface IO {
    * @param url - Relative or absolute path to the target markdown resource.
    * @returns Resolves to the raw text content of the resource.
    */
-  readText(url: string): Promise<string>;
+  readText(url: string,): Promise<string>;
 
   /**
    * @description Retrieves a cached JSON string by key.
    * @param key - Unique cache key identifier.
    * @returns Resolves to the cached string payload, or null if not found.
    */
-  cacheGet(key: string): Promise<string | null>;
+  cacheGet(key: string,): Promise<string | null>;
 
   /**
    * @description Persists a string payload into the cache.
@@ -26,14 +26,14 @@ export interface IO {
    * @param val - Serialized JSON string payload to persist.
    * @returns Resolves when write operation finishes.
    */
-  cachePut(key: string, val: string): Promise<void>;
+  cachePut(key: string, val: string,): Promise<void>;
 
   /**
    * @description Optional method to remove a cached item by key.
    * @param key - Unique cache key identifier to evict.
    * @returns Resolves when eviction completes.
    */
-  cacheDelete?(key: string): Promise<void>;
+  cacheDelete?(key: string,): Promise<void>;
 }
 
 /**
@@ -64,4 +64,4 @@ export interface DocConfig {
   cacheName?: string;
 }
 
-export type { WireDoc, WireFragment };
+export type { WireDoc, WireFragment, };

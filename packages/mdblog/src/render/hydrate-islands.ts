@@ -36,9 +36,9 @@ function mountIsland(
   props: Record<string, unknown>,
   el: HTMLElement,
 ) {
-  // Desmonta eventual root anterior deste container. Sem isso, uma segunda
-  // montagem encontraria o vnode antigo ainda associado a nós já removidos do
-  // DOM e produziria uma cópia extra do widget no mesmo slot.
+  // Unmounts a previous root of this container, if any. Without this, a second
+  // mount would find the old vnode still attached to nodes already removed from
+  // the DOM and produce an extra copy of the widget in the same slot.
   render(null, el,);
   el.innerHTML = "";
   render(h(comp, props as any,), el,);
@@ -53,7 +53,7 @@ function readIslandProps(el: HTMLElement,): Record<string, unknown> {
   try {
     return JSON.parse(el.dataset.props || "{}",);
   } catch (_) {
-    // Ignora erro de parsing
+    // Ignores the parsing error
     return {};
   }
 }
@@ -79,7 +79,7 @@ async function hydrateNode(el: HTMLElement,): Promise<boolean> {
   const islandFileName = name.endsWith(".js",) ? name : `${name}.js`;
   const baseName = islandFileName.replace(/\.js$/, "",);
 
-  // 1. Verifica se já está em cache em memória
+  // 1. Check the in-memory cache first
   const cachedComp = dynamicIslandsCache[name] ||
     dynamicIslandsCache[islandFileName] ||
     dynamicIslandsCache[baseName];
@@ -91,7 +91,7 @@ async function hydrateNode(el: HTMLElement,): Promise<boolean> {
       return true;
     } catch (err) {
       console.error(
-        `[hydrate] Falha ao hidratar ilha "${name}" em cache:`,
+        `[hydrate] Failed to hydrate cached island "${name}":`,
         err,
       );
       el.dataset.islandError = "true";
@@ -99,7 +99,7 @@ async function hydrateNode(el: HTMLElement,): Promise<boolean> {
     }
   }
 
-  // 2. Rotina principal: import dinâmico nativo de ./islands/
+  // 2. Main path: native dynamic import from ./islands/
   try {
     if (!inFlightImports[islandFileName]) {
       const islandUrl = globalThis.location
@@ -124,7 +124,7 @@ async function hydrateNode(el: HTMLElement,): Promise<boolean> {
       dynamicIslandsCache[islandFileName] = dynamicComp;
       dynamicIslandsCache[baseName] = dynamicComp;
 
-      // Relê as props: elas podem ter mudado enquanto o import estava em voo
+      // Re-read the props: they may have changed while the import was in flight
       mountIsland(dynamicComp, readIslandProps(el,), el,);
       markMounted(el,);
       return true;
@@ -134,7 +134,7 @@ async function hydrateNode(el: HTMLElement,): Promise<boolean> {
     return false;
   } catch (err) {
     console.warn(
-      `[hydrate] Falha ao carregar ilha ./islands/${islandFileName}:`,
+      `[hydrate] Failed to load island ./islands/${islandFileName}:`,
       err,
     );
     el.dataset.islandError = "true";
@@ -147,25 +147,25 @@ async function scanIslands(root: HTMLElement,): Promise<number> {
   let hydratedCount = 0;
 
   for (const el of nodes) {
-    // Container pré-renderizado pela árvore principal: ela é a dona das props.
+    // Container pre-rendered by the main tree: that tree owns its props.
     if (el.dataset.islandPrerendered === "true") continue;
 
     const props = el.dataset.props ?? "{}";
     const mounted = el.dataset.islandMountedProps;
 
-    // Já montado por esta função com as mesmas props: nada a fazer. Quando as
-    // props mudam (navegação SPA reaproveita o mesmo elemento DOM) a ilha é
-    // remontada, senão ficaria exibindo a instância do documento anterior.
+    // Already mounted by this function with the same props: nothing to do. When
+    // the props change (SPA navigation reuses the same DOM element) the island is
+    // remounted, otherwise it would keep showing the previous document's instance.
     if (mounted !== undefined && mounted === props) continue;
 
-    // Passada concorrente assumiu este nó e ainda está em `await`
+    // A concurrent pass claimed this node and is still inside an `await`
     if (claimedNodes.has(el,)) continue;
 
     claimedNodes.add(el,);
     const didMount = await hydrateNode(el,);
-    // A reivindicação dura apenas enquanto houver `await` pendente: as marcas
-    // `data-island-*` passam a ser o sinal durável de "já montado com estas
-    // props", permitindo remontar quando o documento mudar as props da ilha.
+    // The claim lasts only while an `await` is pending: the `data-island-*`
+    // marks become the durable signal of "already mounted with these props",
+    // which lets the island remount when the document changes its props.
     claimedNodes.delete(el,);
     if (didMount) hydratedCount++;
   }
@@ -200,8 +200,8 @@ export async function hydrateIslands(
 
   const pass = (async () => {
     let total = await scanIslands(root,);
-    // Chamadas que chegaram durante a varredura pedem uma passada extra: é o
-    // que captura placeholders criados por um re-render posterior ao `await`.
+    // Calls that arrived during the scan ask for an extra pass: that is what
+    // captures placeholders created by a re-render after the `await`.
     while (pendingRoots.size > 0) {
       const queued = [...pendingRoots,];
       pendingRoots.clear();

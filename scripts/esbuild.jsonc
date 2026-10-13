@@ -26,14 +26,14 @@
       "minify": false,
       "sourcemap": "linked",
       "drop": ["debugger"],
-      // "worker" além de "browser": o MESMO bundle é importado pelo Service Worker
-      // (packages/mdblog/public/sw.js). Só com a condição "browser", o mapa de
-      // exportações do pacote "decode-named-character-reference" resolve para
-      // index.dom.js, que faz document.createElement no topo do módulo e faz
-      // falhar a avaliação do script do SW ("ServiceWorker script evaluation
-      // failed"). A precedência é a ordem das chaves do package.json, onde
-      // "worker" vem antes de "browser", e nenhuma outra dependência tem uma
-      // condição "worker", pelo que o código do browser fica inalterado.
+      // "worker" on top of "browser": the SAME bundle is imported by the Service
+      // Worker (packages/mdblog/public/sw.js). With the "browser" condition alone, the
+      // export map of the "decode-named-character-reference" package resolves to
+      // index.dom.js, which calls document.createElement at the top of the module and
+      // makes the SW script evaluation fail ("ServiceWorker script evaluation failed").
+      // Precedence follows the order of the package.json keys, where "worker" comes
+      // before "browser", and no other dependency has a "worker" condition, so the
+      // browser code stays untouched.
       "conditions": ["browser", "worker"],
       "metafile": true,
       "write": true,

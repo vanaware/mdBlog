@@ -19,7 +19,6 @@ export interface MdastRoot {
  * @description Union type of all valid nodes and primitives in the Wire Format AST tree.
  */
 export type Wire =
-
   | string
   | number
   | boolean
@@ -100,7 +99,6 @@ export interface WireDoc {
   frontmatter?: Record<string, any>;
 }
 
-
 /**
  * @description Sanitizes props to guarantee 100% JSON serializability.
  * Strips circular references, functions, and symbols.
@@ -118,7 +116,7 @@ export function sanitizeProps(
 ): Record<string, unknown> {
   if (!p || typeof p !== "object") return {};
   try {
-    return JSON.parse(JSON.stringify(p));
+    return JSON.parse(JSON.stringify(p,),);
   } catch {
     return {};
   }
@@ -134,19 +132,19 @@ export function sanitizeProps(
  * const total = countWireNodes({ t: "f", c: ["hello", "world"] });
  * ```
  */
-export function countWireNodes(wire: Wire): number {
+export function countWireNodes(wire: Wire,): number {
   if (!wire || typeof wire !== "object") return 1;
-  if (Array.isArray(wire)) {
+  if (Array.isArray(wire,)) {
     let sum = 1;
     for (const item of wire) {
-      sum += countWireNodes(item);
+      sum += countWireNodes(item,);
     }
     return sum;
   }
   let count = 1;
-  if ("c" in wire && Array.isArray(wire.c)) {
+  if ("c" in wire && Array.isArray(wire.c,)) {
     for (const child of wire.c) {
-      count += countWireNodes(child);
+      count += countWireNodes(child,);
     }
   }
   return count;
@@ -162,22 +160,20 @@ export function countWireNodes(wire: Wire): number {
  * const islands = countWireIslands({ t: "i", n: "Counter.js", p: {} });
  * ```
  */
-export function countWireIslands(wire: Wire): number {
+export function countWireIslands(wire: Wire,): number {
   if (!wire || typeof wire !== "object") return 0;
-  if (Array.isArray(wire)) {
+  if (Array.isArray(wire,)) {
     let sum = 0;
     for (const item of wire) {
-      sum += countWireIslands(item);
+      sum += countWireIslands(item,);
     }
     return sum;
   }
   let count = wire.t === "i" ? 1 : 0;
-  if ("c" in wire && Array.isArray(wire.c)) {
+  if ("c" in wire && Array.isArray(wire.c,)) {
     for (const child of wire.c) {
-      count += countWireIslands(child);
+      count += countWireIslands(child,);
     }
   }
   return count;
 }
-
-

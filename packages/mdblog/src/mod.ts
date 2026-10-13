@@ -37,7 +37,10 @@ import { App, } from "./components/App.ts";
 import { Navbar, } from "./components/Navbar.ts";
 import { Sidebar, } from "./components/Sidebar.ts";
 import { Content, } from "./components/Content.ts";
-import { ThemeToggle, } from "./components/ThemeToggle.ts";
+import {
+  ThemeToggle,
+  type ThemeToggleProps,
+} from "./components/ThemeToggle.ts";
 import { SearchBox, type SearchBoxProps, } from "./components/SearchBox.ts";
 import { Toc, type TocProps, } from "./components/Toc.ts";
 import { initRouter, navigateTo, } from "./router.ts";
@@ -245,6 +248,7 @@ export type {
   MdastRoot,
   SearchBoxProps,
   SWPluginOptions,
+  ThemeToggleProps,
   TocHeading,
   TocProps,
   Wire,
@@ -281,7 +285,7 @@ export { mdTranspiler, };
 export { APP_VERSION as version, } from "./version.ts";
 export default mdTranspiler;
 
-// Disponibiliza a biblioteca e todas as primitivas no escopo global para consumo direto no browser
+// Exposes the library and every primitive on the global scope for direct use in the browser
 if (typeof globalThis !== "undefined") {
   (globalThis as Record<string, unknown>).mdBlog = {
     App,
@@ -297,7 +301,13 @@ if (typeof globalThis !== "undefined") {
     state,
     mdTranspiler,
     hydrateIslands,
-    // Primitivas reativas e de renderização para ilhas
+    // Reactive and rendering primitives for islands.
+    //
+    // The hooks below are published for user-authored islands, which are plain
+    // Preact components and may prefer them. The engine's own components do NOT
+    // use them for state: signals are the single state mechanism (see
+    // state.ts), and the few useEffect calls that remain exist only to touch
+    // the DOM after a commit — focus, measurement, hydration.
     html,
     signal,
     useSignal,
@@ -319,11 +329,11 @@ if (typeof globalThis !== "undefined") {
 }
 
 /**
- * Inicialização automática no browser:
- * 1. Procura o container #app (ou cria um se ausente).
- * 2. Tenta carregar um app.js customizado do usuário caso exista.
- * 3. Caso NÃO exista app.js, utiliza automaticamente o App padrão com todos os componentes da biblioteca embutidos.
- * 4. Inicializa o router reativo e registra o Service Worker.
+ * Automatic browser bootstrap:
+ * 1. Looks for the #app container (and creates one when it is missing).
+ * 2. Tries to load a custom user-provided app.js when one exists.
+ * 3. When there is NO app.js, falls back to the default App with every component of the library built in.
+ * 4. Starts the reactive router and registers the Service Worker.
  */
 async function bootstrap() {
   let root = document.getElementById("app",);
@@ -333,7 +343,7 @@ async function bootstrap() {
     document.body.appendChild(root,);
   }
 
-  // 1. Verifica se há um componente customizado provido via window ou arquivo app.js
+  // 1. Check whether a custom component was provided through window or an app.js file
   let ComponentToMount = App;
 
   const g = typeof globalThis !== "undefined"
@@ -345,7 +355,7 @@ async function bootstrap() {
     document.querySelector('script[src*="app.js"]',) || g?.mdBlogEnableAppJs
   ) {
     try {
-      // Tenta importar dinamicamente app.js em tempo de execução no browser se existir
+      // Try to import app.js dynamically at runtime in the browser, if it exists
       const dynamicImport = new Function("path", "return import(path)",);
       const userModule = await dynamicImport("./app.js",).catch(() => null);
       if (userModule) {
@@ -356,7 +366,7 @@ async function bootstrap() {
         }
       }
     } catch {
-      // Nenhum app.js encontrado: usa a biblioteca e componentes embutidos por padrão
+      // No app.js found: use the built-in library and its default components
     }
   }
 
@@ -364,10 +374,10 @@ async function bootstrap() {
     render(html`<${ComponentToMount} />` as VNode, root,);
   }
 
-  // Inicializa o roteador para leitura reativa dos artigos
+  // Starts the router so the articles are read reactively
   initRouter();
 
-  // Registra o Service Worker padrão com escopo relativo
+  // Registers the default Service Worker with a relative scope
   registerServiceWorker();
 }
 

@@ -17,7 +17,7 @@ export function isSWControlling(): boolean {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
     return false;
   }
-  return Boolean(navigator.serviceWorker.controller);
+  return Boolean(navigator.serviceWorker.controller,);
 }
 
 /**
@@ -31,20 +31,20 @@ export function isSWControlling(): boolean {
  */
 export function getAppBaseUrl(): string {
   if (typeof globalThis === "undefined" || !globalThis.location) return "./";
-  const { origin, pathname } = globalThis.location;
+  const { origin, pathname, } = globalThis.location;
   if (!origin || origin === "null") return "./";
-  if (pathname.endsWith(".html")) {
-    const dir = pathname.substring(0, pathname.lastIndexOf("/") + 1);
+  if (pathname.endsWith(".html",)) {
+    const dir = pathname.substring(0, pathname.lastIndexOf("/",) + 1,);
     return `${origin}${dir}`;
   }
-  const dir = pathname.endsWith("/") ? pathname : `${pathname}/`;
+  const dir = pathname.endsWith("/",) ? pathname : `${pathname}/`;
   return `${origin}${dir}`;
 }
 
 /**
  * @description Normalizes and resolves a documentation request path.
- * Maps clean paths like "/docs/guia" or "docs/guia" or "/docs/guia.md" to canonical ".md" paths.
- * Supports subfolder hosting on GitHub Pages (e.g. "/mdBlog/articles/guia.md").
+ * Maps clean paths like "/docs/guide" or "docs/guide" or "/docs/guide.md" to canonical ".md" paths.
+ * Supports subfolder hosting on GitHub Pages (e.g. "/mdBlog/articles/guide.md").
  * @param urlOrPath - Raw request pathname or link URL.
  * @param basePath - Root articles folder relative path.
  * @returns Object with normalized docPath and boolean isDoc flag.
@@ -60,62 +60,62 @@ export function resolveDocPath(
   basePath: string = "./articles",
 ): { docPath: string; isDoc: boolean } {
   let pathname = (urlOrPath || "").trim();
-  if (pathname.includes("#")) {
-    pathname = pathname.substring(pathname.indexOf("#") + 1);
+  if (pathname.includes("#",)) {
+    pathname = pathname.substring(pathname.indexOf("#",) + 1,);
   }
-  pathname = pathname.replace(/\?.*$/, "");
+  pathname = pathname.replace(/\?.*$/, "",);
 
-  const cleanBase = basePath.replace(/^\.?\//, "").replace(/\/$/, "");
+  const cleanBase = basePath.replace(/^\.?\//, "",).replace(/\/$/, "",);
 
   // If path is root or empty
   if (
     pathname === "" || pathname === "/" || pathname === "./" ||
     pathname === `/${cleanBase}` || pathname === `${cleanBase}`
   ) {
-    return { docPath: `/${cleanBase}/index.md`, isDoc: true };
+    return { docPath: `/${cleanBase}/index.md`, isDoc: true, };
   }
 
   // Check if it pertains to articles, docs, or ends with .md
-  const isDoc = pathname.includes(`/${cleanBase}/`) ||
-    pathname.startsWith(`${cleanBase}/`) ||
-    pathname.startsWith(`./${cleanBase}/`) ||
-    pathname.endsWith(`/${cleanBase}`) ||
-    pathname.endsWith(`/${cleanBase}/`) ||
-    pathname.includes("/docs/") ||
-    pathname.startsWith("docs/") ||
-    pathname.endsWith(".md");
+  const isDoc = pathname.includes(`/${cleanBase}/`,) ||
+    pathname.startsWith(`${cleanBase}/`,) ||
+    pathname.startsWith(`./${cleanBase}/`,) ||
+    pathname.endsWith(`/${cleanBase}`,) ||
+    pathname.endsWith(`/${cleanBase}/`,) ||
+    pathname.includes("/docs/",) ||
+    pathname.startsWith("docs/",) ||
+    pathname.endsWith(".md",);
 
   if (!isDoc) {
-    return { docPath: pathname, isDoc: false };
+    return { docPath: pathname, isDoc: false, };
   }
 
   let docPath = pathname;
-  if (!docPath.endsWith(".md")) {
+  if (!docPath.endsWith(".md",)) {
     if (
-      docPath.endsWith(`/${cleanBase}`) || docPath.endsWith(`/${cleanBase}/`)
+      docPath.endsWith(`/${cleanBase}`,) || docPath.endsWith(`/${cleanBase}/`,)
     ) {
-      docPath = `${docPath.replace(/\/+$/, "")}/index.md`;
+      docPath = `${docPath.replace(/\/+$/, "",)}/index.md`;
     } else {
       docPath = `${docPath}.md`;
     }
   }
 
   if (
-    !docPath.includes(`/${cleanBase}`) &&
-    !docPath.startsWith(`${cleanBase}`) &&
-    !docPath.includes("/docs/")
+    !docPath.includes(`/${cleanBase}`,) &&
+    !docPath.startsWith(`${cleanBase}`,) &&
+    !docPath.includes("/docs/",)
   ) {
-    docPath = `/${cleanBase}/${docPath.replace(/^\.?\//, "")}`;
+    docPath = `/${cleanBase}/${docPath.replace(/^\.?\//, "",)}`;
   }
 
-  if (!docPath.startsWith("/") && !docPath.startsWith("./")) {
+  if (!docPath.startsWith("/",) && !docPath.startsWith("./",)) {
     docPath = `/${docPath}`;
   }
 
   // Normalize duplicate slashes
-  docPath = docPath.replace(/\/+/g, "/");
+  docPath = docPath.replace(/\/+/g, "/",);
 
-  return { docPath, isDoc: true };
+  return { docPath, isDoc: true, };
 }
 
 /**
@@ -125,17 +125,16 @@ export function resolveDocPath(
  * @example
  * ```ts
  * import { slugify } from "./detect.ts";
- * const slug = slugify("Seção de Configuração!");
- * // slug === "secao-de-configuracao"
+ * const slug = slugify("Configuration Section!");
+ * // slug === "configuration-section"
  * ```
  */
-export function slugify(text: string): string {
-
+export function slugify(text: string,): string {
   return text
     .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s-]/g, "")
+    .normalize("NFD",)
+    .replace(/[\u0300-\u036f]/g, "",)
+    .replace(/[^\w\s-]/g, "",)
     .trim()
-    .replace(/\s+/g, "-");
+    .replace(/\s+/g, "-",);
 }

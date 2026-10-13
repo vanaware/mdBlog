@@ -1,5 +1,5 @@
 ---
-title: "🔄 Fluxos e Ciclo de Vida"
+title: "🔄 Flows and lifecycle"
 icon: "sync"
 date: "2026-10-09"
 author: "SyntaxMesh Team"
@@ -8,53 +8,55 @@ tags:
   - "service-worker"
   - "cache"
   - "spa"
-description: "Ciclo de vida, first paint com shell e navegação client-side SPA no mdBlog."
-location: "#/articles/FLUXOS_E_CICLO_DE_VIDA.md"
+description: "Lifecycle, shell first paint and client-side SPA navigation in mdBlog."
+location: "#/articles/flows.md"
 ---
 
-# 🔄 Fluxos de Navegação e Ciclo de Vida
+# 🔄 Navigation flows and lifecycle
 
-Este documento detalha o comportamento do mdBlog durante os diferentes momentos de execução: primeira carga no navegador, navegação interna via SPA, operação offline e fallback resiliente.
-
----
-
-## ⚡ Fluxo 1: Navegação Direta e First Paint
-
-Ocorre quando o usuário acessa diretamente uma URL no navegador ou recarrega a página (F5):
-
-1. **Interceptação no Service Worker:** O Service Worker intercepta a requisição com cabeçalho `Accept: text/html`.
-2. **Consulta ao CacheStorage:** Verifica se o documento já existe em `md-wire-v1`. Em caso de cache válido, utiliza a AST prévia.
-3. **Transformação em Background:** Se o cache não existir ou estiver expirado, busca o `.md` cru, gera a árvore Wire Format e armazena em cache.
-4. **HTML Shell Completo:** O Service Worker responde com um HTML contendo BeerCSS e a árvore Wire embutida em `<script id="__md_wire">`.
-5. **Renderização Imediata:** O bundle cliente consome a tag inline, monta os VNodes Preact instantaneamente e aciona a hidratação de ilhas sem requisições adicionais de rede.
+This document details how mdBlog behaves at each moment of execution: the first
+load in the browser, internal SPA navigation, offline operation and the resilient
+fallback.
 
 ---
 
-## 🚀 Fluxo 2: Navegação SPA (Transição entre Artigos)
+## ⚡ Flow 1: direct navigation and first paint
 
-Ocorre quando o usuário clica em links internos ou quando a rota hash é modificada:
+Happens when the user opens a URL directly in the browser or reloads the page (F5):
 
-1. **Disparo do Roteador:** O clique atualiza o sinal reativo `currentPath.value`.
-2. **Requisição de Dados:** O leitor envia uma requisição solicitando `Accept: application/json`.
-3. **Resposta Otimizada:** O Service Worker (ou o fallback local) entrega apenas a árvore JSON `WireDoc` do artigo de destino.
-4. **Reconciliação no DOM:** O Preact atualiza o leitor suavemente, sem piscar a tela ou recarregar a página inteira.
-5. **Hidratação de Novas Ilhas:** Apenas os elementos `[data-island]` recém-criados são ativados.
-
----
-
-## 🛡️ Fluxo 3: Fallback Sem Service Worker (Client-Side Puro)
-
-Ocorre em ambientes restritos, navegação privada ou antes da ativação do Service Worker:
-
-1. **Detecção Automática:** A função `isSWControlling()` identifica que não há Service Worker ativo.
-2. **Ativação do Pipeline Local:** O adaptador client-side executa o mesmo pipeline de parsing diretamente na thread do navegador.
-3. **Persistência em Cache:** A árvore processada é gravada no CacheStorage e IndexedDB para disponibilidade posterior.
-4. **Experiência Idêntica:** Para o usuário final, a navegação funciona de maneira transparente e sem degradação visual.
+1. **Service Worker interception:** the Service Worker picks up the request carrying `Accept: text/html`.
+2. **CacheStorage lookup:** it checks whether the document already lives in `md-wire-v1`. On a valid cache hit it reuses the existing AST.
+3. **Background transformation:** with no cache, or an expired one, it fetches the raw `.md`, builds the Wire Format tree and caches it.
+4. **Complete HTML shell:** the Service Worker answers with an HTML that carries BeerCSS and the Wire tree embedded in `<script id="__md_wire">`.
+5. **Immediate rendering:** the client bundle consumes the inline tag, mounts the Preact VNodes instantly and triggers island hydration with no extra network requests.
 
 ---
 
-## 💾 Estratégia de Cache e Armazenamento Offline
+## 🚀 Flow 2: SPA navigation (moving between articles)
 
-- **CacheStorage (`md-wire-v1`):** Armazena os documentos processados com TTL configurável (padrão de 60 segundos).
-- **IndexedDB (`idb-keyval`):** Garante persistência durável dos artigos mesmo se os dados temporários de cache forem reciclados.
-- **Prevenção de Loops:** Requisições internas de arquivos `.md` utilizam parâmetros de controle para evitar re-interceptações circulares no Service Worker.
+Happens when the user clicks an internal link or the hash route changes:
+
+1. **Router trigger:** the click updates the reactive signal `currentPath.value`.
+2. **Data request:** the reader sends a request asking for `Accept: application/json`.
+3. **Optimized response:** the Service Worker (or the local fallback) delivers only the destination article's `WireDoc` JSON tree.
+4. **DOM reconciliation:** Preact updates the reader smoothly, with no screen flicker and no full page reload.
+5. **Hydration of the new islands:** only the freshly created `[data-island]` elements are activated.
+
+---
+
+## 🛡️ Flow 3: fallback without a Service Worker (pure client-side)
+
+Happens in restricted environments, private browsing, or before the Service Worker activates:
+
+1. **Automatic detection:** `isSWControlling()` finds that no Service Worker is in control.
+2. **Local pipeline activation:** the client-side adapter runs the very same parsing pipeline directly on the browser thread.
+3. **Cache persistence:** the processed tree is written to CacheStorage and IndexedDB for later use.
+4. **Identical experience:** for the end user navigation works transparently, with no visual degradation.
+
+---
+
+## 💾 Cache and offline storage strategy
+
+- **CacheStorage (`md-wire-v1`):** stores the processed documents with a configurable TTL (60 seconds by default).
+- **IndexedDB (`idb-keyval`):** keeps articles durably even when the temporary cache data is evicted.
+- **Loop prevention:** internal requests for `.md` files carry control parameters so the Service Worker never re-intercepts its own fetches.

@@ -8,19 +8,34 @@ import {
   parseTimeMs,
   viewMode,
 } from "./state.ts";
-import { mdFetch } from "./plugin/adapters/client.ts";
-import { createBrowserIO } from "./plugin/core/io.ts";
-import { hydrateIslands } from "./render/hydrate-islands.ts";
+import { mdFetch, } from "./plugin/adapters/client.ts";
+import { createBrowserIO, } from "./plugin/core/io.ts";
+import { hydrateIslands, } from "./render/hydrate-islands.ts";
 
 const io = createBrowserIO({
   cacheName: "mdblog-pwa-v1",
   useIndexedDB: true,
-});
+},);
 
 const config = {
   basePath: "./articles",
   cacheTTLSeconds: 60,
 };
+
+/**
+ * Sequence token of the latest navigation. Every navigation takes a new number
+ * and only the one still holding the token may commit state, so a slow response
+ * for an old route can no longer land on top of a newer one.
+ */
+let navigationSeq = 0;
+
+/**
+ * The hash this module wrote itself. Normalizing a route into the address bar
+ * fires a `hashchange` that would re-enter the handler for the route already
+ * being loaded; remembering the value lets the listener recognise and drop its
+ * own echo, while a genuine link click or a back/forward step never matches it.
+ */
+let selfTriggeredHash: string | null = null;
 
 /**
  * @description Navigates to a target article markdown route, loading Wire AST and hydrating dynamic islands.
@@ -29,17 +44,16 @@ const config = {
  * @example
  * ```ts
  * import { navigateTo } from "./router.ts";
- * await navigateTo("README.md");
+ * await navigateTo("overview.md");
  * ```
  */
-export async function navigateTo(path: string): Promise<void> {
-
-  let clean = (path || "").replace(/^#\/?/, "").replace(/^\.?\//, "");
-  clean = clean.replace(/^articles\//, "").replace(/^docs\//, "");
+export async function navigateTo(path: string,): Promise<void> {
+  let clean = (path || "").replace(/^#\/?/, "",).replace(/^\.?\//, "",);
+  clean = clean.replace(/^articles\//, "",).replace(/^docs\//, "",);
   if (!clean || clean === "/" || clean === "index" || clean === "index.md") {
     clean = "index.md";
   }
-  if (!clean.endsWith(".md")) {
+  if (!clean.endsWith(".md",)) {
     clean = `${clean}.md`;
   }
 
@@ -48,10 +62,12 @@ export async function navigateTo(path: string): Promise<void> {
 
   if (typeof globalThis !== "undefined" && globalThis.location) {
     if (globalThis.location.hash !== hashRoute) {
+      selfTriggeredHash = hashRoute;
       globalThis.location.hash = hashRoute;
     }
   }
 
+  const seq = ++navigationSeq;
   currentPath.value = hashRoute;
   viewMode.value = "preview";
   isLoading.value = true;
@@ -59,9 +75,11 @@ export async function navigateTo(path: string): Promise<void> {
 
   try {
     const t0 = performance.now();
-    const doc = await mdFetch(fetchPath, io, config);
+    const doc = await mdFetch(fetchPath, io, config,);
+    if (seq !== navigationSeq) return; // superseded by a newer navigation
+
     const t1 = performance.now();
-    parseTimeMs.value = Math.max(0.1, Number((t1 - t0).toFixed(1)));
+    parseTimeMs.value = Math.max(0.1, Number((t1 - t0).toFixed(1,),),);
 
     currentDoc.value = doc;
     document.title = `${doc.title} - mdBlog`;
@@ -69,12 +87,15 @@ export async function navigateTo(path: string): Promise<void> {
     // Schedule selective island hydration
     setTimeout(() => {
       hydrateIslands();
-    }, 50);
+    }, 50,);
   } catch (err) {
-    console.error(`[router] Error loading ${fetchPath}:`, err);
-    errorMessage.value = err instanceof Error ? err.message : String(err);
+    if (seq !== navigationSeq) return;
+    console.error(`[router] Error loading ${fetchPath}:`, err,);
+    errorMessage.value = err instanceof Error ? err.message : String(err,);
   } finally {
-    isLoading.value = false;
+    // Only the winning navigation owns the loading flag: a superseded request
+    // must not clear it while a newer one is still in flight.
+    if (seq === navigationSeq) isLoading.value = false;
   }
 }
 
@@ -87,44 +108,55 @@ export async function navigateTo(path: string): Promise<void> {
  * ```
  */
 export function initRouter(): void {
-
   if (typeof window === "undefined") return;
 
-  // Carrega dinamicamente a lista de artigos do blog
+  // Loads the blog's article list dynamically
   loadArticles().then(() => {
-    // Se a rota atual não foi definida, vai para o primeiro artigo
+    // When no route was requested, go to the first article
     const hash = globalThis.location.hash;
     if (!hash && articles.value.length > 0 && articles.value[0]) {
-      navigateTo(articles.value[0].path);
+      navigateTo(articles.value[0].path,);
     }
-  }).catch(() => {});
+  },).catch(() => {},);
 
   function handleRoute() {
     const hash = globalThis.location.hash;
+
+    if (selfTriggeredHash !== null) {
+      const echo = selfTriggeredHash;
+      selfTriggeredHash = null;
+      // This event is the echo of our own normalization: the route is already
+      // being loaded, so re-navigating would fetch and render it twice.
+      if (hash === echo) return;
+    }
+
     if (hash) {
-      navigateTo(hash);
+      navigateTo(hash,);
     } else {
-      navigateTo("index.md");
+      navigateTo("index.md",);
     }
   }
 
-  globalThis.addEventListener("hashchange", handleRoute);
+  globalThis.addEventListener("hashchange", handleRoute,);
 
   // Check if first paint has pre-rendered wire in DOM
-  const preRenderedScript = document.getElementById("__md_wire");
+  const preRenderedScript = document.getElementById("__md_wire",);
   if (preRenderedScript && preRenderedScript.textContent) {
     try {
-      const doc = JSON.parse(preRenderedScript.textContent);
+      const doc = JSON.parse(preRenderedScript.textContent,);
       currentDoc.value = doc;
-      currentPath.value = doc.url || "#/README.md";
+      // The shell always stamps a url, but a hand written or truncated payload
+      // may not: fall back to the home route instead of a filename, so the
+      // sidebar highlights something that actually exists.
+      currentPath.value = doc.url || "#/";
       document.title = `${doc.title} - mdBlog`;
       preRenderedScript.remove();
       setTimeout(() => {
         hydrateIslands();
-      }, 50);
+      }, 50,);
       return;
     } catch (err) {
-      console.warn("[router] Failed to parse inline __md_wire script:", err);
+      console.warn("[router] Failed to parse inline __md_wire script:", err,);
     }
   }
 

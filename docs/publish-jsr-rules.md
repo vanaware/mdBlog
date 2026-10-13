@@ -72,24 +72,24 @@ Articles are discovered dynamically in the browser starting from `public/article
 
 ```markdown
 ---
-title: "Documentação do Projeto"
+title: "Project Documentation"
 author: "Vanaware"
 date: "2026-10-10"
 pages:
   - path: "README.md"
-    title: "Visão Geral"
+    title: "Overview"
     icon: "article"
-  - path: "guia.md"
-    title: "Guia Prático"
+  - path: "guide.md"
+    title: "Hands-on Guide"
     icon: "science"
   - path: "advanced.md"
-    title: "Avançado"
+    title: "Advanced"
     icon: "tune"
 ---
 
-# Bem-vindo ao mdBlog
+# Welcome to mdBlog
 
-Este é o documento inicial. O menu lateral é gerado automaticamente a partir da lista acima!
+This is the initial document. The side menu is generated automatically from the list above!
 ```
 
 Child pages can also declare their own nested `pages:` in frontmatter, enabling arbitrarily deep hierarchical tree navigation without any build-time index files.
@@ -107,9 +107,9 @@ export function LiveCounter({ start = 0, step = 1 }) {
 
   return html`
     <article class="border round padding surface-container margin">
-      <div class="row items-center justify-between">
-        <h6>Contador: ${count.value}</h6>
-        <div class="row gap">
+      <div class="row wrap">
+        <h6 class="max wrap">Counter: ${count.value}</h6>
+        <div class="row">
           <button class="circle small" onClick=${() => count.value -= Number(step)}>
             <i>remove</i>
           </button>

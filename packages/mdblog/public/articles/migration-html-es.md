@@ -1,5 +1,5 @@
 ---
-title: "⚡ Desenvolvimento em HTML+ES (.js)"
+title: "⚡ Developing in HTML+ES (.js)"
 icon: "code"
 date: "2026-10-09"
 author: "SyntaxMesh Team"
@@ -8,37 +8,40 @@ tags:
   - "zero-bundle"
   - "es-modules"
   - "islands"
-description: "Guia prático de desenvolvimento com HTML+ES (.js), Preact Signals e criação de ilhas nativas no navegador."
-location: "#/articles/PLANO_MIGRACAO_HTML_ES.md"
+description: "Hands-on development guide with HTML+ES (.js), Preact Signals and native browser islands."
+location: "#/articles/migration-html-es.md"
 ---
 
-# ⚡ Desenvolvimento em HTML+ES (.js)
+# ⚡ Developing in HTML+ES (.js)
 
-O padrão **HTML+ES** combina o poder de **`htm/preact`** com módulos padrão do JavaScript (**ES Modules** em arquivos **`.js`**). Isso permite criar componentes de interface e ilhas dinâmicas executados diretamente no navegador moderno sem nenhuma etapa de compilação ou transpilador em tempo de execução.
-
----
-
-## 🎯 Por que HTML+ES?
-
-1. **JavaScript Padrão e Válido:**
-   Utiliza *Tagged Template Literals* nativas (`html\`<article>...\`\``). Não requer compiladores de JSX nem Babel.
-
-2. **Extensão Canônica `.js`:**
-   Arquivos `.js` são importados nativamente pelo navegador via `<script type="module">` ou `import()`.
-
-3. **Reatividade Leve:**
-   Usa `@preact/signals` para reatividade pontual e de alta performance, atualizando apenas os nós DOM necessários.
-
-4. **Zero Compilação Prévia para Novas Ilhas:**
-   Basta criar um arquivo `.js` na pasta `public/islands/` e chamá-lo no Markdown. O navegador o carrega sob demanda.
+The **HTML+ES** pattern combines the power of **`htm/preact`** with standard
+JavaScript modules (**ES Modules** in **`.js`** files). It lets you create
+interface components and dynamic islands that run directly in a modern browser
+with no compilation step and no runtime transpiler.
 
 ---
 
-## 🛠 Como Criar uma Nova Ilha em 3 Passos
+## 🎯 Why HTML+ES?
 
-### Passo 1: Crie o arquivo em `public/islands/`
+1. **Standard, valid JavaScript:**
+   It uses native *tagged template literals* (`html\`<article>...\`\``). No JSX compiler and no Babel required.
 
-Crie um novo arquivo JavaScript, por exemplo `public/islands/TimerWidget.js`:
+2. **The canonical `.js` extension:**
+   `.js` files are imported natively by the browser through `<script type="module">` or `import()`.
+
+3. **Lightweight reactivity:**
+   It uses `@preact/signals` for pinpoint, high-performance reactivity that updates only the DOM nodes it needs.
+
+4. **Zero prior compilation for new islands:**
+   Create a `.js` file in the `public/islands/` folder and call it from the Markdown. The browser loads it on demand.
+
+---
+
+## 🛠 How to create a new island in 3 steps
+
+### Step 1: create the file in `public/islands/`
+
+Create a new JavaScript file, for instance `public/islands/TimerWidget.js`:
 
 ```javascript
 import { html as _html, signal as _signal, useSignal as _useSignal } from "../mdblog.js";
@@ -47,32 +50,32 @@ const html = _html || globalThis.mdBlog?.html;
 const signal = _signal || globalThis.mdBlog?.signal;
 const useSignal = _useSignal || globalThis.mdBlog?.useSignal;
 
-export function TimerWidget({ initialSeconds = 0, label = "Cronômetro" }) {
+export function TimerWidget({ initialSeconds = 0, label = "Stopwatch" }) {
   const seconds = typeof useSignal === "function"
     ? useSignal(Number(initialSeconds))
     : signal(Number(initialSeconds));
 
   return html`
-    <article class="border round medium-padding surface-container-low margin">
-      <div class="row items-center justify-between gap">
-        <div>
-          <h6 class="no-margin bold">${label}</h6>
-          <p class="small-text surface-variant-text no-margin">
-            Tempo: ${seconds.value}s
+    <article class="border round padding surface-container-low margin">
+      <div class="row wrap">
+        <div class="max wrap">
+          <h6 class="no-margin bold small wrap">${label}</h6>
+          <p class="small-text secondary-text no-margin wrap">
+            Time: ${seconds.value}s
           </p>
         </div>
-        <div class="row items-center gap">
+        <div class="row">
           <button
             class="circle small primary"
             onClick=${() => seconds.value++}
-            aria-label="Incrementar tempo"
+            aria-label="Increase the time"
           >
             <i>add</i>
           </button>
           <button
             class="circle small transparent"
             onClick=${() => (seconds.value = Number(initialSeconds))}
-            aria-label="Zerar tempo"
+            aria-label="Reset the time"
           >
             <i>restart_alt</i>
           </button>
@@ -85,25 +88,26 @@ export function TimerWidget({ initialSeconds = 0, label = "Cronômetro" }) {
 export default TimerWidget;
 ```
 
-### Passo 2: Use no Markdown
+### Step 2: use it in the Markdown
 
-Você pode invocar sua ilha com a sintaxe de diretiva:
+You can call your island with the directive syntax:
 
 ```markdown
-::TimerWidget.js{initialSeconds: 0, label: "Temporizador de Testes"}
+::TimerWidget.js{initialSeconds: 0, label: "Test Timer"}
 ```
 
-Ou usando o bloco de código tipado:
+Or with the typed code block:
 
 ````markdown
 ```island:TimerWidget.js
 {
   "initialSeconds": 60,
-  "label": "Contagem Regressiva"
+  "label": "Countdown"
 }
 ```
 ````
 
-### Passo 3: Visualização Automática
+### Step 3: automatic rendering
 
-O mdBlog detecta a presença da ilha no documento, reserva o espaço no Wire Format e o hidrata de forma isolada, sem afetar o restante da página estática.
+mdBlog detects the island in the document, reserves its slot in the Wire Format
+and hydrates it in isolation, without affecting the rest of the static page.

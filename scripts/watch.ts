@@ -1,6 +1,6 @@
 /**
  * BuildIt Watch CLI Entry Point.
- * Delegado para o utilitário @vanaware/buildit.
+ * Delegated to the @vanaware/buildit utility.
  */
 import { watchCli, } from "@vanaware/buildit/cli/watch";
 

@@ -1,35 +1,40 @@
-# 🏝 Guia de Arquitetura de Islands (Solução HTML+ES)
+# 🏝 Islands architecture guide (the HTML+ES solution)
 
-Inspirado no modelo arquitetural do **Fresh** (Deno) e com a adoção exclusiva da solução **HTML+ES (Hyperscript Tagged Markup via `htm/preact` + ES Modules padrão)**, o sistema de Islands permite inserir componentes interativos e reativos dentro da documentação estática mantendo o princípio de **zero compilação prévia pelo bundle**, **zero JavaScript desnecessário** e **execução 100% nativa no navegador do início ao fim**.
+Inspired by the architectural model of **Fresh** (Deno) and built exclusively on
+the **HTML+ES solution (Hyperscript Tagged Markup through `htm/preact` + standard
+ES Modules)**, the Islands system lets interactive, reactive components live
+inside static documentation while keeping the principles of **zero prior
+compilation by the bundle**, **zero unnecessary JavaScript** and **100% native
+execution in the browser from start to finish**.
 
 ---
 
-## 1. Por que HTML+ES e não TSX ou MDX?
+## 1. Why HTML+ES and not TSX or MDX?
 
-Durante a evolução do projeto, três abordagens foram rigorosamente avaliadas:
+Three approaches were rigorously evaluated as the project evolved:
 
-| Abordagem | Veredito | Justificativa Técnica |
+| Approach | Verdict | Technical justification |
 |---|---|---|
-| **TSX (Compilado)** | Substituído | Exige empacotamento prévio (`Deno.bundle`/esbuild) para cada nova ilha. Impede que o usuário crie ou adicione ilhas a quente diretamente no browser. |
-| **MDX no Browser** | Descartado | Exige carregar o compilador `@mdx-js` completo (~3MB a 5MB) em tempo de execução no cliente e usar `new Function` / `eval` inseguro, ferindo CSP e penalizando o mobile. |
-| **JSX sem Build** | Descartado | Navegadores lançam `SyntaxError: Unexpected token '<'`. Exigiria carregar transpilador pesado (Babel/Sucrase de ~800KB) no cliente. |
-| **HTML+ES (`htm/preact`)** | **ADOTADO EXCLUSIVAMENTE** | Padrão oficial do Preact. Utiliza *Tagged Template Literals* nativas do JavaScript ES6 (`html\`...\``). Pesa apenas **~600 bytes**, roda nativamente em qualquer navegador sem build, permite `import()` dinâmico assíncrono sob demanda e respeita CSP. |
+| **TSX (compiled)** | Replaced | It requires a prior bundling step (`Deno.bundle`/esbuild) for every new island, which stops the user from creating or hot-adding islands straight in the browser. |
+| **MDX in the browser** | Discarded | It requires loading the full `@mdx-js` compiler (~3MB to 5MB) at runtime on the client and using unsafe `new Function` / `eval`, which breaks CSP and hurts mobile. |
+| **JSX without a build** | Discarded | Browsers throw `SyntaxError: Unexpected token '<'`. It would require a heavy transpiler (Babel/Sucrase, ~800KB) on the client. |
+| **HTML+ES (`htm/preact`)** | **EXCLUSIVELY ADOPTED** | The official Preact pattern. It uses native ES6 *tagged template literals* (`html\`...\``). It weighs only **~600 bytes**, runs natively in any browser with no build, supports asynchronous on-demand `import()` and respects CSP. |
 
 ---
 
-## 2. Princípios Fundamentais
+## 2. Core principles
 
-1. **Apenas Ilhas são Hidratadas:** O resto da documentação (cabeçalhos, parágrafos, tabelas, citações) é materializado como nós HTML puramente estáticos. O Preact não gasta ciclos tentando reconciliar o que não muda.
-2. **Zero Bundle para Novas Ilhas:** Ilhas podem ser escritas como arquivos `.js` comuns em `public/islands/` e carregadas assincronamente pelo navegador via `import("./islands/Nome.js")`.
-3. **Sem closures no Wire:** O Wire Format é JSON puro. Uma ilha é apenas um nó `{ t: "i", n: "Nome", p: { props }, c: [ filhosEstáticos ] }`.
-4. **Isolamento do Service Worker:** O Service Worker **nunca** importa Preact ou componentes de UI. Ele manipula apenas os nomes literais das ilhas (`manifest.ts`).
-5. **Resiliência a Falhas:** Se uma ilha não puder ser resolvida nem baixada, o conteúdo de fallback estático pré-renderizado permanece visível e funcional, sem causar tela branca ou exceções.
+1. **Only islands are hydrated:** the rest of the documentation (headings, paragraphs, tables, quotes) is materialized as purely static HTML nodes. Preact does not spend cycles reconciling what never changes.
+2. **Zero bundle for new islands:** islands can be written as plain `.js` files in `public/islands/` and loaded asynchronously by the browser through `import("./islands/Name.js")`.
+3. **No closures in the Wire:** the Wire Format is pure JSON. An island is only a node `{ t: "i", n: "Name", p: { props }, c: [ staticChildren ] }`.
+4. **Service Worker isolation:** the Service Worker **never** imports Preact or UI components. It only handles the literal island names (`manifest.ts`).
+5. **Failure resilience:** if an island can be neither resolved nor downloaded, the pre-rendered static fallback content stays visible and functional, with no blank screen and no exceptions.
 
 ---
 
-## 3. Separação de Responsabilidades: Manifesto vs Registry
+## 3. Separation of concerns: manifest vs registry
 
-Para evitar que o Service Worker fique inflado com dependências de UI e DOM:
+To keep the Service Worker from inflating with UI and DOM dependencies:
 
 ```
                   ┌──────────────────────────────────────────────┐
@@ -39,28 +44,28 @@ Para evitar que o Service Worker fique inflado com dependências de UI e DOM:
                                          │
                   ┌──────────────────────┴───────────────────────┐
                   ▼                                              ▼
-   [ Service Worker / Core ]                         [ Client Browser (HTML+ES) ]
-   - Lê apenas nomes (strings)                      - Carrega ilhas pré-registradas
-   - Marca nós com t: "i"                           - Ou faz import() dinâmico (.js)
-   - ZERO dependências Preact                       - Hidrata seletivamente via DOM
+   [ Service Worker / Core ]                         [ Client browser (HTML+ES) ]
+   - Reads names only (strings)                     - Loads pre-registered islands
+   - Tags nodes with t: "i"                         - Or runs a dynamic import() (.js)
+   - ZERO Preact dependencies                      - Hydrates selectively through the DOM
 ```
 
 ---
 
-## 4. Como Funciona a Hidratação Seletiva (`hydrateIslands`)
+## 4. How selective hydration works (`hydrateIslands`)
 
-### 4.1 Emissão dos Marcadores HTML
-Durante a execução de `wireToVNode()`, nós com `t: "i"` geram elementos contenedores com atributos de dados:
+### 4.1 Emitting the HTML markers
+While `wireToVNode()` runs, nodes with `t: "i"` produce container elements carrying data attributes:
 
 ```html
-<!-- Se a ilha estiver registrada ou com fallback: -->
+<!-- When the island is registered or has a fallback: -->
 <div data-island="Counter" data-props='{"start": 10}'>
-  <!-- Filhos estáticos renderizados inicialmente -->
+  <!-- Static children rendered initially -->
 </div>
 ```
 
-### 4.2 O Algoritmo de Hidratação com Suporte Dinâmico
-A função `hydrateIslands(registry, opts)` varre o DOM procurando por elementos `[data-island]`. Se a ilha não estiver presente no registro pré-carregado, tenta importá-la como módulo ES sob demanda (`./islands/${name}.js`):
+### 4.2 The hydration algorithm with dynamic support
+`hydrateIslands(registry, opts)` scans the DOM looking for `[data-island]` elements. When an island is absent from the pre-loaded registry, it tries to import it on demand as an ES module (`./islands/${name}.js`):
 
 ```ts
 export function hydrateIslands(registry: Record<string, ComponentType<any>>, opts: HydrateOptions = {}): number {
@@ -75,7 +80,7 @@ export function hydrateIslands(registry: Record<string, ComponentType<any>>, opt
 
     const Comp = registry[name];
     if (!Comp) {
-      // Import dinâmico nativo do navegador para ilha HTML+ES autônoma:
+      // Native browser dynamic import for a standalone HTML+ES island:
       import(`./islands/${name}.js`)
         .then((mod) => {
           const dynamicComp = mod[name] || mod.default;
@@ -102,7 +107,7 @@ export function hydrateIslands(registry: Record<string, ComponentType<any>>, opt
       hydrate(h(Comp, props), el);
       hydrated++;
     } catch (e) {
-      console.error(`[islands] Falha ao hidratar ${name}:`, e);
+      console.error(`[islands] Failed to hydrate ${name}:`, e);
     }
   }
 
@@ -112,52 +117,54 @@ export function hydrateIslands(registry: Record<string, ComponentType<any>>, opt
 
 ---
 
-## 5. Como Criar uma Nova Island em Formato HTML+ES
+## 5. How to create a new island in HTML+ES format
 
-Com a solução HTML+ES, você pode criar uma nova ilha sem precisar rebuildar o projeto!
+With the HTML+ES solution you can create a new island without rebuilding the project!
 
-### Exemplo: `public/islands/MeuWidget.js`
+### Example: `public/islands/MyWidget.js`
 
 ```javascript
 import { html } from "htm/preact";
 import { signal } from "@preact/signals";
 
-export function MeuWidget({ titulo = "Meu Widget Dinâmico" }) {
-  const ativo = signal(false);
+export function MyWidget({ title = "My Dynamic Widget" }) {
+  const active = signal(false);
 
   return html`
-    <article class="border round padding surface-container margin-bottom">
-      <div class="row items-center justify-between">
-        <h6 class="no-margin bold">${titulo}</h6>
+    <article class="border round padding surface-container bottom-margin">
+      <div class="row wrap">
+        <h6 class="max wrap bold no-margin">${title}</h6>
         <button
-          class="chip ${ativo.value ? 'primary' : 'surface-variant'}"
-          onClick=${() => (ativo.value = !ativo.value)}
+          class="chip ${active.value ? 'primary' : 'surface-variant'}"
+          onClick=${() => (active.value = !active.value)}
         >
-          ${ativo.value ? "Ativado" : "Desativado"}
+          ${active.value ? "On" : "Off"}
         </button>
       </div>
     </article>
   `;
 }
 
-export default MeuWidget;
+export default MyWidget;
 ```
 
-### Usando no Markdown
-Basta referenciar a ilha em qualquer arquivo `.md`:
+### Using it in Markdown
+Just reference the island in any `.md` file:
 
 ```markdown
-::MeuWidget{titulo: "Demonstração sem Rebuild"}
+::MyWidget{title: "Demo Without a Rebuild"}
 ```
 
-Ou em bloco de código:
+Or in a code block:
 
 ````markdown
-```island:MeuWidget
+```island:MyWidget
 {
-  "titulo": "Demonstração em Bloco"
+  "title": "Block Demo"
 }
 ```
 ````
 
-Ao abrir o documento no navegador, o cliente detecta a ilha, importa `public/islands/MeuWidget.js` nativamente via rede/cache e ativa a reatividade instantaneamente!
+Opening the document in the browser makes the client detect the island, import
+`public/islands/MyWidget.js` natively over the network/cache and turn the
+reactivity on instantly!

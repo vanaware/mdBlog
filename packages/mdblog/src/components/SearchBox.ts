@@ -1,8 +1,14 @@
 import { html, } from "htm/preact";
 import { useSignal, } from "@preact/signals";
 import { useEffect, } from "preact/hooks";
-import { get, } from "idb-keyval";
-import { isWideScreen, type SearchDocItem, searchDocs, } from "../state.ts";
+import {
+  closeSearch,
+  isWideScreen,
+  openSearch,
+  searchDocs,
+  searchOpen,
+  searchQuery,
+} from "../state.ts";
 import { navigateTo, } from "../router.ts";
 import { articleHrefFromPath, } from "../utils.ts";
 
@@ -12,11 +18,15 @@ import { articleHrefFromPath, } from "../utils.ts";
 export interface SearchBoxProps {
   /** @description Placeholder text displayed in search input. */
   placeholder?: string;
+  /**
+   * @description Extra classes added to the trigger element, so the bar it sits in can space it (BeerCSS rows keep a 1rem gap unless the row is told to have none).
+   */
+  class?: string;
 }
 
 /**
  * @description Search box component with responsive trigger (input on desktop, icon button on mobile), interactive dialog, keyboard shortcuts (Ctrl/Cmd+K to open, Escape to close), auto-indexed full-text search, and quick navigation.
- * @param props - Search configuration props.
+ * @param props - Search configuration, including the spacing classes of the container.
  * @returns Preact VNode representing the search trigger and dialog.
  * @example
  * ```ts
@@ -26,44 +36,30 @@ export interface SearchBoxProps {
  * ```
  */
 export function SearchBox({
-  placeholder = "Buscar artigos...",
+  placeholder = "Search articles...",
+  class: extraClass = "",
 }: SearchBoxProps = {},): unknown {
-  const query = useSignal("",);
-  const isOpen = useSignal(false,);
+  // The typed query is global state, not local: the module-level shortcut
+  // handler has to discard it when `Escape` dismisses the dialog, and an
+  // alias keeps the template below reading exactly as it did before.
+  const query = searchQuery;
   const panelInput = useSignal<HTMLInputElement | null>(null,);
 
-  // `autofocus` nativo é ignorado num dialog mostrado por classe (o BeerCSS
-  // usa .active), pelo que o foco tem de ser colocado explicitamente: sem
-  // isto, quem abre a pesquisa pelo botão de ícone teria de tocar duas vezes.
+  // Native `autofocus` is ignored in a dialog shown through a class (BeerCSS
+  // uses .active), so the focus has to be placed explicitly: without it, opening
+  // the search from the icon button would take two taps. This is the one effect
+  // that genuinely belongs to the component: the dialog element only exists once
+  // `searchOpen` turned true, and a signal effect runs before the DOM is
+  // committed, so there would be nothing to focus yet.
+  //
+  // The restore of the persisted index and the Ctrl/Cmd+K and Escape handlers
+  // used to live here too; they now sit with the state they drive —
+  // `restoreSearchIndexFromCache()` inside `loadArticles()` and the keydown
+  // listener at the bottom of state.ts — so the shortcuts work whether or not
+  // this component happens to be mounted.
   useEffect(() => {
-    if (isOpen.value) panelInput.value?.focus();
-  }, [isOpen.value,],);
-
-  // Tenta restaurar índice do IndexedDB se o signal ainda estiver vazio
-  useEffect(() => {
-    if (searchDocs.value.length === 0) {
-      get<SearchDocItem[]>("mdblog-search-index",).then((cached,) => {
-        if (Array.isArray(cached,) && cached.length > 0) {
-          searchDocs.value = cached;
-        }
-      },).catch(() => {},);
-    }
-  }, [],);
-
-  // Atalhos globais de teclado: Ctrl/Cmd+K abre a busca, Escape fecha
-  useEffect(() => {
-    if (typeof globalThis === "undefined") return;
-    const handleKeydown = (e: KeyboardEvent,): void => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        isOpen.value = true;
-      } else if (e.key === "Escape" && isOpen.value) {
-        handleClose();
-      }
-    };
-    globalThis.addEventListener("keydown", handleKeydown,);
-    return () => globalThis.removeEventListener("keydown", handleKeydown,);
-  }, [],);
+    if (searchOpen.value) panelInput.value?.focus();
+  }, [searchOpen.value,],);
 
   const trimmed = query.value.trim().toLowerCase();
   const indexedCount = searchDocs.value.length;
@@ -79,216 +75,216 @@ export function SearchBox({
   },).slice(0, 10,);
 
   function handleSelect(path: string,): void {
-    isOpen.value = false;
-    query.value = "";
+    closeSearch();
     navigateTo(path,);
   }
 
   function handleClose(): void {
-    isOpen.value = false;
-    query.value = "";
+    closeSearch();
   }
 
   return html`
-    <div class="row items-center no-margin">
-      <!-- Os dois gatilhos são mutuamente exclusivos no DOM, não por classes de
-          breakpoint: as classes s/m/l do BeerCSS deixam de esconder qualquer um
-          deles em larguras fracionárias (zoom do navegador entre 600 e 601 ou
-          entre 992 e 993), o que mostraria os dois e estoiraria a largura da
-          barra. Em telas estreitas cabe apenas o botão de ícone. -->
+    <div class=${`row no-margin ${extraClass}`.trim()}>
+      <!-- The two triggers are mutually exclusive in the DOM rather than through
+          breakpoint classes: BeerCSS's s/m/l classes stop hiding either one at
+          fractional widths (browser zoom between 600 and 601, or between 992 and
+          993), which would show both and blow up the bar. Narrow screens only
+          have room for the icon button anyway. -->
       ${isWideScreen.value
-        ? html`
+      ? html`
           <div
             class="field prefix round fill small surface-container-highest no-margin"
-            onClick=${() => (isOpen.value = true)}
-            title="Buscar (Ctrl+K)"
+            onClick=${openSearch}
+            title="Search (Ctrl+K)"
           >
             <i class="front">search</i>
             <input
               type="search"
               placeholder=${placeholder}
               value=${query.value}
-              aria-label="Buscar artigos"
+              aria-label="Search articles"
               aria-keyshortcuts="Control+K Meta+K"
-              onFocus=${() => (isOpen.value = true)}
+              onFocus=${openSearch}
               onInput=${(e: Event,) => {
-                query.value = (e.target as HTMLInputElement).value;
-                isOpen.value = true;
-              }}
+          query.value = (e.target as HTMLInputElement).value;
+          openSearch();
+        }}
             />
           </div>
         `
-        : html`
+      : html`
           <button
             class="circle transparent"
-            onClick=${() => (isOpen.value = true)}
-            aria-label="Buscar artigos"
-            title="Buscar (Ctrl+K)"
+            onClick=${openSearch}
+            aria-label="Search articles"
+            title="Search (Ctrl+K)"
           >
             <i>search</i>
           </button>
         `}
 
-      <!-- Painel de resultados: dialog nativo do BeerCSS (z-index 100). Em telas
-          largas é um cartão centrado de largura fixa; em telas estreitas ocupa o
-          ecrã inteiro, que é a forma mais legível de apresentar uma lista de
-          resultados num telemóvel. O dialog já traz overflow-y:auto e
-          max-block-size, por isso não precisa de classe de scroll própria. -->
-      ${isOpen.value
-        ? html`
+      <!-- Result panel: BeerCSS's native dialog (z-index 100). On wide screens
+          it is a centered fixed-width card; on narrow ones it fills the whole
+          screen, which is the most readable way to present a result list on a
+          phone. The dialog already brings overflow-y:auto and max-block-size, so
+          it needs no scroll class of its own. -->
+      ${searchOpen.value
+      ? html`
           <div class="overlay active" onClick=${handleClose}></div>
 
           <dialog
             class=${isWideScreen.value ? "active large-width" : "active max"}
-            aria-label="Pesquisar artigos"
+            aria-label="Search articles"
           >
-            <!-- Título à esquerda e acções encostadas à direita. Um <header> não
-                serve aqui: o BeerCSS dá-lhe flex-direction:column e
-                justify-content:center, o que empilhava o chip "Esc" e o botão de
-                fecho no meio do painel. O separador .max (flex:1) é o único
-                mecanismo de alinhamento à direita disponível — a framework não
-                tem justify-between. -->
+            <!-- Title on the left, actions pushed to the right edge. A <header>
+                does not work here: BeerCSS gives it flex-direction:column and
+                justify-content:center, which would stack the "Esc" chip and the
+                close button in the middle of the panel. The .max spacer (flex:1)
+                is the only right-alignment mechanism available — the framework
+                has no justify-between. -->
             <div class="row no-margin">
               <i class="primary-text">search</i>
-              <h6 class="bold no-margin">Pesquisar artigos</h6>
+              <h6
+                class=${`bold no-margin ${isWideScreen.value ? "" : "small"}`}
+              >Search articles</h6>
               <div class="max"></div>
               ${isWideScreen.value
-                ? html`
-                  <span class="chip" title="Fechar com a tecla Esc">Esc</span>
+          ? html`
+                  <span class="chip" title="Close with the Esc key">Esc</span>
                 `
-                : null}
+          : null}
               <button
                 class="circle transparent"
                 onClick=${handleClose}
-                aria-label="Fechar busca"
-                title="Fechar (Esc)"
+                aria-label="Close search"
+                title="Close (Esc)"
               >
                 <i>close</i>
               </button>
             </div>
 
-            <!-- O .field não usa fill nem border: mantém o elevate1 do BeerCSS,
-                que é o contraste correto sobre o fundo do dialog. Os ícones levam
-                .front porque os filhos absolutos do campo são pintados por ordem
-                de documento e o input, sendo relativo, ficaria por cima do
-                último, tornando o "limpar" inclicável. -->
+            <!-- The .field uses neither fill nor border: it keeps BeerCSS's
+                elevate1, which is the right contrast against the dialog
+                background. The icons carry .front because the absolute children
+                of a field are painted in document order and the input, being
+                relative, would end up on top of the last one, making "clear"
+                unclickable. -->
             <div
               class=${query.value
-                ? "field prefix suffix round no-margin"
-                : "field prefix round no-margin"}
+          ? "field prefix suffix round no-margin"
+          : "field prefix round no-margin"}
             >
               <i class="front">search</i>
               <input
                 type="search"
                 placeholder=${placeholder}
                 value=${query.value}
-                aria-label="Buscar artigos"
+                aria-label="Search articles"
                 aria-keyshortcuts="Control+K Meta+K"
                 autofocus
                 ref=${(el: HTMLInputElement | null,) => {
-                  panelInput.value = el;
-                }}
+          panelInput.value = el;
+        }}
                 onInput=${(e: Event,) => {
-                  query.value = (e.target as HTMLInputElement).value;
-                }}
+          query.value = (e.target as HTMLInputElement).value;
+        }}
               />
               ${query.value
-                ? html`
+          ? html`
                   <i
                     class="front link"
-                    title="Limpar busca"
+                    title="Clear search"
                     onClick=${() => {
-                      query.value = "";
-                      panelInput.value?.focus();
-                    }}
+              query.value = "";
+              panelInput.value?.focus();
+            }}
                   >
                     close
                   </i>
                 `
-                : null}
+          : null}
             </div>
 
             ${trimmed === ""
-              ? html`
+          ? html`
                 <div class="row small-padding round surface-container-low">
                   <i class="primary-text">tips_and_updates</i>
                   <div class="max small-text">
-                    Busque por título, etiqueta ou palavra do artigo.
+                    Search by title, tag or any word of an article.
                   </div>
-                  <span class="small-text surface-variant-text">
-                    ${indexedCount} artigos
+                  <span class="small-text secondary-text">
+                    ${indexedCount} articles
                   </span>
                 </div>
               `
-              : null}
+          : null}
 
             ${results.length > 0
-              ? html`
-                <div class="row small-text surface-variant-text">
+          ? html`
+                <div class="row small-text secondary-text">
                   <div class="max">
-                    ${results.length} resultado${results.length > 1
-                      ? "s"
-                      : ""} para "${query.value}"
+                    ${results.length} result${results.length > 1 ? "s" : ""} for
+                    "${query.value}"
                   </div>
                 </div>
               `
-              : null}
+          : null}
 
-            <!-- O BeerCSS zera as margens de qualquer "a.row" (regra própria),
-                pelo que a separação entre cartões não vem do fluxo: small-margin +
-                vertical-margin escrevem var(---margin) com !important e afastam as
-                linhas sem lhes retirar a largura inteira. A coluna de texto também
-                leva .truncate: um item de flexbox com overflow diferente de
-                "visible" passa a ter tamanho mínimo zero, e sem isso o texto de
-                uma linha (white-space:nowrap) empurrava o .max para a largura
-                inteira da frase — cortando o título a meio e atirando a seta para
-                fora do painel. -->
+            <!-- BeerCSS zeroes the margins of every "a.row" (its own rule), so
+                the gap between cards cannot come from the flow: small-margin +
+                vertical-margin write var(---margin) with !important and separate
+                the rows without taking their full width. The text column also
+                needs .truncate: a flexbox item whose overflow is not "visible"
+                gets a zero minimum size, and without it the text of a single
+                line (white-space:nowrap) would push .max to the full width of
+                the sentence — cutting the title in half and throwing the arrow
+                outside the panel. -->
             <div class="vertical-margin small-margin" aria-live="polite">
               ${results.map((doc,) =>
-                html`
+            html`
                   <a
                     key=${doc.path}
                     href=${articleHrefFromPath(doc.path,)}
                     class="row wave round small-padding vertical-margin small-margin surface-container-low"
                     onClick=${(e: Event,) => {
-                      e.preventDefault();
-                      handleSelect(doc.path,);
-                    }}
+                e.preventDefault();
+                handleSelect(doc.path,);
+              }}
                   >
                     <i class="primary-text">${doc.icon || "article"}</i>
                     <div class="max truncate">
                       <div class="bold truncate">${doc.title}</div>
                       ${doc.description
-                        ? html`
-                          <div class="small-text surface-variant-text truncate">
+                ? html`
+                          <div class="small-text secondary-text truncate">
                             ${doc.description}
                           </div>
                         `
-                        : null}
+                : null}
                     </div>
-                    <i class="tiny surface-variant-text">arrow_forward</i>
+                    <i class="tiny secondary-text">arrow_forward</i>
                   </a>
                 `
-              )}
+          )}
             </div>
 
             ${trimmed !== "" && results.length === 0
-              ? html`
+          ? html`
                 <div
                   class="center-align small-padding round surface-container-low vertical-margin">
                   <i class="primary-text large">search_off</i>
                   <p class="no-margin">
-                    Nenhum artigo encontrado para "${query.value}"
+                    No article found for "${query.value}"
                   </p>
-                  <p class="small-text surface-variant-text no-margin">
-                    Verifique a ortografia ou tente uma palavra mais genérica.
+                  <p class="small-text secondary-text no-margin">
+                    Check the spelling or try a more general word.
                   </p>
                 </div>
               `
-              : null}
+          : null}
           </dialog>
         `
-        : null}
+      : null}
     </div>
   `;
 }

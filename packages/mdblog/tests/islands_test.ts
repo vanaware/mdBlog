@@ -17,7 +17,7 @@ describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
 \`\`\`
 `;
     const root = parseMarkdown(md,);
-    // Não precisa de conjunto fixo passado - descobre dinamicamente pelo arquivo
+    // No hard-coded component set needed - the file is discovered dynamically
     const { wire, } = mdastToWire(root,);
 
     assert(wire.c && wire.c.length >= 2,);
@@ -54,7 +54,7 @@ describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
   });
 
   it("verifies dynamic islands exist as pure HTML+ES files exclusively in islands folder (no singular alias)", async () => {
-    // Verifica que ilhas estáticas isoladas existem em public/islands como ES Modules
+    // Checks that the standalone static islands exist in public/islands as ES Modules
     const demoWidgetCode = await Deno.readTextFile(
       `${publicDir}/islands/DemoWidget.js`,
     );
@@ -74,7 +74,7 @@ describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
     );
     assert(publicCounterCode.includes("html`",),);
 
-    // Confirma que não existe pasta ou symlink 'island' no singular (apenas a opção 'islands' mantida)
+    // Confirms there is no 'island' singular folder or symlink (only the 'islands' option is kept)
     let hasIslandSingular = false;
     try {
       await Deno.stat(`${publicDir}/island`,);
@@ -85,7 +85,7 @@ describe("Islands Architecture (Dynamic File-Based, Zero Fixed Lists)", () => {
     assertEquals(
       hasIslandSingular,
       false,
-      "Pasta public/island singular não deve existir; apenas public/islands",
+      "The public/island singular folder must not exist; only public/islands",
     );
   });
 });
