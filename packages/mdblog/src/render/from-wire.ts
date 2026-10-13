@@ -12,8 +12,8 @@ import type {
   WireFragment,
   WireIsland,
 } from "../plugin/wire.ts";
-import { defaultRegistry } from "./registry.ts";
-import { dynamicIslandsCache } from "./hydrate-islands.ts";
+import { defaultRegistry, } from "./registry.ts";
+import { dynamicIslandsCache, } from "./hydrate-islands.ts";
 
 /**
  * @description Map of component names to component implementations.
@@ -46,13 +46,11 @@ export function wireToVNode(
   wire: Wire,
   options: WireToVNodeOptions = {},
 ): unknown {
-
   const registry: Record<string, any> = {
     ...defaultRegistry,
     ...options.registry,
   };
   const islandRegistry: Record<string, any> = options.islands ?? {};
-
 
   if (wire === null || wire === undefined) {
     return null;
@@ -67,9 +65,9 @@ export function wireToVNode(
   }
 
   // Array of nodes
-  if (Array.isArray(wire)) {
-    return wire.map((item, index) =>
-      h(Fragment, { key: index }, wireToVNode(item, options) as any)
+  if (Array.isArray(wire,)) {
+    return wire.map((item, index,) =>
+      h(Fragment, { key: index, }, wireToVNode(item, options,) as any,)
     );
   }
 
@@ -78,48 +76,57 @@ export function wireToVNode(
 
   switch (node.t) {
     case "f": {
-      const children = (node.c ?? []).map((child, idx) =>
-        h(Fragment, { key: idx }, wireToVNode(child, options) as any)
+      const children = (node.c ?? []).map((child, idx,) =>
+        h(Fragment, { key: idx, }, wireToVNode(child, options,) as any,)
       );
-      return h(Fragment, null, children);
+      return h(Fragment, null, children,);
     }
 
     case "e": {
-      const children = (node.c ?? []).map((child, idx) =>
-        h(Fragment, { key: idx }, wireToVNode(child, options) as any)
+      const children = (node.c ?? []).map((child, idx,) =>
+        h(Fragment, { key: idx, }, wireToVNode(child, options,) as any,)
       );
-      return h(node.n, (node.p ?? {}) as Record<string, unknown>, children);
+      return h(node.n, (node.p ?? {}) as Record<string, unknown>, children,);
     }
 
     case "c": {
       const Comp = (registry[node.n] ?? registry.Unknown) as ComponentType<
         Record<string, unknown>
       >;
-      const children = (node.c ?? []).map((child, idx) =>
-        h(Fragment, { key: idx }, wireToVNode(child, options) as any)
+      const children = (node.c ?? []).map((child, idx,) =>
+        h(Fragment, { key: idx, }, wireToVNode(child, options,) as any,)
       );
-      const props = { ...(node.p ?? {}), nodeType: node.n };
-      return h(Comp, props, children);
+      const props = { ...(node.p ?? {}), nodeType: node.n, };
+      return h(Comp, props, children,);
     }
 
     case "i": {
       // Dynamic Island Node (HTML+ES)
-      const islandFileName = node.n.endsWith(".js") ? node.n : `${node.n}.js`;
-      const baseName = islandFileName.replace(/\.js$/, "");
+      const islandFileName = node.n.endsWith(".js",) ? node.n : `${node.n}.js`;
+      const baseName = islandFileName.replace(/\.js$/, "",);
       const Comp = islandRegistry[node.n] ||
         islandRegistry[islandFileName] ||
         islandRegistry[baseName] ||
         dynamicIslandsCache[node.n] ||
         dynamicIslandsCache[islandFileName] ||
         dynamicIslandsCache[baseName];
-      const propsJson = JSON.stringify(node.p ?? {});
-      const isMissing = options.islands !== undefined ? !Comp : false;
+      const propsJson = JSON.stringify(node.p ?? {},);
+      // Somente um registry explícito (SSG / pré-render) assume a posse do
+      // container. Na navegação normal o slot é deixado vazio para
+      // `hydrateIslands`: montar pelos dois caminhos coloca duas raízes Preact
+      // no mesmo elemento e duplica o widget assim que o módulo entra em cache.
+      const externallyOwned = options.islands !== undefined;
+      const eagerlyMounted = externallyOwned && Boolean(Comp,);
+      const isMissing = externallyOwned && !Comp;
 
       // Children inside container for initial render / fallback
       let innerContent: ComponentChildren = null;
-      if (Comp) {
+      if (eagerlyMounted) {
         try {
-          innerContent = h(Comp as any, (node.p ?? {}) as Record<string, unknown>);
+          innerContent = h(
+            Comp as any,
+            (node.p ?? {}) as Record<string, unknown>,
+          );
         } catch (err) {
           console.warn(
             `[from-wire] Initial render error for island ${node.n}:`,
@@ -129,18 +136,20 @@ export function wireToVNode(
       }
 
       if (!innerContent && node.c && node.c.length > 0) {
-        innerContent = (node.c ?? []).map((child, idx) =>
-          h(Fragment, { key: idx }, wireToVNode(child, options) as any)
+        innerContent = (node.c ?? []).map((child, idx,) =>
+          h(Fragment, { key: idx, }, wireToVNode(child, options,) as any,)
         );
       }
-
 
       return h("div", {
         "data-island": node.n,
         "data-props": propsJson,
+        // A árvore principal assumiu o container (SSG/pré-render): a
+        // hidratação seletiva deve sempre pular estes nós.
+        "data-island-prerendered": eagerlyMounted ? "true" : undefined,
         "data-island-missing": isMissing ? "true" : undefined,
         children: innerContent,
-      });
+      },);
     }
 
     default: {
@@ -148,4 +157,3 @@ export function wireToVNode(
     }
   }
 }
-

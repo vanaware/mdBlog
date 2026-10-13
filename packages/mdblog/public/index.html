@@ -61,6 +61,17 @@
       src="https://cdn.jsdelivr.net/npm/material-dynamic-colors@1.1.2/dist/cdn/material-dynamic-colors.min.js"></script>
   </head>
   <body class="auto">
+    <!-- Restaura o tema salvo antes da pintura inicial (evita flash de tema) -->
+    <script>
+    try {
+      var savedTheme = localStorage.getItem("mdblog-theme");
+      if (savedTheme === "dark" || savedTheme === "light") {
+        document.body.classList.remove("auto", "light", "dark");
+        document.body.classList.add(savedTheme);
+      }
+    } catch (e) {}
+    </script>
+
     <!-- Ponto de montagem da aplicação mdBlog -->
     <div id="app"></div>
 

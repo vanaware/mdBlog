@@ -1,6 +1,11 @@
-import { type ComponentChildren, type ComponentType, h, type VNode } from "preact";
-import { html } from "htm/preact";
-import { useSignal } from "@preact/signals";
+import {
+  type ComponentChildren,
+  type ComponentType,
+  h,
+  type VNode,
+} from "preact";
+import { html, } from "htm/preact";
+import { useSignal, } from "@preact/signals";
 
 export interface HeadingProps {
   depth?: number | string;
@@ -8,9 +13,11 @@ export interface HeadingProps {
   children?: ComponentChildren;
 }
 
-export function Heading({ depth = 1, id, children }: HeadingProps = {}): VNode {
-  const headingTags = ["h4", "h5", "h6", "h6", "h6", "h6"];
-  const clampedDepth = Math.min(Math.max(Number(depth) || 1, 1), 6);
+export function Heading(
+  { depth = 1, id, children, }: HeadingProps = {},
+): VNode {
+  const headingTags = ["h4", "h5", "h6", "h6", "h6", "h6",];
+  const clampedDepth = Math.min(Math.max(Number(depth,) || 1, 1,), 6,);
   const tag = headingTags[clampedDepth - 1] ?? "h6";
   const isSmall = clampedDepth >= 4;
 
@@ -21,6 +28,16 @@ export function Heading({ depth = 1, id, children }: HeadingProps = {}): VNode {
         class="surface-variant-text link small-text opacity-50 margin-left"
         title="Link direto para esta seção"
         aria-label="Link direto"
+        onClick=${(e: Event,) => {
+          // Evita que o hash da âncora acione o roteador de artigos
+          e.preventDefault();
+          if (typeof document !== "undefined") {
+            document.getElementById(id,)?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            },);
+          }
+        }}
       >
         <i>link</i>
       </a>
@@ -39,12 +56,11 @@ export function Heading({ depth = 1, id, children }: HeadingProps = {}): VNode {
   ) as VNode;
 }
 
-
 export interface ParagraphProps {
   children?: ComponentChildren;
 }
 
-export function Paragraph({ children }: ParagraphProps = {}): VNode {
+export function Paragraph({ children, }: ParagraphProps = {},): VNode {
   return html`<p class="margin-bottom wrap">${children}</p>`;
 }
 
@@ -53,17 +69,17 @@ export interface CodeBlockProps {
   value?: string;
 }
 
-export function CodeBlock({ lang, value = "" }: CodeBlockProps = {}): VNode {
-  const copied = useSignal(false);
+export function CodeBlock({ lang, value = "", }: CodeBlockProps = {},): VNode {
+  const copied = useSignal(false,);
 
   async function handleCopy(): Promise<void> {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(value);
+        await navigator.clipboard.writeText(value,);
         copied.value = true;
         setTimeout(() => {
           copied.value = false;
-        }, 2000);
+        }, 2000,);
       }
     } catch {
       // Ignore copy error
@@ -72,7 +88,8 @@ export function CodeBlock({ lang, value = "" }: CodeBlockProps = {}): VNode {
 
   return html`
     <article class="no-padding surface-container-highest border round margin">
-      <div class="row items-center justify-between padding-left padding-right small-padding surface-container border-bottom">
+      <div
+        class="row items-center justify-between padding-left padding-right small-padding surface-container border-bottom">
         <span class="chip small primary-container bold">
           ${lang || "text"}
         </span>
@@ -96,7 +113,7 @@ export interface InlineCodeProps {
   value?: string;
 }
 
-export function InlineCode({ value = "" }: InlineCodeProps = {}): VNode {
+export function InlineCode({ value = "", }: InlineCodeProps = {},): VNode {
   return html`<code class="surface-container-high round">${value}</code>`;
 }
 
@@ -104,9 +121,10 @@ export interface BlockquoteProps {
   children?: ComponentChildren;
 }
 
-export function Blockquote({ children }: BlockquoteProps = {}): VNode {
+export function Blockquote({ children, }: BlockquoteProps = {},): VNode {
   return html`
-    <blockquote class="surface-container-low border left-border border-primary padding round margin wrap">
+    <blockquote
+      class="surface-container-low border left-border border-primary padding round margin wrap">
       ${children}
     </blockquote>
   `;
@@ -118,7 +136,7 @@ export interface ListProps {
   children?: ComponentChildren;
 }
 
-export function List({ ordered, start, children }: ListProps = {}): VNode {
+export function List({ ordered, start, children, }: ListProps = {},): VNode {
   if (ordered) {
     return html`<ol start=${start} class="padding-left margin-bottom wrap">${children}</ol>`;
   }
@@ -130,7 +148,7 @@ export interface ListItemProps {
   children?: ComponentChildren;
 }
 
-export function ListItem({ checked, children }: ListItemProps = {}): VNode {
+export function ListItem({ checked, children, }: ListItemProps = {},): VNode {
   if (typeof checked === "boolean") {
     return html`
       <li class="row wrap items-center gap margin-bottom">
@@ -149,10 +167,19 @@ export interface TableProps {
   children?: ComponentChildren;
 }
 
-export function Table({ children }: TableProps = {}): VNode {
+export function Table({ children, }: TableProps = {},): VNode {
+  // "stripes" pinta --active (um cinza de 19% de opacidade, definido uma única
+  // vez em :root e por igual nos dois temas) nas linhas ímpares do tbody: é a
+  // rasca par/ímpar pedida. "border" acrescenta o fio separador entre as linhas
+  // do corpo; a do cabeçalho o BeerCSS já põe por regra própria em thead>tr>th.
+  // Ambas exigem a estrutura thead/tbody que "to-wire.ts" emite. Não se põe
+  // "round" na tabela: sem fundo nem caixa próprios o raio dela não se pintaria
+  // (e :is(...,table,...):not(.round)) já o zera), e o canto arredondado que se
+  // vê vem do "border-radius:inherit" do BeerCSS sobre o div, que com overflow
+  // recorta a faixa de cabeçalho a 0.75rem, o raio do <article>.
   return html`
     <div class="responsive scroll margin">
-      <table class="border round">${children}</table>
+      <table class="border stripes">${children}</table>
     </div>
   `;
 }
@@ -161,17 +188,40 @@ export interface TableRowProps {
   children?: ComponentChildren;
 }
 
-export function TableRow({ children }: TableRowProps = {}): VNode {
+export function TableRow({ children, }: TableRowProps = {},): VNode {
   return html`<tr>${children}</tr>`;
 }
 
 export interface TableCellProps {
   align?: string;
+  /** @description Marks the first row cells as column headers (<th>). */
+  header?: boolean;
   children?: ComponentChildren;
 }
 
-export function TableCell({ align, children }: TableCellProps = {}): VNode {
-  return html`<td class=${align ? `align-${align}` : undefined}>${children}</td>`;
+/** Classes de alinhamento do BeerCSS para o alinhamento de coluna do GFM. */
+const CELL_ALIGN_CLASS: Record<string, string> = {
+  left: "left-align",
+  center: "center-align",
+  right: "right-align",
+};
+
+export function TableCell({
+  align,
+  header,
+  children,
+}: TableCellProps = {},): VNode {
+  const cellClass = [
+    // O cabeçalho leva primary-container, não um tom de surface: as riscas do
+    // corpo são cinza translúcido, e um cinza opaco perder-se-ia entre elas.
+    header ? "primary-container" : "",
+    align ? CELL_ALIGN_CLASS[align] ?? "" : "",
+  ].filter(Boolean,).join(" ",);
+
+  if (header) {
+    return html`<th class=${cellClass} scope="col">${children}</th>`;
+  }
+  return html`<td class=${cellClass || undefined}>${children}</td>`;
 }
 
 export interface LinkProps {
@@ -180,14 +230,17 @@ export interface LinkProps {
   children?: ComponentChildren;
 }
 
-export function Link({ href = "", title, children }: LinkProps = {}): VNode {
+export function Link({ href = "", title, children, }: LinkProps = {},): VNode {
   let targetHref = href;
-  const isExternal = href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//");
+  const isExternal = href.startsWith("http://",) ||
+    href.startsWith("https://",) || href.startsWith("//",);
 
   if (!isExternal) {
-    if (href.endsWith(".md") || href.includes(".md#")) {
-      const cleanHref = href.startsWith("./") ? href.slice(2) : href;
-      const fullPath = cleanHref.startsWith("/") ? cleanHref : `/docs/${cleanHref}`;
+    if (href.endsWith(".md",) || href.includes(".md#",)) {
+      const cleanHref = href.startsWith("./",) ? href.slice(2,) : href;
+      const fullPath = cleanHref.startsWith("/",)
+        ? cleanHref
+        : `/docs/${cleanHref}`;
       targetHref = `#${fullPath}`;
     }
   }
@@ -211,11 +264,17 @@ export interface ImageProps {
   title?: string;
 }
 
-export function Image({ src, alt, title }: ImageProps = {}): VNode {
+export function Image({ src, alt, title, }: ImageProps = {},): VNode {
   return html`
     <figure class="no-margin margin-top margin-bottom">
-      <img src=${src} alt=${alt || ""} title=${title} class="responsive round border" loading="lazy" />
-      ${alt ? html`<figcaption class="small-text surface-variant-text center-align margin-top">${alt}</figcaption>` : null}
+      <img src=${src} alt=${alt ||
+        ""} title=${title} class="responsive round border" loading="lazy" />
+      ${alt
+        ? html`
+          <figcaption
+            class="small-text surface-variant-text center-align margin-top">${alt}</figcaption>
+        `
+        : null}
     </figure>
   `;
 }
@@ -224,7 +283,7 @@ export interface UnknownProps {
   nodeType?: string;
 }
 
-export function Unknown({ nodeType }: UnknownProps = {}): VNode {
+export function Unknown({ nodeType, }: UnknownProps = {},): VNode {
   return html`
     <span class="chip error-container small" title=${`Unknown node type: ${nodeType}`}>
       [${nodeType ?? "Unknown"}]
@@ -236,8 +295,6 @@ export function Unknown({ nodeType }: UnknownProps = {}): VNode {
  * @description Default map of standard Markdown and GFM components used by mdBlog.
  */
 export const defaultRegistry: Record<string, unknown> = {
-
-
   Heading,
   Paragraph,
   CodeBlock,

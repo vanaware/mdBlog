@@ -1,9 +1,29 @@
-import { html } from "htm/preact";
-import type { VNode } from "preact";
-import { useSignal } from "@preact/signals";
+import { html, } from "htm/preact";
+import { useSignal, } from "@preact/signals";
+
+const STORAGE_KEY = "mdblog-theme";
+
+function readSavedTheme(): boolean | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const saved = localStorage.getItem(STORAGE_KEY,);
+    if (saved === "dark") return true;
+    if (saved === "light") return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function applyTheme(dark: boolean,): void {
+  if (typeof document === "undefined") return;
+  document.body.classList.remove(dark ? "light" : "dark",);
+  document.body.classList.remove("auto",);
+  document.body.classList.add(dark ? "dark" : "light",);
+}
 
 /**
- * @description Button component toggling BeerCSS light and dark color themes on document.body.
+ * @description Button component toggling BeerCSS light and dark color themes on document.body, persisting the choice in localStorage.
  * @returns Preact VNode representing the theme toggle button.
  * @example
  * ```ts
@@ -13,23 +33,27 @@ import { useSignal } from "@preact/signals";
  * ```
  */
 export function ThemeToggle(): unknown {
-
-
+  const saved = readSavedTheme();
   const isDark = useSignal(
-    typeof document !== "undefined" &&
-      document.body.classList.contains("dark"),
+    saved ??
+      (typeof document !== "undefined" &&
+        document.body.classList.contains("dark",)),
   );
+
+  // Garante que a preferência salva prevaleça sobre o modo "auto" do sistema
+  if (saved !== null) {
+    applyTheme(saved,);
+  }
 
   function toggle(): void {
     isDark.value = !isDark.value;
-    if (typeof document !== "undefined") {
-      if (isDark.value) {
-        document.body.classList.remove("light");
-        document.body.classList.add("dark");
-      } else {
-        document.body.classList.remove("dark");
-        document.body.classList.add("light");
+    applyTheme(isDark.value,);
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, isDark.value ? "dark" : "light",);
       }
+    } catch {
+      // Persistência indisponível (modo privado): mantém apenas em memória
     }
   }
 

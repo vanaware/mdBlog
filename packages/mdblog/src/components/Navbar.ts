@@ -1,28 +1,10 @@
-import { html } from "htm/preact";
-import type { VNode } from "preact";
-import {
-  articles,
-  currentPath,
-  isOffline,
-  isSWActive,
-  sidebarOpen,
-} from "../state.ts";
-import { ThemeToggle } from "./ThemeToggle.ts";
-import { SearchBox } from "./SearchBox.ts";
-import { navigateTo } from "../router.ts";
-
-function norm(p?: string | null): string {
-  let s = (p || "")
-    .replace(/^#\/?/, "")
-    .replace(/^\.?\//, "")
-    .replace(/^articles\//, "")
-    .replace(/^docs\//, "");
-  if (!s || s === "index") s = "index.md";
-  return s;
-}
+import { html, } from "htm/preact";
+import { isOffline, isSWActive, sidebarOpen, } from "../state.ts";
+import { ThemeToggle, } from "./ThemeToggle.ts";
+import { SearchBox, } from "./SearchBox.ts";
 
 /**
- * @description Top navigation bar component displaying logo, network status, search input, and theme toggle.
+ * @description Top navigation bar component displaying logo, network status chip, search input, and theme toggle.
  * @returns Preact VNode representing the application header.
  * @example
  * ```ts
@@ -32,37 +14,44 @@ function norm(p?: string | null): string {
  * ```
  */
 export function Navbar(): unknown {
-
-
-  const current = currentPath.value;
-  const list = articles.value;
-
   return html`
     <nav class="top surface-container border-bottom sticky">
       <button
         class="circle transparent"
         onClick=${() => (sidebarOpen.value = !sidebarOpen.value)}
         aria-label="Alternar menu lateral"
+        aria-expanded=${sidebarOpen.value}
+        title=${sidebarOpen.value
+          ? "Ocultar lista de artigos"
+          : "Mostrar lista de artigos"}
       >
-        <i>menu</i>
+        <i>${sidebarOpen.value ? "keyboard_arrow_left" : "menu"}</i>
       </button>
 
-      <a
-        class="row items-center gap-small wave transparent surface-text no-margin"
-        onClick=${() =>
-          navigateTo(articles.value[0]?.path || "./articles/index.md")}
-        title="Página Inicial"
-      >
-        <i class="primary-text bold">menu_book</i>
-        <h6 class="bold no-margin">mdBlog</h6>
-      </a>
+      <!-- O BeerCSS trata todo "a" filho direto de nav.top como item de navegação
+          (flex-direction: column, largura fixa de 3.5rem e o ícone com raio de pill
+          e fundo secondary-container em hover) — o que empilha o ícone sobre o nome
+          e o faz parecer um badge. Envolver a marca num contentor neutro mantém o
+          link fora desse seletor, deixando a classe row colocar o ícone à esquerda. -->
+      <div class="row items-center no-margin">
+        <a
+          href="#/"
+          class="row items-center gap-small wave transparent surface-text no-margin"
+          title="Página Inicial"
+        >
+          <i class="primary-text bold">menu_book</i>
+          <h6 class="bold no-margin">mdBlog</h6>
+        </a>
+      </div>
 
       <div class="max"></div>
 
-      <div class="row items-center gap">
-        <!-- Indicador compacto de status online/offline -->
+      <div class="row items-center gap-small">
+        <!-- Chip de status de conectividade: texto visível em telas médias/grandes -->
         <span
-          class="circle small transparent"
+          class=${`chip small no-margin ${
+            isOffline.value ? "error-container" : "surface-container-highest"
+          }`}
           title=${isOffline.value
             ? "Offline (Sem conexão)"
             : isSWActive.value
@@ -72,12 +61,11 @@ export function Navbar(): unknown {
           <i class=${isOffline.value ? "error-text" : "success-text"}>
             ${isOffline.value ? "cloud_off" : "cloud_done"}
           </i>
+          <span class="m l">${isOffline.value ? "Offline" : "Online"}</span>
         </span>
 
-        <!-- Busca com suporte a todas as telas -->
-        <div class="m l">
-          <${SearchBox} placeholder="Buscar artigos..." />
-        </div>
+        <!-- Busca responsiva: campo em m/l, botão compacto em s -->
+        <${SearchBox} placeholder="Buscar artigos..." />
 
         <${ThemeToggle} />
       </div>

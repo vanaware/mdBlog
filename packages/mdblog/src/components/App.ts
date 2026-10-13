@@ -1,8 +1,8 @@
-import { html } from "htm/preact";
-import type { VNode } from "preact";
-import { Navbar } from "./Navbar.ts";
-import { Sidebar } from "./Sidebar.ts";
-import { Content } from "./Content.ts";
+import { html, } from "htm/preact";
+import type { VNode, } from "preact";
+import { Navbar, } from "./Navbar.ts";
+import { Sidebar, } from "./Sidebar.ts";
+import { Content, } from "./Content.ts";
 
 /**
  * @description Main application layout component assembling Navbar, Sidebar, and Content.
@@ -15,11 +15,12 @@ import { Content } from "./Content.ts";
  * ```
  */
 export function App(): unknown {
-
-
+  // A gaveta é renderizada antes da barra: ambos usam `z-index: 100` no
+  // BeerCSS, então a ordem no DOM define a sobreposição — assim a barra
+  // superior permanece clicável mesmo com o menu lateral aberto.
   return html`
-    <${Navbar} />
     <${Sidebar} />
+    <${Navbar} />
     <${Content} />
   `;
 }

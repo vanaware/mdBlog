@@ -222,6 +222,26 @@ Texto normal aqui.`;
     );
   });
 
+  it("keeps the bundle evaluable inside the Service Worker scope", async () => {
+    const swSrc = await Deno.readTextFile(`${publicDir}/sw.js`,);
+    assert(
+      swSrc.includes('import mdTranspiler from "./mdblog.js"',),
+      "sw.js must keep importing the app bundle, which is why that bundle has to stay worker-safe",
+    );
+
+    const raw = await Deno.readTextFile(`${scriptsDir}/esbuild.jsonc`,);
+    const config = JSON.parse(
+      raw.replace(/^\s*\/\/.*$/gm, "",),
+    ) as { targets: Record<string, { conditions?: string[] }> };
+
+    for (const [name, target,] of Object.entries(config.targets,)) {
+      assert(
+        (target.conditions ?? []).includes("worker",),
+        `esbuild target "${name}" must keep the "worker" export condition: sw.js imports the same bundle, and with only "browser" the exports map of decode-named-character-reference resolves to index.dom.js, whose top-level document.createElement throws "document is not defined" and makes the Service Worker script evaluation fail`,
+      );
+    }
+  });
+
   it("resolves /articles/ routes correctly via resolveDocPath", () => {
     const res1 = resolveDocPath("/articles/guia", "/articles",);
     assertEquals(res1.isDoc, true,);
@@ -246,8 +266,8 @@ Texto normal aqui.`;
       `${srcDir}/components/Navbar.ts`,
     );
     assert(
-      navbarSrc.includes("articles.value",),
-      "Navbar must read articles from reactive signal",
+      navbarSrc.includes('href="#/"',),
+      "Navbar home link must route to the dynamically resolved home article",
     );
     assert(
       !navbarSrc.includes("<select",),
@@ -289,6 +309,112 @@ Texto normal aqui.`;
       !sidebarSrc.includes("const SECTIONS =",),
       "Sidebar must not have hardcoded SECTIONS",
     );
+  });
+
+  it("keeps the app bar brand horizontal and its contents within the bar width", async () => {
+    const navbarSrc = await Deno.readTextFile(
+      `${srcDir}/components/Navbar.ts`,
+    );
+    const brandIndex = navbarSrc.indexOf('href="#/"',);
+    assert(brandIndex > -1, "Navbar must expose the home link",);
+    // Um `a` filho direto de nav.top é tratado pelo BeerCSS como item de
+    // navegação (flex-direction: column e ícone dentro de uma pill), o que
+    // empilha o ícone sobre o nome. A marca tem de viver num contentor próprio.
+    const beforeBrand = navbarSrc.slice(0, brandIndex,);
+    assert(
+      beforeBrand.lastIndexOf("<div",) > beforeBrand.lastIndexOf("<nav",),
+      "Navbar brand link must be nested in a container, not a direct child of nav.top",
+    );
+
+    const searchSrc = await Deno.readTextFile(
+      `${srcDir}/components/SearchBox.ts`,
+    );
+    assert(
+      searchSrc.includes("isWideScreen.value",),
+      "Search triggers must be mutually exclusive in the DOM: BeerCSS s/m/l classes leak on fractional viewport widths (browser zoom), showing both controls at once and overflowing the app bar",
+    );
+    assert(
+      !searchSrc.includes('class="circle transparent s',),
+      "Compact search button must not depend on breakpoint classes",
+    );
+    assert(
+      !searchSrc.includes('no-margin l"',),
+      "Inline search field must not depend on breakpoint classes",
+    );
+  });
+
+  it("keeps the table of contents openable and closable on every breakpoint", async () => {
+    const contentSrc = await Deno.readTextFile(
+      `${srcDir}/components/Content.ts`,
+    );
+    const stateSrc = await Deno.readTextFile(`${srcDir}/state.ts`,);
+
+    assert(
+      contentSrc.includes("toggleToc",),
+      "Content.ts must expose one table of contents control for both modes",
+    );
+    assert(
+      contentSrc.includes("tocRailOpen.value = !tocRailOpen.value",),
+      "The control must both hide and show the wide-screen summary column",
+    );
+    assert(
+      contentSrc.includes("tocRailOpen.value = false",),
+      "The summary column must offer its own close button",
+    );
+    assert(
+      !/showRail = hasToc && isWideScreen\.value;/.test(contentSrc,),
+      "The summary column must not be rendered unconditionally on wide screens",
+    );
+    assert(
+      stateSrc.includes("TOC_STORAGE_KEY",),
+      "The summary column preference must be persisted like the sidebar's",
+    );
+  });
+
+  it("lays the search panel out as one horizontal header with its actions at the end", async () => {
+    const searchSrc = await Deno.readTextFile(
+      `${srcDir}/components/SearchBox.ts`,
+    );
+    // Os comentários explicam precisamente as classes proibidas, por isso são
+    // removidos antes de qualquer verificação de markup.
+    const markup = searchSrc.replace(/<!--[\s\S]*?-->/g, "",);
+
+    // O BeerCSS define header como flex-direction:column + justify-content:center,
+    // o que empilhava o chip "Esc" e o botão de fecho no meio do painel.
+    assertEquals(
+      /<header[\s>]/.test(markup,),
+      false,
+      "The search panel header must not be a <header> element (BeerCSS stacks and centers it)",
+    );
+    assert(
+      markup.includes('<div class="row no-margin">',),
+      "The panel header must be a single horizontal .row",
+    );
+    assert(
+      markup.includes('<div class="max"></div>',),
+      "The header must use the .max spacer to push its actions to the end (BeerCSS has no justify-between)",
+    );
+    assert(
+      markup.includes('"active large-width" : "active max"',),
+      "The dialog must take a fixed readable width on wide screens and the full screen on narrow ones",
+    );
+    assert(
+      /class="row wave round [\w- ]*vertical-margin/.test(markup,),
+      "Result rows need an !important margin utility: BeerCSS declares margin:0 on every a.row, which welds the cards together",
+    );
+    assert(
+      markup.includes('<div class="max truncate">',),
+      "The text column must be a scroll container (.truncate): a flex item with overflow:visible refuses to shrink below its nowrap text, which cuts titles mid-glyph and pushes the trailing icon out of the panel",
+    );
+    for (
+      const ghost of ["medium round shadow", 'class="column', "gap-tiny",]
+    ) {
+      assertEquals(
+        markup.includes(ghost,),
+        false,
+        `BeerCSS 3.7.12 has no "${ghost}" utility; the class is silently ignored and breaks the layout`,
+      );
+    }
   });
 
   it("confirms zero static fallback files (articles.json and articles/index.html removed) and discovery is purely frontmatter-driven", async () => {
@@ -397,6 +523,43 @@ Texto normal aqui.`;
     assert(
       !contentSrc.includes("dangerouslySetInnerHTML",),
       "Footer must not contain debug strings",
+    );
+  });
+
+  it("shows the compiled app version in the Made with mdBlog footer", async () => {
+    const contentSrc = await Deno.readTextFile(
+      `${srcDir}/components/Content.ts`,
+    );
+    const versionSrc = await Deno.readTextFile(`${srcDir}/version.ts`,);
+
+    assert(
+      contentSrc.includes('from "../version.ts"',),
+      "Content.ts must read the version from version.ts, the file the build stamps",
+    );
+    assert(
+      contentSrc.includes('APP_VERSION ? ` ${APP_VERSION}` : ""',),
+      "an un-stamped (unbundled) version must disappear, not leave a loose space",
+    );
+    assert(
+      versionSrc.includes('typeof __APP_VERSION__ !== "undefined"',),
+      "version.ts must keep the typeof guard: without a bundler there is no define, and a bare reference would throw ReferenceError",
+    );
+
+    const footer = contentSrc.match(/<footer[\s\S]*?<\/footer>/,)?.[0] ?? "";
+    assert(
+      footer.includes("Made with mdBlog",),
+      "the footer must keep the tagline",
+    );
+    assert(
+      footer.includes("versionSuffix",),
+      "the version must be rendered in the footer",
+    );
+    // O BeerCSS dá ao <footer> flex-direction:column, por isso nome e versão
+    // partilham um único <span>; um segundo elemento cairia para outra linha.
+    assertEquals(
+      footer.match(/<(?!\/)/g,)?.length ?? 0,
+      2,
+      "footer must hold exactly one element",
     );
   });
 });

@@ -17,7 +17,7 @@ import {
   useRef,
   useState,
 } from "preact/hooks";
-import { html as rawHtml } from "htm/preact";
+import { html as rawHtml, } from "htm/preact";
 import {
   batch as rawBatch,
   computed as rawComputed,
@@ -26,20 +26,31 @@ import {
   useSignal as rawUseSignal,
 } from "@preact/signals";
 import * as stateNamespace from "./state.ts";
+import type { ArticleItem, } from "./state.ts";
 
 /**
  * @description Reactive application state, signals, and dynamic article tree discovery.
  */
 export const state: typeof stateNamespace = stateNamespace;
 
-import { App } from "./components/App.ts";
-import { Navbar } from "./components/Navbar.ts";
-import { Sidebar } from "./components/Sidebar.ts";
-import { Content } from "./components/Content.ts";
-import { ThemeToggle } from "./components/ThemeToggle.ts";
-import { SearchBox, type SearchBoxProps } from "./components/SearchBox.ts";
-import { initRouter, navigateTo } from "./router.ts";
-import { registerServiceWorker } from "./register-sw.ts";
+import { App, } from "./components/App.ts";
+import { Navbar, } from "./components/Navbar.ts";
+import { Sidebar, } from "./components/Sidebar.ts";
+import { Content, } from "./components/Content.ts";
+import { ThemeToggle, } from "./components/ThemeToggle.ts";
+import { SearchBox, type SearchBoxProps, } from "./components/SearchBox.ts";
+import { Toc, type TocProps, } from "./components/Toc.ts";
+import { initRouter, navigateTo, } from "./router.ts";
+import { registerServiceWorker, } from "./register-sw.ts";
+import {
+  type AdjacentArticles,
+  articleHrefFromPath,
+  estimateReadingTimeMinutes,
+  extractTocHeadings,
+  findAdjacentArticles,
+  normalizePath,
+  type TocHeading,
+} from "./utils.ts";
 import {
   dynamicIslandsCache,
   hydrateIslands,
@@ -50,10 +61,10 @@ import {
   wireToVNode,
   type WireToVNodeOptions,
 } from "./render/from-wire.ts";
-import { defaultRegistry } from "./render/registry.ts";
-import { parseMarkdown } from "./plugin/core/parse.ts";
-import { mdastToWire } from "./plugin/core/to-wire.ts";
-import { loadDoc, processMarkdown } from "./plugin/core/pipeline.ts";
+import { defaultRegistry, } from "./render/registry.ts";
+import { parseMarkdown, } from "./plugin/core/parse.ts";
+import { mdastToWire, } from "./plugin/core/to-wire.ts";
+import { loadDoc, processMarkdown, } from "./plugin/core/pipeline.ts";
 import {
   type CacheIOOptions,
   createBrowserIO,
@@ -63,13 +74,9 @@ import {
   createSWFetchHandler,
   type SWPluginOptions,
 } from "./plugin/adapters/sw.ts";
-import { defaultShell } from "./plugin/core/shell.ts";
-import type { DocConfig, IO } from "./plugin/types.ts";
-import {
-  isSWControlling,
-  resolveDocPath,
-  slugify,
-} from "./plugin/detect.ts";
+import { defaultShell, } from "./plugin/core/shell.ts";
+import type { DocConfig, IO, } from "./plugin/types.ts";
+import { isSWControlling, resolveDocPath, slugify, } from "./plugin/detect.ts";
 import {
   countWireIslands,
   countWireNodes,
@@ -83,11 +90,10 @@ import {
   type WireIsland,
 } from "./plugin/wire.ts";
 
-
 /**
  * @description Reactive Signal container holding a mutable value.
  */
-export interface Signal<T = unknown> {
+export interface Signal<T = unknown,> {
   /** @description The current reactive value. */
   value: T;
   /** @description Converts signal value to string representation. */
@@ -107,10 +113,12 @@ export interface Signal<T = unknown> {
  * const node = html`<div class="banner">Hello World</div>`;
  * ```
  */
-export function html(strings: TemplateStringsArray, ...values: unknown[]): unknown {
-  return rawHtml(strings, ...values);
+export function html(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+): unknown {
+  return rawHtml(strings, ...values,);
 }
-
 
 /**
  * @description Creates a new reactive state signal with an initial value.
@@ -123,8 +131,8 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): unkno
  * count.value++;
  * ```
  */
-export function signal<T>(initialValue: T): Signal<T> {
-  return rawSignal(initialValue) as unknown as Signal<T>;
+export function signal<T,>(initialValue: T,): Signal<T> {
+  return rawSignal(initialValue,) as unknown as Signal<T>;
 }
 
 /**
@@ -140,8 +148,8 @@ export function signal<T>(initialValue: T): Signal<T> {
  * }
  * ```
  */
-export function useSignal<T>(initialValue: T): Signal<T> {
-  return rawUseSignal(initialValue) as unknown as Signal<T>;
+export function useSignal<T,>(initialValue: T,): Signal<T> {
+  return rawUseSignal(initialValue,) as unknown as Signal<T>;
 }
 
 /**
@@ -155,8 +163,8 @@ export function useSignal<T>(initialValue: T): Signal<T> {
  * const double = computed(() => count.value * 2);
  * ```
  */
-export function computed<T>(compute: () => T): Readonly<Signal<T>> {
-  return rawComputed(compute) as unknown as Readonly<Signal<T>>;
+export function computed<T,>(compute: () => T,): Readonly<Signal<T>> {
+  return rawComputed(compute,) as unknown as Readonly<Signal<T>>;
 }
 
 /**
@@ -170,8 +178,8 @@ export function computed<T>(compute: () => T): Readonly<Signal<T>> {
  * const dispose = effect(() => console.log(count.value));
  * ```
  */
-export function effect(callback: () => void | (() => void)): () => void {
-  return rawEffect(callback);
+export function effect(callback: () => void | (() => void),): () => void {
+  return rawEffect(callback,);
 }
 
 /**
@@ -186,12 +194,13 @@ export function effect(callback: () => void | (() => void)): () => void {
  * batch(() => { a.value = 10; b.value = 20; });
  * ```
  */
-export function batch<T>(callback: () => T): T {
-  return rawBatch(callback);
+export function batch<T,>(callback: () => T,): T {
+  return rawBatch(callback,);
 }
 
 export {
   App,
+  articleHrefFromPath,
   Content,
   countWireIslands,
   countWireNodes,
@@ -201,6 +210,9 @@ export {
   defaultRegistry,
   defaultShell,
   dynamicIslandsCache,
+  estimateReadingTimeMinutes,
+  extractTocHeadings,
+  findAdjacentArticles,
   hydrateIslands,
   initRouter,
   isSWControlling,
@@ -208,6 +220,7 @@ export {
   mdastToWire,
   Navbar,
   navigateTo,
+  normalizePath,
   parseMarkdown,
   processMarkdown,
   registerServiceWorker,
@@ -217,11 +230,13 @@ export {
   Sidebar,
   slugify,
   ThemeToggle,
-
+  Toc,
   wireToVNode,
 };
 
 export type {
+  AdjacentArticles,
+  ArticleItem,
   CacheIOOptions,
   ComponentRegistry,
   DocConfig,
@@ -230,6 +245,8 @@ export type {
   MdastRoot,
   SearchBoxProps,
   SWPluginOptions,
+  TocHeading,
+  TocProps,
   Wire,
   WireComponent,
   WireDoc,
@@ -238,9 +255,6 @@ export type {
   WireIsland,
   WireToVNodeOptions,
 };
-
-
-
 
 /**
  * @description Transpiler and Service Worker pipeline suite bundled with mdBlog.
@@ -262,11 +276,10 @@ const mdTranspiler = {
   slugify,
 };
 
-export { mdTranspiler };
+export { mdTranspiler, };
 
-export { APP_VERSION as version } from "./version.ts";
+export { APP_VERSION as version, } from "./version.ts";
 export default mdTranspiler;
-
 
 // Disponibiliza a biblioteca e todas as primitivas no escopo global para consumo direto no browser
 if (typeof globalThis !== "undefined") {
@@ -277,6 +290,7 @@ if (typeof globalThis !== "undefined") {
     Content,
     ThemeToggle,
     SearchBox,
+    Toc,
     initRouter,
     navigateTo,
     registerServiceWorker,
@@ -312,11 +326,11 @@ if (typeof globalThis !== "undefined") {
  * 4. Inicializa o router reativo e registra o Service Worker.
  */
 async function bootstrap() {
-  let root = document.getElementById("app");
+  let root = document.getElementById("app",);
   if (!root && document.body) {
-    root = document.createElement("div");
+    root = document.createElement("div",);
     root.id = "app";
-    document.body.appendChild(root);
+    document.body.appendChild(root,);
   }
 
   // 1. Verifica se há um componente customizado provido via window ou arquivo app.js
@@ -327,11 +341,13 @@ async function bootstrap() {
     : null;
   if (g && typeof g.mdBlogApp === "function") {
     ComponentToMount = g.mdBlogApp as typeof App;
-  } else if (document.querySelector('script[src*="app.js"]') || g?.mdBlogEnableAppJs) {
+  } else if (
+    document.querySelector('script[src*="app.js"]',) || g?.mdBlogEnableAppJs
+  ) {
     try {
       // Tenta importar dinamicamente app.js em tempo de execução no browser se existir
-      const dynamicImport = new Function("path", "return import(path)");
-      const userModule = await dynamicImport("./app.js").catch(() => null);
+      const dynamicImport = new Function("path", "return import(path)",);
+      const userModule = await dynamicImport("./app.js",).catch(() => null);
       if (userModule) {
         if (typeof userModule.App === "function") {
           ComponentToMount = userModule.App;
@@ -345,7 +361,7 @@ async function bootstrap() {
   }
 
   if (root) {
-    render(html`<${ComponentToMount} />` as VNode, root);
+    render(html`<${ComponentToMount} />` as VNode, root,);
   }
 
   // Inicializa o roteador para leitura reativa dos artigos
@@ -358,11 +374,13 @@ async function bootstrap() {
 if (typeof document !== "undefined") {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      bootstrap().catch((err) =>
-        console.error("[mdBlog] Bootstrap error:", err)
+      bootstrap().catch((err,) =>
+        console.error("[mdBlog] Bootstrap error:", err,)
       );
-    });
+    },);
   } else {
-    bootstrap().catch((err) => console.error("[mdBlog] Bootstrap error:", err));
+    bootstrap().catch((err,) =>
+      console.error("[mdBlog] Bootstrap error:", err,)
+    );
   }
 }

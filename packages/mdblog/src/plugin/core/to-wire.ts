@@ -1,4 +1,4 @@
-import type { Root, RootContent } from "npm:@types/mdast@4.0.4";
+import type { Root, RootContent, } from "npm:@types/mdast@4.0.4";
 import type {
   MdastRoot,
   Wire,
@@ -7,18 +7,18 @@ import type {
   WireFragment,
   WireIsland,
 } from "../wire.ts";
-import { sanitizeProps } from "../wire.ts";
-import { slugify } from "../detect.ts";
+import { sanitizeProps, } from "../wire.ts";
+import { slugify, } from "../detect.ts";
 
 /**
  * Extracts plain text from mdast nodes recursively.
  */
-function extractText(node: unknown): string {
+function extractText(node: unknown,): string {
   if (!node || typeof node !== "object") return "";
   const n = node as Record<string, unknown>;
   if (typeof n.value === "string") return n.value;
-  if (Array.isArray(n.children)) {
-    return n.children.map(extractText).join("");
+  if (Array.isArray(n.children,)) {
+    return n.children.map(extractText,).join("",);
   }
   return "";
 }
@@ -39,62 +39,60 @@ function extractText(node: unknown): string {
 export function mdastToWire(
   root: MdastRoot,
 ): { wire: WireFragment; title: string } {
-
-
   let extractedTitle = "";
 
-  function transform(node: RootContent | Root): Wire | null {
+  function transform(node: RootContent | Root,): Wire | null {
     if (!node || typeof node !== "object") return null;
 
     switch (node.type) {
       case "root": {
         const children: Wire[] = [];
         for (const child of node.children) {
-          const w = transform(child);
-          if (w !== null) children.push(w);
+          const w = transform(child,);
+          if (w !== null) children.push(w,);
         }
-        return { t: "f", c: children } as WireFragment;
+        return { t: "f", c: children, } as WireFragment;
       }
 
       case "heading": {
-        const text = extractText(node);
+        const text = extractText(node,);
         if (node.depth === 1 && !extractedTitle) {
           extractedTitle = text.trim();
         }
-        const id = slugify(text);
-        const children = transformChildren(node.children);
+        const id = slugify(text,);
+        const children = transformChildren(node.children,);
         return {
           t: "c",
           n: "Heading",
-          p: sanitizeProps({ depth: node.depth, id }),
+          p: sanitizeProps({ depth: node.depth, id, },),
           c: children,
         } as WireComponent;
       }
 
       case "paragraph": {
         // Suporte a ilhas dinâmicas por arquivo no markdown: ::NomeDoArquivo.js{start: 5} ou ::NomeDoArquivo.js
-        const text = extractText(node).trim();
+        const text = extractText(node,).trim();
         const islandDirectiveMatch = text.match(
           /^:{2,3}\s*([A-Za-z0-9_.-]+)\s*(?:\{([\s\S]*)\})?\s*(?::{2,3})?$/,
         );
         if (islandDirectiveMatch && islandDirectiveMatch[1]) {
           const rawTarget = islandDirectiveMatch[1];
-          const islandFileName = rawTarget.endsWith(".js")
+          const islandFileName = rawTarget.endsWith(".js",)
             ? rawTarget
             : `${rawTarget}.js`;
           let props: Record<string, unknown> = {};
           if (islandDirectiveMatch[2]) {
             const raw = islandDirectiveMatch[2].trim();
-            const wrapped = raw.startsWith("{") ? raw : `{${raw}}`;
+            const wrapped = raw.startsWith("{",) ? raw : `{${raw}}`;
             try {
-              props = JSON.parse(wrapped);
+              props = JSON.parse(wrapped,);
             } catch {
               try {
                 // Quote unquoted object keys (e.g. start: 20 -> "start": 20) and normalize single quotes
                 const quoted = wrapped
-                  .replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":')
-                  .replace(/'([^']*)'/g, '"$1"');
-                props = JSON.parse(quoted);
+                  .replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":',)
+                  .replace(/'([^']*)'/g, '"$1"',);
+                props = JSON.parse(quoted,);
               } catch {
                 // Ignore parse error, use empty props
               }
@@ -103,12 +101,12 @@ export function mdastToWire(
           return {
             t: "i",
             n: islandFileName,
-            p: sanitizeProps(props),
+            p: sanitizeProps(props,),
             c: [],
           } as WireIsland;
         }
 
-        const children = transformChildren(node.children);
+        const children = transformChildren(node.children,);
         return {
           t: "c",
           n: "Paragraph",
@@ -122,7 +120,7 @@ export function mdastToWire(
           t: "c",
           n: "Blockquote",
           p: {},
-          c: transformChildren(node.children),
+          c: transformChildren(node.children,),
         } as WireComponent;
       }
 
@@ -131,10 +129,10 @@ export function mdastToWire(
           t: "c",
           n: "List",
           p: sanitizeProps({
-            ordered: Boolean(node.ordered),
+            ordered: Boolean(node.ordered,),
             start: node.start ?? 1,
-          }),
-          c: transformChildren(node.children),
+          },),
+          c: transformChildren(node.children,),
         } as WireComponent;
       }
 
@@ -146,8 +144,8 @@ export function mdastToWire(
             checked: typeof node.checked === "boolean"
               ? node.checked
               : undefined,
-          }),
-          c: transformChildren(node.children),
+          },),
+          c: transformChildren(node.children,),
         } as WireComponent;
       }
 
@@ -157,23 +155,23 @@ export function mdastToWire(
         // {"start": 10}
         // ```
         const lang = node.lang?.trim() ?? "";
-        if (lang.startsWith("island:")) {
-          const rawIsland = lang.slice(7).trim();
-          const islandFileName = rawIsland.endsWith(".js")
+        if (lang.startsWith("island:",)) {
+          const rawIsland = lang.slice(7,).trim();
+          const islandFileName = rawIsland.endsWith(".js",)
             ? rawIsland
             : `${rawIsland}.js`;
           let props: Record<string, unknown> = {};
           if (node.value.trim()) {
             try {
-              props = JSON.parse(node.value.trim());
+              props = JSON.parse(node.value.trim(),);
             } catch {
-              props = { raw: node.value };
+              props = { raw: node.value, };
             }
           }
           return {
             t: "i",
             n: islandFileName,
-            p: sanitizeProps(props),
+            p: sanitizeProps(props,),
             c: [],
           } as WireIsland;
         }
@@ -185,7 +183,7 @@ export function mdastToWire(
             lang: node.lang ?? "",
             meta: node.meta ?? "",
             value: node.value ?? "",
-          }),
+          },),
         } as WireComponent;
       }
 
@@ -193,7 +191,7 @@ export function mdastToWire(
         return {
           t: "c",
           n: "InlineCode",
-          p: sanitizeProps({ value: node.value ?? "" }),
+          p: sanitizeProps({ value: node.value ?? "", },),
         } as WireComponent;
       }
 
@@ -204,8 +202,8 @@ export function mdastToWire(
           p: sanitizeProps({
             href: node.url,
             title: node.title ?? undefined,
-          }),
-          c: transformChildren(node.children),
+          },),
+          c: transformChildren(node.children,),
         } as WireComponent;
       }
 
@@ -217,7 +215,7 @@ export function mdastToWire(
             src: node.url,
             alt: node.alt ?? "",
             title: node.title ?? undefined,
-          }),
+          },),
         } as WireComponent;
       }
 
@@ -225,7 +223,7 @@ export function mdastToWire(
         return {
           t: "e",
           n: "strong",
-          c: transformChildren(node.children),
+          c: transformChildren(node.children,),
         } as WireElement;
       }
 
@@ -233,7 +231,7 @@ export function mdastToWire(
         return {
           t: "e",
           n: "em",
-          c: transformChildren(node.children),
+          c: transformChildren(node.children,),
         } as WireElement;
       }
 
@@ -241,7 +239,7 @@ export function mdastToWire(
         return {
           t: "e",
           n: "del",
-          c: transformChildren(node.children),
+          c: transformChildren(node.children,),
         } as WireElement;
       }
 
@@ -260,11 +258,46 @@ export function mdastToWire(
       }
 
       case "table": {
+        // O alinhamento GFM vive no nó "table", um valor por coluna, e só as
+        // células sabem em que coluna caem: é aqui que as duas coisas se
+        // cruzam. O cabeçalho também é posicional (primeiro linha), porque o
+        // mdast não marca as suas células de outra forma.
+        const align = node.align ?? [];
+        const wireRows: WireComponent[] = node.children.map((
+          row,
+          rowIndex,
+        ): WireComponent => ({
+          t: "c",
+          n: "TableRow",
+          c: row.children.map((cell, colIndex,): WireComponent => ({
+            t: "c",
+            n: "TableCell",
+            p: sanitizeProps({
+              header: rowIndex === 0,
+              align: align[colIndex] ?? undefined,
+            },),
+            c: transformChildren(cell.children,),
+          })),
+        }));
+        const [headRow, ...bodyRows] = wireRows;
+
+        // thead/tbody não são decorativos: as regras do BeerCSS para linhas
+        // alternadas (table.stripes > tbody > tr:nth-child(odd)) e para a borda
+        // do cabeçalho (thead > tr > th) exigem esta estrutura, e o Preact, ao
+        // criar nós por API, não inventa o tbody implícito que o parser de HTML
+        // criaria.
+        const sections: WireElement[] = [];
+        if (headRow) {
+          sections.push({ t: "e", n: "thead", c: [headRow,], },);
+        }
+        if (bodyRows.length > 0) {
+          sections.push({ t: "e", n: "tbody", c: bodyRows, },);
+        }
+
         return {
           t: "c",
           n: "Table",
-          p: sanitizeProps({ align: node.align ?? [] }),
-          c: transformChildren(node.children),
+          c: sections,
         } as WireComponent;
       }
 
@@ -272,7 +305,7 @@ export function mdastToWire(
         return {
           t: "c",
           n: "TableRow",
-          c: transformChildren(node.children),
+          c: transformChildren(node.children,),
         } as WireComponent;
       }
 
@@ -280,7 +313,7 @@ export function mdastToWire(
         return {
           t: "c",
           n: "TableCell",
-          c: transformChildren(node.children),
+          c: transformChildren(node.children,),
         } as WireComponent;
       }
 
@@ -299,19 +332,19 @@ export function mdastToWire(
     }
   }
 
-  function transformChildren(children?: unknown[]): Wire[] {
-    if (!Array.isArray(children)) return [];
+  function transformChildren(children?: unknown[],): Wire[] {
+    if (!Array.isArray(children,)) return [];
     const result: Wire[] = [];
     for (const child of children) {
-      const w = transform(child as RootContent);
+      const w = transform(child as RootContent,);
       if (w !== null) {
-        result.push(w);
+        result.push(w,);
       }
     }
     return result;
   }
 
-  const wire = (transform(root as any) as WireFragment) ?? { t: "f", c: [] };
+  const wire = (transform(root as any,) as WireFragment) ?? { t: "f", c: [], };
 
-  return { wire, title: extractedTitle || "Documentation" };
+  return { wire, title: extractedTitle || "Documentation", };
 }
