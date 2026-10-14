@@ -80,7 +80,12 @@ import {
 } from "./plugin/adapters/sw.ts";
 import { defaultShell, injectWireShell, } from "./plugin/core/shell.ts";
 import type { DocConfig, IO, } from "./plugin/types.ts";
-import { isSWControlling, resolveDocPath, slugify, } from "./plugin/detect.ts";
+import {
+  isSWControlling,
+  resolveDocPath,
+  slugify,
+  toBaseRelativePath,
+} from "./plugin/detect.ts";
 import {
   countWireIslands,
   countWireNodes,
@@ -235,6 +240,7 @@ export {
   Sidebar,
   slugify,
   ThemeToggle,
+  toBaseRelativePath,
   Toc,
   wireToVNode,
 };
@@ -281,6 +287,7 @@ const mdTranspiler = {
   resolveDocPath,
   sanitizeProps,
   slugify,
+  toBaseRelativePath,
   // The build stamp, so a Service Worker — which imports this bundle instead of
   // importing the module graph — can name its caches after the build it holds.
   version: APP_VERSION,

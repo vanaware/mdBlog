@@ -130,6 +130,31 @@ the release `index.html` uses) and `tests/router_test.ts` (the budget); the
 `mdblog-pwa-v2` literal assertion in `app_test.ts` became an assertion that the
 cache name follows the build.
 
+**The same build under a subfolder.** A console error reported from the published
+site — `[sw-adapter] Error processing /mdBlog/articles/index.md: document not
+found` — was the worker asking for its own folder twice. The browser hands the
+worker the request it already resolved (`./articles/index.md` arrives as
+`/mdBlog/articles/index.md`), and `readText` treats a leading slash as "relative
+to the application", prefixing it with `.` — which at the root of a domain is
+harmless and under a deployment folder is a path that cannot exist. Every
+article was missed this way; the page still appeared because `mdFetch` falls back
+to running the pipeline in the tab, so the cost was a failed request and a second
+parse per navigation, invisible except in the console. `toBaseRelativePath`
+(`plugin/detect.ts`) now reduces the request to what it is below the worker's own
+directory before the document is read, which is the spelling the page uses and
+keeps a cache key from depending on where the site is published. Verified against
+a real subfolder: a copy of `dist/` served at `http://127.0.0.1:8099/mdBlog/`,
+worker in control, navigations and JSON requests answered with
+`X-Rendered-By: SW-Wire-Format` and an empty console — while the path the old
+code produced (`/mdBlog/mdBlog/articles/index.md`) still 404s there, which is the
+proof of the mechanism rather than of the fix. Tests: `tests/sw_adapter_test.ts`.
+
+The console line about autofocus is the same kind of noise and is gone: the
+search dialog declared `autofocus` on an input that only exists once the dialog
+is open, which Chrome blocks ("a document already has a focused element") while
+the component already places the caret itself in an effect. The attribute is no
+longer rendered.
+
 ## ⏭️ Next candidates
 
 - `deno task esbuild noversion`, the build every local round and the test suite

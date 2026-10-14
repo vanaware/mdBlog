@@ -21,7 +21,10 @@ Happens when the user opens a path directly in the browser (e.g.
                   │     └── Valid cache hit? If so, uses the cached WireDoc.
                   │
                   ├── Cache miss or expired:
-                  │     ├── Internal fetch: '/docs/guide.md?_md_raw=1'
+                  │     ├── The request path is reduced to what it is below the
+                  │     │    application directory (/mdBlog/articles/index.md
+                  │     │    becomes articles/index.md, the spelling the page uses)
+                  │     ├── Internal fetch: 'articles/index.md?_md_raw=1'
                   │     ├── Parse Markdown -> mdast AST -> WireDoc
                   │     └── Stores the WireDoc in Cache Storage
                   │
@@ -54,6 +57,12 @@ Happens when the user opens a path directly in the browser (e.g.
   same theme restore and the same mount deadline as a plain visit — there is no
   second copy of the head to keep in step, which is how a shell ends up loading
   another framework release and hanging on a blank page.
+- **Publishable anywhere:** the worker reads the request path relative to its own
+  directory rather than to the server root, so the same build works at the root
+  of a domain and under a subfolder (GitHub Pages). A path kept as the browser
+  sent it would be joined to the folder twice, and every document would 404 — a
+  failure that only appears once the site is published, never in local
+  development.
 
 ---
 

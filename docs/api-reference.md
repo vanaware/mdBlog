@@ -112,6 +112,8 @@ Creates a fetch event interceptor for use in a Service Worker (`sw.js`). Interce
   - `bundlePath?: string` (default: `"./mdblog.js"`) — the client script the shell loads.
   - `shellPath?: string` (default: `"./index.html"`) — the document the first-paint payload is injected into, resolved next to the worker. Point it at another entry document when the app ships one; when it cannot be read, `defaultShell` answers instead.
 
+The browser hands the worker the request it already resolved, so a page asking for `./articles/index.md` arrives as `/mdBlog/articles/index.md`. Before the document is read, that path is reduced to what it is below the worker's own directory (`articles/index.md`, through `toBaseRelativePath`) — the spelling the client itself uses, and the only one a reader resolving against the application directory can serve. Without the reduction a site published under a subfolder asks for the folder twice and misses every document, while the same build served at the root of a domain shows nothing wrong at all. It also keeps the cache key of a document independent of where the site is published.
+
 ### `createLocalFetcher(io: IO, options?: DocConfig): (url: string) => Promise<WireDoc>`
 Creates an in-browser fetcher that executes the parsing pipeline locally as a transparent fallback when the Service Worker is inactive.
 

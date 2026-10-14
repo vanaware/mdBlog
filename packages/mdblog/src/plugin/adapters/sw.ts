@@ -1,5 +1,5 @@
 import type { DocConfig, IO, } from "../types.ts";
-import { resolveDocPath, } from "../detect.ts";
+import { resolveDocPath, toBaseRelativePath, } from "../detect.ts";
 import { loadDoc, } from "../core/pipeline.ts";
 import { defaultShell, injectWireShell, } from "../core/shell.ts";
 
@@ -80,6 +80,16 @@ export function createSWFetchHandler(
   const basePath = options.basePath ?? "./articles";
   const bundlePath = options.bundlePath ?? "./mdblog.js";
   const shellPath = options.shellPath ?? "./index.html";
+  // Everything the site serves lives next to the worker, so its directory is the
+  // application's base. A request arrives already resolved by the browser
+  // (`/mdBlog/articles/index.md`), and that origin-rooted form is not what the
+  // reader asks the network for — see toBaseRelativePath.
+  const baseDir = (() => {
+    const href = (typeof self !== "undefined" && self?.location?.href)
+      ? self.location.href
+      : undefined;
+    return href ? new URL("./", href,).pathname : "/";
+  })();
   // The document belongs next to the worker, not next to the request: an article
   // navigation asks for `../index.html` when resolved against its own path, and
   // a deep link would then be answered with the fallback shell.
@@ -113,11 +123,15 @@ export function createSWFetchHandler(
       return false;
     }
 
+    // The path of the document below the application's own directory: the same
+    // spelling a page fetches it with, which is what the reader resolves.
+    const assetPath = toBaseRelativePath(docPath, baseDir,);
+
     // 5. Intercept and handle
     event.respondWith(
       (async () => {
         try {
-          const doc = await loadDoc(docPath, io, options,);
+          const doc = await loadDoc(assetPath, io, options,);
 
           const accept = request.headers.get("Accept",) ?? "";
 

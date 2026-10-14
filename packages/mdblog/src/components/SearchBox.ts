@@ -45,12 +45,15 @@ export function SearchBox({
   const query = searchQuery;
   const panelInput = useSignal<HTMLInputElement | null>(null,);
 
-  // Native `autofocus` is ignored in a dialog shown through a class (BeerCSS
-  // uses .active), so the focus has to be placed explicitly: without it, opening
-  // the search from the icon button would take two taps. This is the one effect
-  // that genuinely belongs to the component: the dialog element only exists once
-  // `searchOpen` turned true, and a signal effect runs before the DOM is
-  // committed, so there would be nothing to focus yet.
+  // The focus is placed explicitly rather than with the `autofocus` attribute:
+  // BeerCSS shows a dialog by adding .active, and an attribute processed while
+  // the element is still hidden does nothing — Chrome then reports
+  // "Autofocus processing was blocked because a document already has a focused
+  // element", because the control that opened the panel keeps its focus. Without
+  // the call below, opening the search from the icon button would take two taps.
+  // This is the one effect that genuinely belongs to the component: the dialog
+  // element only exists once `searchOpen` turned true, and a signal effect runs
+  // before the DOM is committed, so there would be nothing to focus yet.
   //
   // The restore of the persisted index and the Ctrl/Cmd+K and Escape handlers
   // used to live here too; they now sit with the state they drive —
@@ -91,7 +94,7 @@ export function SearchBox({
           993), which would show both and blow up the bar. Narrow screens only
           have room for the icon button anyway. -->
       ${isWideScreen.value
-        ? html`
+      ? html`
           <div
             class="field prefix round fill small surface-container-highest no-margin"
             onClick=${openSearch}
@@ -106,13 +109,13 @@ export function SearchBox({
               aria-keyshortcuts="Control+K Meta+K"
               onFocus=${openSearch}
               onInput=${(e: Event,) => {
-                query.value = (e.target as HTMLInputElement).value;
-                openSearch();
-              }}
+          query.value = (e.target as HTMLInputElement).value;
+          openSearch();
+        }}
             />
           </div>
         `
-        : html`
+      : html`
           <button
             class="circle transparent"
             onClick=${openSearch}
@@ -129,7 +132,7 @@ export function SearchBox({
           phone. The dialog already brings overflow-y:auto and max-block-size, so
           it needs no scroll class of its own. -->
       ${searchOpen.value
-        ? html`
+      ? html`
           <div class="overlay active" onClick=${handleClose}></div>
 
           <dialog
@@ -149,10 +152,10 @@ export function SearchBox({
               >Search articles</h6>
               <div class="max"></div>
               ${isWideScreen.value
-                ? html`
+          ? html`
                   <span class="chip" title="Close with the Esc key">Esc</span>
                 `
-                : null}
+          : null}
               <button
                 class="circle transparent"
                 onClick=${handleClose}
@@ -171,8 +174,8 @@ export function SearchBox({
                 unclickable. -->
             <div
               class=${query.value
-                ? "field prefix suffix round no-margin"
-                : "field prefix round no-margin"}
+          ? "field prefix suffix round no-margin"
+          : "field prefix round no-margin"}
             >
               <i class="front">search</i>
               <input
@@ -181,32 +184,31 @@ export function SearchBox({
                 value=${query.value}
                 aria-label="Search articles"
                 aria-keyshortcuts="Control+K Meta+K"
-                autofocus
                 ref=${(el: HTMLInputElement | null,) => {
-                  panelInput.value = el;
-                }}
+          panelInput.value = el;
+        }}
                 onInput=${(e: Event,) => {
-                  query.value = (e.target as HTMLInputElement).value;
-                }}
+          query.value = (e.target as HTMLInputElement).value;
+        }}
               />
               ${query.value
-                ? html`
+          ? html`
                   <i
                     class="front link"
                     title="Clear search"
                     onClick=${() => {
-                      query.value = "";
-                      panelInput.value?.focus();
-                    }}
+              query.value = "";
+              panelInput.value?.focus();
+            }}
                   >
                     close
                   </i>
                 `
-                : null}
+          : null}
             </div>
 
             ${trimmed === ""
-              ? html`
+          ? html`
                 <div class="row small-padding round surface-container-low">
                   <i class="primary-text">tips_and_updates</i>
                   <div class="max small-text">
@@ -217,10 +219,10 @@ export function SearchBox({
                   </span>
                 </div>
               `
-              : null}
+          : null}
 
             ${results.length > 0
-              ? html`
+          ? html`
                 <div class="row small-text secondary-text">
                   <div class="max">
                     ${results.length} result${results.length > 1 ? "s" : ""} for
@@ -228,7 +230,7 @@ export function SearchBox({
                   </div>
                 </div>
               `
-              : null}
+          : null}
 
             <!-- BeerCSS zeroes the margins of every "a.row" (its own rule), so
                 the gap between cards cannot come from the flow: small-margin +
@@ -241,35 +243,35 @@ export function SearchBox({
                 outside the panel. -->
             <div class="vertical-margin small-margin" aria-live="polite">
               ${results.map((doc,) =>
-                html`
+            html`
                   <a
                     key=${doc.path}
                     href=${articleHrefFromPath(doc.path,)}
                     class="row wave round small-padding vertical-margin small-margin surface-container-low"
                     onClick=${(e: Event,) => {
-                      e.preventDefault();
-                      handleSelect(doc.path,);
-                    }}
+                e.preventDefault();
+                handleSelect(doc.path,);
+              }}
                   >
                     <i class="primary-text">${doc.icon || "article"}</i>
                     <div class="max truncate">
                       <div class="bold truncate">${doc.title}</div>
                       ${doc.description
-                        ? html`
+                ? html`
                           <div class="small-text secondary-text truncate">
                             ${doc.description}
                           </div>
                         `
-                        : null}
+                : null}
                     </div>
                     <i class="tiny secondary-text">arrow_forward</i>
                   </a>
                 `
-              )}
+          )}
             </div>
 
             ${trimmed !== "" && results.length === 0
-              ? html`
+          ? html`
                 <div
                   class="center-align small-padding round surface-container-low vertical-margin">
                   <i class="primary-text large">search_off</i>
@@ -281,10 +283,10 @@ export function SearchBox({
                   </p>
                 </div>
               `
-              : null}
+          : null}
           </dialog>
         `
-        : null}
+      : null}
     </div>
   `;
 }

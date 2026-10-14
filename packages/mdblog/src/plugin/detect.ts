@@ -119,6 +119,43 @@ export function resolveDocPath(
 }
 
 /**
+ * @description Rewrites a document path relative to the directory the application
+ * is served from, instead of relative to the server's root.
+ *
+ * A Service Worker receives the request the browser already resolved: the page
+ * asks for `./articles/index.md` and the worker is handed
+ * `/mdBlog/articles/index.md`. Handing that origin-rooted spelling back to a
+ * reader that resolves paths against the application's own directory puts the
+ * deployment folder in front of it twice, so a site published under a subfolder
+ * misses every document it holds while the very same code served at the root of
+ * a domain cannot notice the difference. Reducing the path to what it is below
+ * the application's directory settles both spellings into one, and keeps the
+ * cache key of a document independent of where the site happens to be published.
+ * @param docPath - Path as requested: origin-rooted, `./`-relative or bare.
+ * @param baseDir - Directory holding the application, e.g. `"/mdBlog/"` or `"/"`.
+ * @returns The same document addressed from baseDir, without a leading slash.
+ * @example
+ * ```ts
+ * import { toBaseRelativePath } from "./detect.ts";
+ * toBaseRelativePath("/mdBlog/articles/index.md", "/mdBlog/"); // "articles/index.md"
+ * toBaseRelativePath("/articles/guide.md", "/"); // "articles/guide.md"
+ * ```
+ */
+export function toBaseRelativePath(
+  docPath: string,
+  baseDir: string,
+): string {
+  if (!docPath) return "";
+  const base = baseDir.startsWith("/",) ? baseDir : `/${baseDir}`;
+  const prefix = base.endsWith("/",) ? base : `${base}/`;
+  // The request came with the deployment folder spelled out in front of it.
+  if (docPath.startsWith(prefix,)) return docPath.slice(prefix.length,);
+  // Already relative to the application, in one of the two ways it is written.
+  if (docPath.startsWith("./",)) return docPath.slice(2,);
+  return docPath.replace(/^\//, "",);
+}
+
+/**
  * @description Generates a clean URL slug for heading anchors.
  * @param text - Plain heading text.
  * @returns Clean kebab-case slug string.
