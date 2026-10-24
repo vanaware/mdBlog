@@ -28,6 +28,13 @@ import mdTranspiler from "./mdblog.js";
 // stops being whatever the first visit happened to cache.
 const CACHE_NAME = `mdblog-pwa-${mdTranspiler.version || "dev"}`;
 
+// A request that neither resolves nor fails — the signature of a worker whose
+// caches were deleted underneath an open tab — would otherwise spin the tab
+// past the shell's own mount deadline, because the deadline script only runs
+// once the navigation itself arrives. The network therefore has to answer
+// within this window for the deadline to exist at all.
+const NETWORK_DEADLINE_MS = 6000;
+
 // List of assets essential to offline operation
 const STATIC_ASSETS = [
   "./",
@@ -93,7 +100,13 @@ self.addEventListener("fetch", (event,) => {
   event.respondWith(
     (async () => {
       try {
-        const networkResponse = await fetch(event.request,);
+        const networkResponse = await Promise.race([
+          fetch(event.request,),
+          new Promise((resolve,) =>
+            setTimeout(() => resolve(null,), NETWORK_DEADLINE_MS,)
+          ),
+        ],);
+        if (!networkResponse) throw new Error("network deadline passed",);
         if (networkResponse.ok) {
           const cache = await caches.open(CACHE_NAME,);
           cache.put(event.request, networkResponse.clone(),).catch(() => {},);

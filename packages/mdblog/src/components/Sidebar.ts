@@ -37,7 +37,7 @@ export function Sidebar(): unknown {
       <span class="bold small-text truncate">Articles</span>
       <div class="max"></div>
       <button
-        class="circle tiny transparent"
+        class="circle transparent"
         onClick=${() => (sidebarOpen.value = false)}
         aria-label="Close the side navigation"
         title="Close the side menu"

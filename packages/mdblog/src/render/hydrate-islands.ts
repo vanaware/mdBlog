@@ -13,7 +13,15 @@ export interface HydrateOptions {
  */
 export const dynamicIslandsCache: Record<string, unknown> = {};
 
-const inFlightImports: Record<string, Promise<Record<string, any> | null>> = {};
+/**
+ * @description One import promise per island file, shared between concurrent
+ * hydration passes. Failed attempts are evicted (see {@link hydrateNode}), so a
+ * later navigation can retry; exported for tests and diagnostics.
+ */
+export const inFlightImports: Record<
+  string,
+  Promise<Record<string, unknown> | null>
+> = {};
 
 /**
  * @description Containers claimed by a hydration pass that is still running. A node is claimed before the first `await` so a second, overlapping pass cannot mount the same island a second time.
@@ -107,9 +115,16 @@ async function hydrateNode(el: HTMLElement,): Promise<boolean> {
         : `./islands/${islandFileName}`;
 
       const dynamicImport = new Function("path", "return import(path)",);
-      inFlightImports[islandFileName] = dynamicImport(islandUrl,).catch(() =>
+      const attempt = dynamicImport(islandUrl,).catch(() =>
         dynamicImport(`./islands/${islandFileName}`,)
       );
+      // Neither spelling resolved: drop the memo so a later navigation can
+      // retry instead of awaiting a permanently rejected promise. The stored
+      // attempt itself stays rejected — this caller still reports the failure.
+      attempt.catch(() => {
+        delete inFlightImports[islandFileName];
+      },);
+      inFlightImports[islandFileName] = attempt;
     }
 
     const mod = await inFlightImports[islandFileName];

@@ -61,6 +61,14 @@
     <link
       href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.css"
       rel="stylesheet" />
+    <!-- The icon font ships inside beer.min.css as @font-face with
+         font-display: block: every <i> glyph stays invisible until the
+         stylesheet is parsed and the woff2 fetch has finished. Preloading it
+         starts that fetch in parallel with the stylesheet instead of behind
+         it. -->
+    <link rel="preload"
+      href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/material-symbols-outlined.woff2"
+      as="font" type="font/woff2" crossorigin />
     <script type="module"
       src="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.js"></script>
     <script type="module"
@@ -74,6 +82,14 @@
       if (savedTheme === "dark" || savedTheme === "light") {
         document.body.classList.remove("auto", "light", "dark",);
         document.body.classList.add(savedTheme,);
+      }
+      // The shipped theme-color is the brand purple of the light palette; the
+      // chrome and splash should carry the background actually painted, so the
+      // restored mode is mirrored into the meta before the first paint.
+      var bootBg = getComputedStyle(document.body,).backgroundColor;
+      var bootMeta = document.querySelector("meta[name=theme-color]",);
+      if (bootBg && bootBg !== "transparent" && bootMeta) {
+        bootMeta.setAttribute("content", bootBg,);
       }
     } catch (e) {}
     </script>

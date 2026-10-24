@@ -155,13 +155,91 @@ is open, which Chrome blocks ("a document already has a focused element") while
 the component already places the caret itself in an effect. The attribute is no
 longer rendered.
 
+**Simplification round — no feature, smaller code.** A whole-codebase review
+confirmed the documentation is entirely in English (guides, READMEs, articles,
+JSDoc, comments); the last two Portuguese remnants — the `sub-artigo-*.md`
+sample paths in `docs/syntax-and-islands.md` — became `sub-article-*.md`, and
+the bilingual keyword table in `inferArticleIcon` stays on purpose: it is runtime
+data that lets a Portuguese article tree get the same icons, not documentation.
+The engine itself shed its duplications: `state.ts` now fetches every document
+through one `fetchArticleText()` and builds every `ArticleItem` — the root
+`index.md` included — through one `buildArticleItem()`; `router.ts` routes
+through `utils.normalizePath` instead of re-implementing it; the dead
+single-element candidate loop of `io.readText` is a straight line; the icon
+inference reads a keyword table instead of eight if-branches; the Service Worker
+adapter types its `event` with a documented structural `SWFetchEvent` (now part
+of the published surface) instead of `any`; the breadcrumb walk uses one path→article Map
+instead of rescanning the list per hop; and a failed island import is now
+evicted from the import memo so a later navigation can retry it. The client-side
+cache bucket follows the build stamp (`mdblog-pwa-${APP_VERSION || "dev"}`) the
+same way `sw.js` names its own, so page and worker share one versioned bucket
+and a release orphans the old one — the frozen `mdblog-pwa-v1` name no cleanup
+ever owned is gone. The hand-written `Signal` interface in `mod.ts` stays — an
+attempt to alias the native `@preact/signals` type fails JSR's `private-type-ref`
+doc lint, and the comment there now records why. Tests: `router_test.ts` (naming mirroring) and the new
+`hydrate_islands_test.ts` (import eviction and retry); the suite runs 19 files,
+80 steps, all green.
+
+**Pure-BeerCSS round — copied reference audited, four real gaps closed.**
+`docs/beercss.md` (copied from another project as the styling reference) was
+verified rule by rule against the actual `beercss@3.7.12` stylesheet and the
+official repo: its golden rules hold (the app writes no custom CSS, ripples and
+`:focus-visible` rings come from the framework, the `.overlay.active` +
+`dialog.active` pattern is the correct 3.7.x scrim — there is no `.modal` class
+in this release), but three of its claims are wrong for 3.7.12 and the file now
+says so: `medium-margin`/`medium-padding` do not exist (only `medium-space`
+does), the dialog `modal` helper is a later major, and the icon fonts are
+already bundled in `beer.min.css`. The audit found four gaps worth code:
+`beer.min.css` declares its Material Symbols `@font-face` with
+`font-display: block`, so both shells (public `index.html` and `defaultShell`)
+now `<link rel="preload" as="font" crossorigin>` the woff2 instead of leaving
+every glyph invisible behind the stylesheet round trip; `ThemeToggle` seeded its
+state from `body.classList.contains("dark")`, which never fires in `auto` mode —
+`initialThemeIsDark()` now falls back to the `prefers-color-scheme` query the
+auto mode mirrors; the hardcoded `#6750a4` `theme-color` meta follows the
+painted background through `syncThemeColor()` (boot script in the shipped shell,
+`applyTheme` otherwise); and the Sidebar close button gave up `tiny` to return
+above the 48px M3 tap target. Tests: new `theme_toggle_test.ts` (7 steps, using
+the native Deno `localStorage` because its global accessor ignores
+reassignment) and a shell preload lockstep assertion; the suite runs 21 files,
+88 steps, all green.
+
+**Refresh hang — every wait now has a deadline.** Refreshing
+`http://localhost:3000/#/` in a real browser kept spinning forever. The server
+answered every route in milliseconds, and a fresh browser reloaded cleanly — the
+signature of the old trap: `resolveDocPath("/")` treats the root as an article,
+so the refresh IS a worker navigation, and a worker holding the pre-watchdog
+bundle (kept alive because `noversion` freezes the stamped URL it registered
+under) can hand `respondWith` a promise that never settles and never fails —
+the shell's 12s mount deadline cannot help because the navigation HTML itself
+never arrives. Two layers of watchdog plus one replacement path: the published
+adapter (`plugin/adapters/sw.ts`) races the whole handling chain against
+`handlerTimeoutMs` (default 8000), answering a 504 — an HTML "Still loading"
+page for navigations, JSON for API reads — and clearing the timer the moment
+the chain settles; `sw.js` gives its generic network-first fetch a
+`NETWORK_DEADLINE_MS = 6000` race so a stalled fetch falls into the existing
+cache-and-shell fallback instead of hanging the event; and the registration in
+`register-sw.ts` sets `updateViaCache: "none"`, so under a frozen version URL
+the update check still reaches the network and a byte-changed worker is
+actually re-downloaded and adopted via `skipWaiting`. Worst case is now a 504
+that invites a reload, never an eternal spinner. Tests: a "Bounded answers"
+describe in `sw_adapter_test.ts` (html deadline, json deadline, and a fast
+answer proving the timer is cleared); the suite runs 22 files, 91 steps, all
+green.
+
 ## ⏭️ Next candidates
 
 - `deno task esbuild noversion`, the build every local round and the test suite
-  runs, keeps the stamp frozen — so in development the worker is still not
-  replaced by a rebuild and a stale engine has to be dropped by hand (DevTools,
-  or the shell's own "Discard the cached copy"). A stamp that moves with the
-  content of the bundle would close that gap without touching releases.
+  runs, keeps the stamp frozen — so in development the registered worker URL
+  never changes across rebuilds. `updateViaCache: "none"` makes the browser
+  revalidate the script so a byte-changed worker is replaced, and both the
+  adapter and `sw.js` now answer within a deadline even while an old wedged
+  worker is still in charge, but a content-hash stamp (owned by
+  `@vanaware/buildit`'s `versionPaths`) would also make the URL itself move and
+  let a brand-new tab skip the stale worker entirely.
 - Old bookmarks pointing at the previous Portuguese file names 404; a legacy alias
   map (or a case-insensitive lookup against the discovered article tree) would keep
   them working.
+- The root `README.md` is not formatted (`deno fmt --check` flags the nested code
+  fence around line 148) and `docs/` is excluded from `deno fmt` targets —
+  deciding whether the guides should be format-covered is an open choice.

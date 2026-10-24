@@ -99,10 +99,10 @@ tags:
   - "tutorial"
   - "deno"
 pages:                     # Recursive navigation to sub-pages
-  - path: "sub-artigo-1.md"
+  - path: "sub-article-1.md"
     title: "Part 1"
     icon: "filter_1"
-  - path: "sub-artigo-2.md"
+  - path: "sub-article-2.md"
     title: "Part 2"
     icon: "filter_2"
 ---

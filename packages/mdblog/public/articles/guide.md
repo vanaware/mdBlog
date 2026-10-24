@@ -18,7 +18,7 @@ pages:
 Welcome to the live demonstration of the **mdBlog** architecture!
 
 This document is read by the Markdown parser, turned into serializable JSON nodes
-(*Wire Format AST*) and materialized by Preact in the browser with a responsive
+(_Wire Format AST_) and materialized by Preact in the browser with a responsive
 BeerCSS layout.
 
 ---
@@ -75,13 +75,13 @@ the reading.
 The Wire Format converts Markdown tables into Preact components with a responsive
 BeerCSS layout:
 
-| Feature | Traditional (Docsify) | Wire Format (mdBlog) |
-|---|---|---|
-| HTML injection | `dangerouslySetInnerHTML` | Pure, typed Preact VNodes |
-| SW interception | Not native | Turns `.md` into AST in the background |
-| Interactivity | Loose scripts in the DOM | Preact Islands with `@preact/signals` |
-| XSS protection | Complex without sanitizers | Immune by AST architecture |
-| Offline support | Basic | CacheStorage + IndexedDB (`idb-keyval`) |
+| Feature         | Traditional (Docsify)      | Wire Format (mdBlog)                    |
+| --------------- | -------------------------- | --------------------------------------- |
+| HTML injection  | `dangerouslySetInnerHTML`  | Pure, typed Preact VNodes               |
+| SW interception | Not native                 | Turns `.md` into AST in the background  |
+| Interactivity   | Loose scripts in the DOM   | Preact Islands with `@preact/signals`   |
+| XSS protection  | Complex without sanitizers | Immune by AST architecture              |
+| Offline support | Basic                      | CacheStorage + IndexedDB (`idb-keyval`) |
 
 ---
 
@@ -90,14 +90,14 @@ BeerCSS layout:
 You can easily copy a snippet by clicking the button in the top right corner:
 
 ```typescript
-import { mdFetch } from "./src/plugin/adapters/client.ts";
-import { createBrowserIO } from "./src/plugin/core/io.ts";
+import { mdFetch, } from "./src/plugin/adapters/client.ts";
+import { createBrowserIO, } from "./src/plugin/core/io.ts";
 
 const io = createBrowserIO();
-const doc = await mdFetch("./articles/guide.md", io);
+const doc = await mdFetch("./articles/guide.md", io,);
 
-console.log("Document title:", doc.title);
-console.log("Wire Format nodes:", doc.wire.c?.length);
+console.log("Document title:", doc.title,);
+console.log("Wire Format nodes:", doc.wire.c?.length,);
 ```
 
 ---

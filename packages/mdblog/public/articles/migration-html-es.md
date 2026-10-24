@@ -24,7 +24,7 @@ with no compilation step and no runtime transpiler.
 ## 🎯 Why HTML+ES?
 
 1. **Standard, valid JavaScript:**
-   It uses native *tagged template literals* (`html\`<article>...\`\``). No JSX compiler and no Babel required.
+   It uses native _tagged template literals_ (`html\`<article>...\`\``). No JSX compiler and no Babel required.
 
 2. **The canonical `.js` extension:**
    `.js` files are imported natively by the browser through `<script type="module">` or `import()`.
@@ -44,16 +44,20 @@ with no compilation step and no runtime transpiler.
 Create a new JavaScript file, for instance `public/islands/TimerWidget.js`:
 
 ```javascript
-import { html as _html, signal as _signal, useSignal as _useSignal } from "../mdblog.js";
+import {
+  html as _html,
+  signal as _signal,
+  useSignal as _useSignal,
+} from "../mdblog.js";
 
 const html = _html || globalThis.mdBlog?.html;
 const signal = _signal || globalThis.mdBlog?.signal;
 const useSignal = _useSignal || globalThis.mdBlog?.useSignal;
 
-export function TimerWidget({ initialSeconds = 0, label = "Stopwatch" }) {
+export function TimerWidget({ initialSeconds = 0, label = "Stopwatch", },) {
   const seconds = typeof useSignal === "function"
-    ? useSignal(Number(initialSeconds))
-    : signal(Number(initialSeconds));
+    ? useSignal(Number(initialSeconds,),)
+    : signal(Number(initialSeconds,),);
 
   return html`
     <article class="border round padding surface-container-low margin">
@@ -74,7 +78,7 @@ export function TimerWidget({ initialSeconds = 0, label = "Stopwatch" }) {
           </button>
           <button
             class="circle small transparent"
-            onClick=${() => (seconds.value = Number(initialSeconds))}
+            onClick=${() => (seconds.value = Number(initialSeconds,))}
             aria-label="Reset the time"
           >
             <i>restart_alt</i>

@@ -106,4 +106,24 @@ describe("First-paint shell", () => {
       "the fallback must not carry another project's name",
     );
   });
+
+  it("preloads the icon font in both shells", async () => {
+    const shipped = await Deno.readTextFile(
+      new URL("../public/index.html", import.meta.url,),
+    );
+
+    // beer.min.css declares its @font-face with font-display: block, so a head
+    // that does not preload the woff2 keeps every glyph invisible until the
+    // font arrives behind the stylesheet — and the fallback shell is read
+    // exactly when the network is already failing.
+    const fontOf = (html: string,) =>
+      html.match(/beercss@[\d.]+\/dist\/cdn\/material-symbols-outlined\.woff2/,)
+        ?.[0];
+
+    assert(
+      fontOf(shipped,),
+      "the shipped index.html must preload the icon font",
+    );
+    assertEquals(fontOf(defaultShell(doc,),), fontOf(shipped,),);
+  });
 });

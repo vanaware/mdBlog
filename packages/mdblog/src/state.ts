@@ -1,6 +1,9 @@
 import { computed, effect, type Signal, signal, } from "@preact/signals";
 import type { WireDoc, } from "./plugin/wire.ts";
-import { parseFrontmatter, } from "./plugin/core/frontmatter.ts";
+import {
+  type ParsedFrontmatter,
+  parseFrontmatter,
+} from "./plugin/core/frontmatter.ts";
 import { get, set, } from "idb-keyval";
 import { getAppBaseUrl, } from "./plugin/detect.ts";
 import { TOC_RAIL_HEIGHT_TIERS, } from "./utils.ts";
@@ -264,6 +267,22 @@ export const parseTimeMs: Signal<number> = signal<number>(0,);
 export const viewMode: Signal<ViewMode> = signal<ViewMode>("preview",);
 
 /**
+ * @description Keyword table behind {@link inferArticleIcon}: each row maps a set
+ * of lowercase terms (Portuguese next to their English equivalents) to the
+ * Material Symbols icon they select. Rows are matched in order, first hit wins.
+ */
+const ARTICLE_ICON_KEYWORDS: ReadonlyArray<readonly [string[], string,]> = [
+  [["index", "home", "início", "start",], "home",],
+  [["readme", "overview",], "article",],
+  [["guia", "guide", "demo", "pratico",], "science",],
+  [["html", "migracao", "migration", "code",], "code",],
+  [["wire", "ast", "spec", "schema",], "schema",],
+  [["island", "ilha",], "widgets",],
+  [["fluxo", "flow", "ciclo", "vida",], "sync",],
+  [["plano", "plan", "desenvolvimento", "roadmap",], "checklist",],
+];
+
+/**
  * Assigns a semantic icon based on the article name or title.
  */
 function inferArticleIcon(slug: string, title: string,): string {
@@ -273,37 +292,10 @@ function inferArticleIcon(slug: string, title: string,): string {
   // part of what is matched here, which is why the shipped articles use English
   // slugs.
   const combined = `${slug} ${title}`.toLowerCase();
-  if (
-    combined.includes("index",) || combined.includes("home",) ||
-    combined.includes("início",) || combined.includes("start",)
-  ) return "home";
-  if (combined.includes("readme",) || combined.includes("overview",)) {
-    return "article";
-  }
-  if (
-    combined.includes("guia",) || combined.includes("guide",) ||
-    combined.includes("demo",) || combined.includes("pratico",)
-  ) return "science";
-  if (
-    combined.includes("html",) || combined.includes("migracao",) ||
-    combined.includes("migration",) || combined.includes("code",)
-  ) return "code";
-  if (
-    combined.includes("wire",) || combined.includes("ast",) ||
-    combined.includes("spec",) || combined.includes("schema",)
-  ) return "schema";
-  if (combined.includes("island",) || combined.includes("ilha",)) {
-    return "widgets";
-  }
-  if (
-    combined.includes("fluxo",) || combined.includes("flow",) ||
-    combined.includes("ciclo",) || combined.includes("vida",)
-  ) return "sync";
-  if (
-    combined.includes("plano",) || combined.includes("plan",) ||
-    combined.includes("desenvolvimento",) || combined.includes("roadmap",)
-  ) {
-    return "checklist";
+  for (const [keywords, icon,] of ARTICLE_ICON_KEYWORDS) {
+    if (keywords.some((keyword,) => combined.includes(keyword,))) {
+      return icon;
+    }
   }
   return "description";
 }
@@ -371,10 +363,93 @@ export function flattenArticles(items: ArticleItem[],): ArticleItem[] {
 }
 
 /**
+ * @description One entry of a frontmatter `pages:`/`articles:`/`subpages:` list:
+ * either a bare filename or an object carrying at least the `path` it points at.
+ */
+type SubPageRef = string | { path?: string };
+
+/**
+ * Fetches the raw markdown of a document under `articles/`, asking first with the
+ * `?_md_raw=1` marker (the spelling that bypasses Service Worker interception)
+ * and then plain, swallowing network failures so callers can fall back to the
+ * empty string.
+ */
+async function fetchArticleText(normalized: string,): Promise<string> {
+  const url = `${getAppBaseUrl()}articles/${normalized}`;
+  try {
+    const res = await fetch(`${url}?_md_raw=1`,);
+    if (res.ok) return await res.text();
+    const res2 = await fetch(url,);
+    if (res2.ok) return await res2.text();
+  } catch {
+    // offline or network failure
+  }
+  return "";
+}
+
+/**
+ * Builds an `ArticleItem` (and its search-index twin) out of an already parsed
+ * document. Shared by every level of the tree, the root `index.md` included, so
+ * frontmatter interpretation, title/icon fallbacks and search accumulation are
+ * written exactly once. The caller keeps its own `ParsedFrontmatter` handle to
+ * read the sub-page list from without paying for a second parse.
+ */
+function buildArticleItem(
+  normalized: string,
+  parsed: ParsedFrontmatter,
+  depth: number,
+  parentPath: string | undefined,
+  searchAccumulator: SearchDocItem[],
+): ArticleItem {
+  const { frontmatter: pageFm, body: pageBody, } = parsed;
+  const slug = normalized.replace(/\.md$/, "",);
+  const title = pageFm.title ||
+    (depth === 0
+      ? "Home page"
+      : extractTitleFromMarkdown(pageBody, normalized,));
+  const icon = pageFm.icon || inferArticleIcon(slug, title,);
+  const itemPath = `./articles/${normalized}`;
+  const tags: string[] = Array.isArray(pageFm.tags,)
+    ? pageFm.tags
+    : (pageFm.tag ? [pageFm.tag,] : []);
+
+  const item: ArticleItem = {
+    name: normalized,
+    slug,
+    path: itemPath,
+    title,
+    icon,
+    badge: pageFm.badge,
+    date: pageFm.date,
+    location: pageFm.location || `#/articles/${normalized}`,
+    author: pageFm.author,
+    description: pageFm.description,
+    tags,
+    depth,
+    parentPath,
+    children: [],
+  };
+
+  // Fills the search entry that later goes to IndexedDB
+  searchAccumulator.push({
+    path: itemPath,
+    title,
+    description: pageFm.description || "",
+    content: cleanMarkdownText(pageBody,),
+    tags,
+    icon,
+    badge: pageFm.badge,
+    depth,
+  },);
+
+  return item;
+}
+
+/**
  * Loads a page and its sub-pages recursively, from each page's frontmatter.
  */
 async function loadPageRecursive(
-  rawItem: any,
+  rawItem: SubPageRef,
   depth: number,
   parentPath: string,
   visited: Set<string>,
@@ -388,69 +463,26 @@ async function loadPageRecursive(
   visited.add(normalized,);
 
   try {
-    const baseUrl = getAppBaseUrl();
-    let pageText = "";
-    try {
-      const res = await fetch(`${baseUrl}articles/${normalized}?_md_raw=1`,);
-      if (res.ok) {
-        pageText = await res.text();
-      } else {
-        const res2 = await fetch(`${baseUrl}articles/${normalized}`,);
-        if (res2.ok) pageText = await res2.text();
-      }
-    } catch {
-      // offline or network failure
-    }
-
-    const { frontmatter: pageFm, body: pageBody, } = parseFrontmatter(
-      pageText,
-    );
-    const slug = normalized.replace(/\.md$/, "",);
-    const title = pageFm.title ||
-      extractTitleFromMarkdown(pageText, normalized,);
-    const icon = pageFm.icon || inferArticleIcon(slug, title,);
-    const itemPath = `./articles/${normalized}`;
-
-    const item: ArticleItem = {
-      name: normalized,
-      slug,
-      path: itemPath,
-      title,
-      icon,
-      badge: pageFm.badge,
-      date: pageFm.date,
-      location: pageFm.location || `#/articles/${normalized}`,
-      author: pageFm.author,
-      description: pageFm.description,
-      tags: Array.isArray(pageFm.tags,)
-        ? pageFm.tags
-        : (pageFm.tag ? [pageFm.tag,] : []),
+    const pageText = await fetchArticleText(normalized,);
+    const parsed = parseFrontmatter(pageText,);
+    const item = buildArticleItem(
+      normalized,
+      parsed,
       depth,
       parentPath,
-      children: [],
-    };
-
-    // Fills the search entry that later goes to IndexedDB
-    searchAccumulator.push({
-      path: itemPath,
-      title,
-      description: pageFm.description || "",
-      content: cleanMarkdownText(pageBody,),
-      tags: item.tags || [],
-      icon,
-      badge: pageFm.badge,
-      depth,
-    },);
+      searchAccumulator,
+    );
 
     // Accepts 'pages', 'articles' or 'subpages' in the page's own frontmatter
-    const subPagesRaw = pageFm.pages || pageFm.articles || pageFm.subpages;
+    const subPagesRaw = parsed.frontmatter.pages ||
+      parsed.frontmatter.articles || parsed.frontmatter.subpages;
     if (Array.isArray(subPagesRaw,) && subPagesRaw.length > 0) {
       const children: ArticleItem[] = [];
       for (const subItem of subPagesRaw) {
         const childNode = await loadPageRecursive(
           subItem,
           depth + 1,
-          itemPath,
+          item.path,
           visited,
           searchAccumulator,
         );
@@ -514,63 +546,34 @@ export async function loadArticles(): Promise<ArticleItem[]> {
 
   try {
     // 1. Load index.md and parse its frontmatter
-    const baseUrl = getAppBaseUrl();
-    let indexRaw: string | null = null;
-    try {
-      const res = await fetch(`${baseUrl}articles/index.md?_md_raw=1`,);
-      if (res.ok) {
-        indexRaw = await res.text();
-      } else {
-        const res2 = await fetch(`${baseUrl}articles/index.md`,);
-        if (res2.ok) indexRaw = await res2.text();
-      }
-    } catch {
-      // offline or network error
-    }
+    const indexRaw = await fetchArticleText("index.md",);
 
     if (indexRaw) {
-      const { frontmatter, body, } = parseFrontmatter(indexRaw,);
-      const pagesList: any[] = frontmatter.pages || frontmatter.articles ||
-        frontmatter.subpages;
+      const parsed = parseFrontmatter(indexRaw,);
+      const pagesList: SubPageRef[] = parsed.frontmatter.pages ||
+        parsed.frontmatter.articles || parsed.frontmatter.subpages || [];
 
       const visited = new Set<string>(["index.md",],);
       const searchAccumulator: SearchDocItem[] = [];
 
-      // Home page, built from index.md itself (depth: 0)
-      const indexItem: ArticleItem = {
-        name: "index.md",
-        slug: "index",
-        path: "./articles/index.md",
-        title: frontmatter.title || "Home page",
-        icon: "home",
-        date: frontmatter.date,
-        location: frontmatter.location || "#/articles/index.md",
-        author: frontmatter.author,
-        description: frontmatter.description,
-        tags: Array.isArray(frontmatter.tags,) ? frontmatter.tags : [],
-        depth: 0,
-        children: [],
-      };
-
-      // Adds index.md to the search index
-      searchAccumulator.push({
-        path: "./articles/index.md",
-        title: frontmatter.title || "Home page",
-        description: frontmatter.description || "",
-        content: cleanMarkdownText(body,),
-        tags: Array.isArray(frontmatter.tags,) ? frontmatter.tags : [],
-        icon: "home",
-        depth: 0,
-      },);
+      // Home page, built from index.md itself (depth: 0) through the very same
+      // construction every other document of the tree goes through
+      const indexItem = buildArticleItem(
+        "index.md",
+        parsed,
+        0,
+        undefined,
+        searchAccumulator,
+      );
 
       // Recursively loads each child page declared in the frontmatter
-      if (Array.isArray(pagesList,) && pagesList.length > 0) {
-        const childNodes: ArticleItem[] = [];
+      const childNodes: ArticleItem[] = [];
+      if (Array.isArray(pagesList,)) {
         for (const item of pagesList) {
           const node = await loadPageRecursive(
             item,
             1,
-            "./articles/index.md",
+            indexItem.path,
             visited,
             searchAccumulator,
           );
@@ -578,8 +581,8 @@ export async function loadArticles(): Promise<ArticleItem[]> {
             childNodes.push(node,);
           }
         }
-        indexItem.children = childNodes;
       }
+      indexItem.children = childNodes;
 
       const tree = [indexItem,];
       const flattened = flattenArticles(tree,);

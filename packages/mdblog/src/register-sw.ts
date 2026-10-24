@@ -36,10 +36,16 @@ export async function registerServiceWorker(): Promise<void> {
     const registration = await navigator.serviceWorker.register(swUrl, {
       scope: baseUrl,
       type: "module",
+      // The update check must reach the network: served from the browser's own
+      // cache, a worker whose script changed bytes under a frozen version URL
+      // (every `noversion` dev build) would never be noticed, and the stale
+      // engine would keep answering every navigation. This is the one knob
+      // that makes the byte comparison in the comment above actually run.
+      updateViaCache: "none",
     },);
 
     // Check for updates immediately so stale workers are replaced
-    registration.update().catch(() => {},);
+    registration.update().catch(() => { },);
 
     if (navigator.serviceWorker.controller) {
       isSWActive.value = true;

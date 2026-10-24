@@ -51,6 +51,11 @@ export function defaultShell(
 
     <!-- BeerCSS Framework v3.7.12 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.css" />
+    <!-- The icon font ships inside beer.min.css as @font-face with font-display:
+        block; preloading it starts the woff2 fetch in parallel with the
+        stylesheet so the glyphs do not stay invisible behind the CSS round
+        trip. Kept in lockstep with the application's own index.html. -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/material-symbols-outlined.woff2" as="font" type="font/woff2" crossorigin />
     <script type="module" src="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.js"></script>
 
     <!-- Material Dynamic Colors -->

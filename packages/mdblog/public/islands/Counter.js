@@ -1,15 +1,24 @@
 // Counter island in pure HTML+ES form (runs directly in the browser)
 // Uses the utilities exported by the mdBlog bundle (no external CDN requests)
-import { html as _html, signal as _signal, useSignal as _useSignal } from "../mdblog.js";
+import {
+  html as _html,
+  signal as _signal,
+  useSignal as _useSignal,
+} from "../mdblog.js";
 
-const html = _html || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.html : null);
-const signal = _signal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.signal : null);
-const useSignal = _useSignal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.useSignal : null);
+const html = _html ||
+  (typeof globalThis !== "undefined" ? globalThis.mdBlog?.html : null);
+const signal = _signal ||
+  (typeof globalThis !== "undefined" ? globalThis.mdBlog?.signal : null);
+const useSignal = _useSignal ||
+  (typeof globalThis !== "undefined" ? globalThis.mdBlog?.useSignal : null);
 
-export function Counter({ start = 0, step = 1, label = "Interactive Counter" }) {
+export function Counter(
+  { start = 0, step = 1, label = "Interactive Counter", },
+) {
   const count = typeof useSignal === "function"
-    ? useSignal(Number(start))
-    : signal(Number(start));
+    ? useSignal(Number(start,),)
+    : signal(Number(start,),);
 
   return html`
     <article class="border round padding surface-container-low margin">
@@ -26,7 +35,7 @@ export function Counter({ start = 0, step = 1, label = "Interactive Counter" }) 
         <div class="row">
           <button
             class="circle small surface-variant"
-            onClick=${() => (count.value -= Number(step))}
+            onClick=${() => (count.value -= Number(step,))}
             aria-label="Decrease"
           >
             <i>remove</i>
@@ -36,14 +45,14 @@ export function Counter({ start = 0, step = 1, label = "Interactive Counter" }) 
           </span>
           <button
             class="circle small primary"
-            onClick=${() => (count.value += Number(step))}
+            onClick=${() => (count.value += Number(step,))}
             aria-label="Increase"
           >
             <i>add</i>
           </button>
           <button
             class="circle small transparent"
-            onClick=${() => (count.value = Number(start))}
+            onClick=${() => (count.value = Number(start,))}
             title="Reset"
             aria-label="Reset"
           >

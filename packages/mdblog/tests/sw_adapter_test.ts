@@ -174,3 +174,74 @@ describe("Service Worker fetch adapter", () => {
     assertEquals(requested, [],);
   });
 });
+
+describe("Bounded answers", () => {
+  /** An IO whose reads never settle — the wedged-fetch signature. */
+  function stalledIO(): IO {
+    return {
+      readText: (): Promise<string> => new Promise<string>(() => {},),
+      cacheGet: (): Promise<string | null> =>
+        new Promise<string | null>(() => {},),
+      cachePut: (): Promise<void> => Promise.resolve(),
+      cacheDelete: (): Promise<void> => Promise.resolve(),
+    };
+  }
+
+  it("ends a never-settling navigation with a 504 page instead of a spinning tab", async () => {
+    const handler = createSWFetchHandler(stalledIO(), {
+      basePath: "./articles",
+      handlerTimeoutMs: 30,
+    },);
+
+    const { event, answer, } = fetchEvent(
+      "https://example.com/articles/index.md",
+      "text/html",
+    );
+    assert(handler(event,),);
+
+    const response = await answer();
+    assertEquals(response.status, 504,);
+    assert(
+      (response.headers.get("Content-Type",) ?? "").includes("text/html",),
+      "a navigation must be answered with a document, not with JSON",
+    );
+    assert((await response.text()).includes("Still loading",),);
+  });
+
+  it("ends a never-settling JSON request with a JSON error", async () => {
+    const handler = createSWFetchHandler(stalledIO(), {
+      basePath: "./articles",
+      handlerTimeoutMs: 30,
+    },);
+
+    const { event, answer, } = fetchEvent(
+      "https://example.com/articles/index.md",
+      "application/json",
+    );
+    assert(handler(event,),);
+
+    const response = await answer();
+    assertEquals(response.status, 504,);
+    const body = JSON.parse(await response.text(),) as { error?: string };
+    assert(body.error?.includes("did not answer in time",),);
+  });
+
+  it("answers a settling chain immediately and leaves no deadline behind", async () => {
+    const { io, } = recordingIO("# Home\n\nBody.",);
+    const handler = createSWFetchHandler(io, {
+      basePath: "./articles",
+      handlerTimeoutMs: 60000,
+    },);
+
+    const { event, answer, } = fetchEvent(
+      "https://example.com/articles/index.md",
+      "application/json",
+    );
+    assert(handler(event,),);
+
+    // A one-minute deadline could only be observed as a test that never
+    // finishes if the fast answer did not clear it.
+    const response = await answer();
+    assertEquals(response.status, 200,);
+  });
+});

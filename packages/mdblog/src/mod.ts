@@ -76,6 +76,7 @@ import {
 } from "./plugin/core/io.ts";
 import {
   createSWFetchHandler,
+  type SWFetchEvent,
   type SWPluginOptions,
 } from "./plugin/adapters/sw.ts";
 import { defaultShell, injectWireShell, } from "./plugin/core/shell.ts";
@@ -100,7 +101,12 @@ import {
 } from "./plugin/wire.ts";
 
 /**
- * @description Reactive Signal container holding a mutable value.
+ * @description Reactive Signal container holding a mutable value. The published
+ * surface is deliberately this documented shape and not the native
+ * `@preact/signals` class: JSR's doc lint refuses a public type that references
+ * an undocumented type from npm (`private-type-ref`), and the runtime object
+ * already satisfies everything declared here (`value`, plus the inherited
+ * `toString`/`valueOf`).
  */
 export interface Signal<T = unknown,> {
   /** @description The current reactive value. */
@@ -255,6 +261,7 @@ export type {
   IO,
   MdastRoot,
   SearchBoxProps,
+  SWFetchEvent,
   SWPluginOptions,
   ThemeToggleProps,
   TocHeading,

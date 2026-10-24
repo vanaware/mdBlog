@@ -22,6 +22,17 @@ export interface SWPluginOptions extends DocConfig {
    * @default "./index.html"
    */
   shellPath?: string;
+
+  /**
+   * @description Maximum time the handler may take to answer an intercepted
+   * request. A promise that never settles keeps the browser spinning the tab
+   * forever — the signature of a fetch that neither resolves nor fails, most
+   * often a worker whose caches were deleted underneath an open tab. When the
+   * deadline passes the request is answered with a 504 that ends the wait and
+   * invites a reload, so no wedged dependency can hold a navigation open.
+   * @default 8000
+   */
+  handlerTimeoutMs?: number;
 }
 
 /**
@@ -60,6 +71,76 @@ async function readShellTemplate(
 }
 
 /**
+ * @description The minimal shape of the `fetch` event this handler consumes.
+ * Declared structurally instead of using the DOM `FetchEvent` type, so the
+ * module keeps checking outside a Service Worker context (tests, Deno).
+ */
+export interface SWFetchEvent {
+  /** @description The intercepted request. */
+  request: Request;
+  /** @description Promise settled with the response to serve. */
+  respondWith(response: Response | Promise<Response>,): void;
+}
+
+/**
+ * Ends the wait when the handling chain never settles: the same race the
+ * published shell uses against a never-answering worker, moved to the side of
+ * the worker itself, so a wedged fetch or a hanging cache read answers with a
+ * deadline response instead of an eternally spinning tab. The timer is cleared
+ * as soon as the chain settles, so a fast answer leaves no deadline burning
+ * seconds behind it.
+ */
+function raceWithinDeadline(
+  chain: Promise<Response>,
+  deadlineMs: number,
+  pathname: string,
+  wantsHtml: boolean,
+): Promise<Response> {
+  const deadlineResponse = (): Response => {
+    console.warn(
+      `[sw-adapter] No answer for ${pathname} within ${deadlineMs}ms; ending the wait`,
+    );
+    if (wantsHtml) {
+      return new Response(
+        '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
+          "<title>Loading timed out</title></head><body><h6>Still loading</h6>" +
+          "<p>The site did not finish answering in time. Reloading usually fixes it.</p>" +
+          "</body></html>",
+        {
+          status: 504,
+          headers: { "Content-Type": "text/html; charset=utf-8", },
+        },
+      );
+    }
+    return new Response(
+      JSON.stringify({
+        error: "The document handler did not answer in time",
+        url: pathname,
+      },),
+      {
+        status: 504,
+        headers: { "Content-Type": "application/json", },
+      },
+    );
+  };
+
+  return new Promise<Response>((resolve,) => {
+    const timer = setTimeout(() => resolve(deadlineResponse(),), deadlineMs,);
+    chain.then(
+      (response,) => {
+        clearTimeout(timer,);
+        resolve(response,);
+      },
+      (error,) => {
+        clearTimeout(timer,);
+        console.error(`[sw-adapter] Error processing ${pathname}:`, error,);
+        resolve(deadlineResponse(),);
+      },
+    );
+  },);
+}
+
+/**
  * @description Creates a fetch event handler for the Service Worker.
  * Intercepts documentation markdown routes and returns WireDoc JSON or HTML shells.
  * @param io - IO abstraction instance to fetch and cache documents.
@@ -76,10 +157,11 @@ async function readShellTemplate(
 export function createSWFetchHandler(
   io: IO,
   options: SWPluginOptions = {},
-): (event: any,) => boolean {
+): (event: SWFetchEvent,) => boolean {
   const basePath = options.basePath ?? "./articles";
   const bundlePath = options.bundlePath ?? "./mdblog.js";
   const shellPath = options.shellPath ?? "./index.html";
+  const handlerDeadline = options.handlerTimeoutMs ?? 8000;
   // Everything the site serves lives next to the worker, so its directory is the
   // application's base. A request arrives already resolved by the browser
   // (`/mdBlog/articles/index.md`), and that origin-rooted form is not what the
@@ -97,7 +179,7 @@ export function createSWFetchHandler(
     self.location.href :
     undefined;
 
-  return function handleFetch(event: any,): boolean {
+  return function handleFetch(event: SWFetchEvent,): boolean {
     const request = event.request;
 
     // 1. Only intercept GET requests
@@ -127,57 +209,70 @@ export function createSWFetchHandler(
     // spelling a page fetches it with, which is what the reader resolves.
     const assetPath = toBaseRelativePath(docPath, baseDir,);
 
-    // 5. Intercept and handle
+    // 5. Intercept and handle. The chain is raced against a deadline: a
+    // respondWith whose promise never settles is exactly the spinning tab the
+    // published shell's own mount deadline complains about.
+    const wantsHtml = (request.headers.get("Accept",) ?? "").includes(
+      "text/html",
+    );
     event.respondWith(
-      (async () => {
-        try {
-          const doc = await loadDoc(assetPath, io, options,);
+      raceWithinDeadline(
+        (async () => {
+          try {
+            const doc = await loadDoc(assetPath, io, options,);
 
-          const accept = request.headers.get("Accept",) ?? "";
+            const accept = request.headers.get("Accept",) ?? "";
 
-          // Content negotiation:
-          // If browser navigation (text/html): return HTML shell with embedded wire
-          if (accept.includes("text/html",)) {
-            const template = await readShellTemplate(
-              shellPath,
-              shellBase ?? url.href,
-            );
-            const html = template
-              ? injectWireShell(template, doc,)
-              : defaultShell(doc, bundlePath,);
-            return new Response(html, {
+            // Content negotiation:
+            // If browser navigation (text/html): return HTML shell with embedded wire
+            if (accept.includes("text/html",)) {
+              const template = await readShellTemplate(
+                shellPath,
+                shellBase ?? url.href,
+              );
+              const html = template
+                ? injectWireShell(template, doc,)
+                : defaultShell(doc, bundlePath,);
+              return new Response(html, {
+                status: 200,
+                headers: {
+                  "Content-Type": "text/html; charset=utf-8",
+                  "X-Rendered-By": "SW-Wire-Format",
+                  "X-Doc-Title": encodeURIComponent(doc.title,),
+                },
+              },);
+            }
+
+            // If SPA request (application/json): return pure WireDoc JSON
+            return new Response(JSON.stringify(doc,), {
               status: 200,
               headers: {
-                "Content-Type": "text/html; charset=utf-8",
+                "Content-Type": "application/json; charset=utf-8",
                 "X-Rendered-By": "SW-Wire-Format",
                 "X-Doc-Title": encodeURIComponent(doc.title,),
               },
             },);
+          } catch (err) {
+            console.error(
+              `[sw-adapter] Error processing ${url.pathname}:`,
+              err,
+            );
+            return new Response(
+              JSON.stringify({
+                error: err instanceof Error ? err.message : String(err,),
+                url: url.pathname,
+              },),
+              {
+                status: 404,
+                headers: { "Content-Type": "application/json", },
+              },
+            );
           }
-
-          // If SPA request (application/json): return pure WireDoc JSON
-          return new Response(JSON.stringify(doc,), {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json; charset=utf-8",
-              "X-Rendered-By": "SW-Wire-Format",
-              "X-Doc-Title": encodeURIComponent(doc.title,),
-            },
-          },);
-        } catch (err) {
-          console.error(`[sw-adapter] Error processing ${url.pathname}:`, err,);
-          return new Response(
-            JSON.stringify({
-              error: err instanceof Error ? err.message : String(err,),
-              url: url.pathname,
-            },),
-            {
-              status: 404,
-              headers: { "Content-Type": "application/json", },
-            },
-          );
-        }
-      })(),
+        })(),
+        handlerDeadline,
+        url.pathname,
+        wantsHtml,
+      ),
     );
 
     return true;

@@ -35,43 +35,38 @@ export function createBrowserIO(options: CacheIOOptions = {},): IO {
 
   return {
     async readText(url: string,): Promise<string> {
+      // The request's own query/hash never survives: `_md_raw=1` is always
+      // appended fresh below, which is what tells the Service Worker to hand
+      // over the markdown source instead of an intercepted rendering.
       const cleanPath = url.replace(/[?#].*$/, "",);
+      // An origin-rooted path is meant relative to the application itself:
+      // the `./` spelling is the one that also resolves under a deployment
+      // subfolder (see toBaseRelativePath).
+      const target = cleanPath.startsWith("/",) ? `.${cleanPath}` : cleanPath;
 
-      // 1. Candidate paths to try (/articles/)
-      const candidatePaths = [cleanPath,];
-
-      for (const candidate of candidatePaths) {
-        try {
-          let target = candidate;
-          if (target.startsWith("/",) && typeof globalThis !== "undefined") {
-            target = `.${target}`;
-          }
-          const separator = target.includes("?",) ? "&" : "?";
-          const fetchUrl = `${target}${separator}_md_raw=1`;
-
-          let response: Response;
+      let response: Response | null = null;
+      try {
+        response = await fetch(`${target}?_md_raw=1`,);
+      } catch {
+        // Only a rewritten spelling deserves a second chance at the original one
+        if (target !== cleanPath) {
           try {
-            response = await fetch(fetchUrl,);
+            response = await fetch(`${cleanPath}?_md_raw=1`,);
           } catch {
-            const fallback = `${candidate}${
-              candidate.includes("?",) ? "&" : "?"
-            }_md_raw=1`;
-            response = await fetch(fallback,);
+            // Both spellings failed: fall through to the cached copy below
           }
-
-          if (response.ok) {
-            const text = await response.text();
-            if (useIdb) {
-              set(`raw:${cleanPath}`, text,).catch(() => {},);
-            }
-            return text;
-          }
-        } catch {
-          // Continue to next candidate
         }
       }
 
-      // 2. Check IndexedDB cached raw text if offline
+      if (response && response.ok) {
+        const text = await response.text();
+        if (useIdb) {
+          set(`raw:${cleanPath}`, text,).catch(() => {},);
+        }
+        return text;
+      }
+
+      // Offline or gone: the raw text cached by a previous visit is next
       if (useIdb) {
         try {
           const cached = await get<string>(`raw:${cleanPath}`,);

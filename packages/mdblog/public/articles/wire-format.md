@@ -50,10 +50,10 @@ export type Wire =
   | boolean
   | null
   | Wire[]
-  | WireElement      // Intrinsic HTML elements (strong, em, hr...)
-  | WireComponent    // Block components (Heading, CodeBlock, Table...)
-  | WireIsland       // Reactive islands ([data-island])
-  | WireFragment;    // Grouping fragments
+  | WireElement // Intrinsic HTML elements (strong, em, hr...)
+  | WireComponent // Block components (Heading, CodeBlock, Table...)
+  | WireIsland // Reactive islands ([data-island])
+  | WireFragment; // Grouping fragments
 
 export interface WireElement {
   t: "e";
@@ -82,6 +82,7 @@ export interface WireIsland {
 ## 🛡️ Sanitized properties (prop sanitization)
 
 Every node property in the Wire Format goes through a sanitizing function that:
+
 - Drops functions and references to non-serializable objects.
 - Guarantees full JSON compliance.
 - Lets the tree be stored safely in the Service Worker `CacheStorage` or in the browser's IndexedDB.

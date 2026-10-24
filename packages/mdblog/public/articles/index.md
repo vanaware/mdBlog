@@ -53,7 +53,7 @@ You can also instantiate islands by providing structured JSON data:
 Browse the guides and technical documentation available:
 
 - **[📚 mdBlog Overview](./overview.md)**: Learn about the motivation, the data pipeline and the security principles.
-- **[🧪 Hands-on Guide & Island Demo](./guide.md)**: See interactive components (*islands*) running in real time.
+- **[🧪 Hands-on Guide & Island Demo](./guide.md)**: See interactive components (_islands_) running in real time.
 - **[⚙️ Architecture & Features](./development-plan.md)**: Understand how the frontmatter, recursive sub-pages and the PWA work.
 - **[⚡ Developing in HTML+ES (.js)](./migration-html-es.md)**: Learn to create new islands in native `.js` files with no build step.
 - **[📐 Wire Format AST Specification](./wire-format.md)**: A serializable JSON contract that is immune to XSS.

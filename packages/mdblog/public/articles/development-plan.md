@@ -44,6 +44,7 @@ pages:
 ```
 
 When an article loads, this metadata feeds the interface components:
+
 - **Navbar & Sidebar:** show the title and its matching icon.
 - **Reader header (`Content`):** render the title, publication date and author in harmony with the BeerCSS design.
 - **Breadcrumbs:** show the hierarchical path up to the current page.
@@ -86,6 +87,7 @@ receives props and keeps its own reactive state.
 ````
 
 ### How an island is hydrated:
+
 1. The transformer turns the Markdown declaration into a `{ t: "i", n: "Counter.js", p: { ... } }` node.
 2. Preact renders a `<div data-island="Counter.js" data-props="..."></div>` container.
 3. The `hydrateIslands()` routine loads the `./islands/Counter.js` module natively in the browser and mounts the component into the target element.

@@ -1,13 +1,20 @@
 // Pure interactive HTML+ES island (runs directly in the browser, no compilation or bundling)
 // Uses the utilities exported by the mdBlog bundle (no external CDN requests)
-import { html as _html, signal as _signal, useSignal as _useSignal } from "../mdblog.js";
+import {
+  html as _html,
+  signal as _signal,
+  useSignal as _useSignal,
+} from "../mdblog.js";
 
-const html = _html || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.html : null);
-const signal = _signal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.signal : null);
-const useSignal = _useSignal || (typeof globalThis !== "undefined" ? globalThis.mdBlog?.useSignal : null);
+const html = _html ||
+  (typeof globalThis !== "undefined" ? globalThis.mdBlog?.html : null);
+const signal = _signal ||
+  (typeof globalThis !== "undefined" ? globalThis.mdBlog?.signal : null);
+const useSignal = _useSignal ||
+  (typeof globalThis !== "undefined" ? globalThis.mdBlog?.useSignal : null);
 
-export function DemoWidget({ title = "Dynamic HTML+ES Island", step = 1 }) {
-  const count = typeof useSignal === "function" ? useSignal(0) : signal(0);
+export function DemoWidget({ title = "Dynamic HTML+ES Island", step = 1, },) {
+  const count = typeof useSignal === "function" ? useSignal(0,) : signal(0,);
 
   return html`
     <article class="border round padding surface-container bottom-margin">
@@ -21,7 +28,7 @@ export function DemoWidget({ title = "Dynamic HTML+ES Island", step = 1 }) {
         <div class="row">
           <button
             class="circle small surface-variant"
-            onClick=${() => (count.value -= Number(step))}
+            onClick=${() => (count.value -= Number(step,))}
             aria-label="Decrease"
           >
             <i>remove</i>
@@ -29,7 +36,7 @@ export function DemoWidget({ title = "Dynamic HTML+ES Island", step = 1 }) {
           <span class="chip primary bold center-align">${count.value}</span>
           <button
             class="circle small primary"
-            onClick=${() => (count.value += Number(step))}
+            onClick=${() => (count.value += Number(step,))}
             aria-label="Increase"
           >
             <i>add</i>

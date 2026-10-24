@@ -4,7 +4,12 @@ import {
   assertStringIncludes,
 } from "@std/assert";
 import { describe, it, } from "@std/testing/bdd";
-import { NAVIGATION_TIMEOUT_MS, withTimeout, } from "../src/router.ts";
+import {
+  CLIENT_CACHE_NAME,
+  NAVIGATION_TIMEOUT_MS,
+  withTimeout,
+} from "../src/router.ts";
+import { APP_VERSION, } from "../src/version.ts";
 
 describe("Navigation budget", () => {
   it("hands the answer of work that settles in time straight through", async () => {
@@ -49,5 +54,27 @@ describe("Navigation budget", () => {
     // failure it never was; above half a minute the reader has closed the tab.
     assertEquals(NAVIGATION_TIMEOUT_MS >= 5_000, true,);
     assertEquals(NAVIGATION_TIMEOUT_MS <= 30_000, true,);
+  });
+});
+
+describe("Client cache bucket naming", () => {
+  it("follows the build stamp, mirroring the worker's own bucket scheme", () => {
+    // Page and worker share one versioned bucket whenever they come from the
+    // same build; a frozen name (the former "mdblog-pwa-v1") accumulated
+    // entries no cleanup ever owned.
+    assertEquals(
+      CLIENT_CACHE_NAME,
+      `mdblog-pwa-${APP_VERSION || "dev"}`,
+    );
+    const swSource = Deno.readTextFileSync(
+      new URL("../public/sw.js", import.meta.url,),
+    );
+    assertEquals(
+      swSource.includes(
+        'const CACHE_NAME = `mdblog-pwa-${mdTranspiler.version || "dev"}`;',
+      ),
+      true,
+      "sw.js must keep naming its cache with the same template",
+    );
   });
 });

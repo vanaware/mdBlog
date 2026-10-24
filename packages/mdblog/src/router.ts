@@ -11,9 +11,22 @@ import {
 import { mdFetch, } from "./plugin/adapters/client.ts";
 import { createBrowserIO, } from "./plugin/core/io.ts";
 import { hydrateIslands, } from "./render/hydrate-islands.ts";
+import { normalizePath, } from "./utils.ts";
+import { APP_VERSION, } from "./version.ts";
+
+/**
+ * @description Cache bucket the client reads and writes its wire documents into.
+ *
+ * It follows the build stamp on purpose, mirroring the naming of the Service
+ * Worker itself (`mdblog-pwa-${version}` in `sw.js`): when page and worker come
+ * from the same build they share one bucket, and a new release orphans the old
+ * name, which the worker's activate step then deletes. A frozen name (the
+ * former `mdblog-pwa-v1`) accumulated entries no cleanup ever owned.
+ */
+export const CLIENT_CACHE_NAME = `mdblog-pwa-${APP_VERSION || "dev"}`;
 
 const io = createBrowserIO({
-  cacheName: "mdblog-pwa-v1",
+  cacheName: CLIENT_CACHE_NAME,
   useIndexedDB: true,
 },);
 
@@ -95,11 +108,10 @@ export function withTimeout<T,>(
  * ```
  */
 export async function navigateTo(path: string,): Promise<void> {
-  let clean = (path || "").replace(/^#\/?/, "",).replace(/^\.?\//, "",);
-  clean = clean.replace(/^articles\//, "",).replace(/^docs\//, "",);
-  if (!clean || clean === "/" || clean === "index" || clean === "index.md") {
-    clean = "index.md";
-  }
+  // Route cleaning itself is what normalizePath already does (hash, `./`,
+  // articles/ and docs/ prefixes, empty/index spellings all collapse to the
+  // filename); only the implicit `.md` suffix is added here.
+  let clean = normalizePath(path,);
   if (!clean.endsWith(".md",)) {
     clean = `${clean}.md`;
   }

@@ -129,9 +129,15 @@ export function Content(): unknown {
     `;
   }
 
-  const currentArticle = articles.value.find(
-    (a,) => normalizePath(a.path,) === normalizePath(path,),
-  );
+  // One normalized-path index for the whole render: the breadcrumb walk below
+  // follows parent links through the tree, and re-scanning the flat list per
+  // hop is the kind of hidden O(n²) a lookup map settles in one pass.
+  const articleByPath = new Map<string, ArticleItem>();
+  for (const a of articles.value) {
+    articleByPath.set(normalizePath(a.path,), a,);
+  }
+
+  const currentArticle = articleByPath.get(normalizePath(path,),);
 
   // Builds the discreet breadcrumb out of the article hierarchy
   const breadcrumbs: ArticleItem[] = [];
@@ -142,9 +148,7 @@ export function Content(): unknown {
       !curr.parentPath ||
       normalizePath(curr.parentPath,) === normalizePath(curr.path,)
     ) break;
-    curr = articles.value.find(
-      (a,) => normalizePath(a.path,) === normalizePath(curr?.parentPath,),
-    );
+    curr = articleByPath.get(normalizePath(curr.parentPath,),);
   }
 
   const rootArticle = articles.value.find(
