@@ -1,5 +1,12 @@
 import { html, } from "htm/preact";
-import { isOffline, isSWActive, isWideScreen, sidebarOpen, } from "../state.ts";
+import {
+  isOffline,
+  isSWActive,
+  isWideScreen,
+  sidebarOpen,
+  siteIcon,
+  siteTitle,
+} from "../state.ts";
 import { ThemeToggle, } from "./ThemeToggle.ts";
 import { SearchBox, } from "./SearchBox.ts";
 
@@ -53,8 +60,8 @@ export function Navbar(): unknown {
           class="row wave transparent no-margin horizontal-padding tiny-padding"
           title="Home page"
         >
-          <i class="primary-text bold right-margin small-margin">menu_book</i>
-          <h6 class="bold no-margin small">mdBlog</h6>
+          <i class="primary-text bold right-margin small-margin">${siteIcon.value}</i>
+          <h6 class="bold no-margin small">${siteTitle.value}</h6>
         </a>
       </div>
 

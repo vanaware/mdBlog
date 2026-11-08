@@ -26,7 +26,7 @@ import {
   useSignal as rawUseSignal,
 } from "@preact/signals";
 import * as stateNamespace from "./state.ts";
-import type { ArticleItem, } from "./state.ts";
+import { type ArticleItem, siteIcon, siteTitle, } from "./state.ts";
 
 /**
  * @description Reactive application state, signals, and dynamic article tree discovery.
@@ -244,6 +244,8 @@ export {
   sanitizeProps,
   SearchBox,
   Sidebar,
+  siteIcon,
+  siteTitle,
   slugify,
   ThemeToggle,
   toBaseRelativePath,

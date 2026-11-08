@@ -75,6 +75,16 @@ export interface SearchDocItem {
 export const articles: Signal<ArticleItem[]> = signal<ArticleItem[]>([],);
 
 /**
+ * @description Reactive signal holding the global blog title configured via index.md frontmatter (defaults to "mdBlog").
+ */
+export const siteTitle: Signal<string> = signal<string>("mdBlog",);
+
+/**
+ * @description Reactive signal holding the global blog icon configured via index.md frontmatter (defaults to "menu_book").
+ */
+export const siteIcon: Signal<string> = signal<string>("menu_book",);
+
+/**
  * @description Reactive signal holding the hierarchical article tree starting from index.md.
  */
 export const articleTree: Signal<ArticleItem[]> = signal<ArticleItem[]>([],);
@@ -553,6 +563,23 @@ export async function loadArticles(): Promise<ArticleItem[]> {
       const pagesList: SubPageRef[] = parsed.frontmatter.pages ||
         parsed.frontmatter.articles || parsed.frontmatter.subpages || [];
 
+      // Global blog title and icon configured exclusively in index.md frontmatter
+      const customTitle = parsed.frontmatter.siteTitle ||
+        parsed.frontmatter.blogTitle ||
+        parsed.frontmatter.site_title ||
+        parsed.frontmatter.blog_title;
+      if (typeof customTitle === "string" && customTitle.trim()) {
+        siteTitle.value = customTitle.trim();
+      }
+
+      const customIcon = parsed.frontmatter.siteIcon ||
+        parsed.frontmatter.blogIcon ||
+        parsed.frontmatter.site_icon ||
+        parsed.frontmatter.blog_icon;
+      if (typeof customIcon === "string" && customIcon.trim()) {
+        siteIcon.value = customIcon.trim();
+      }
+
       const visited = new Set<string>(["index.md",],);
       const searchAccumulator: SearchDocItem[] = [];
 
@@ -595,6 +622,10 @@ export async function loadArticles(): Promise<ArticleItem[]> {
       try {
         await set("browser-articles-cache", flattened,);
         await set("mdblog-search-index", searchAccumulator,);
+        await set("mdblog-site-config", {
+          siteTitle: siteTitle.value,
+          siteIcon: siteIcon.value,
+        },);
       } catch {
         // non-fatal
       }
@@ -604,6 +635,12 @@ export async function loadArticles(): Promise<ArticleItem[]> {
 
     // 2. Offline fallback: read the cache stored in IndexedDB (idb-keyval)
     try {
+      const siteConfig = await get<{ siteTitle?: string; siteIcon?: string }>(
+        "mdblog-site-config",
+      );
+      if (siteConfig?.siteTitle) siteTitle.value = siteConfig.siteTitle;
+      if (siteConfig?.siteIcon) siteIcon.value = siteConfig.siteIcon;
+
       const cached = await get<ArticleItem[]>("browser-articles-cache",);
       if (cached && Array.isArray(cached,) && cached.length > 0) {
         articles.value = cached;

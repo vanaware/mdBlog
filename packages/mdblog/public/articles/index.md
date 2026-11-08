@@ -1,5 +1,7 @@
 ---
 title: "mdBlog - Blog & Static Documentation"
+siteTitle: "mdBlog"
+siteIcon: "menu_book"
 description: "Modern static documentation engine built on Deno, Preact Signals, BeerCSS and HTML+ES Islands."
 date: "2026-10-09"
 author: "SyntaxMesh Team"
@@ -11,6 +13,8 @@ tags:
   - "BeerCSS"
   - "Islands"
 pages:
+  - "static-site-installation.md"
+  - "frontmatter-guide.md"
   - "overview.md"
   - "guide.md"
   - "development-plan.md"
@@ -52,6 +56,8 @@ You can also instantiate islands by providing structured JSON data:
 
 Browse the guides and technical documentation available:
 
+- **[📦 How to Install mdBlog on Your Static Site](./static-site-installation.md)**: Required files, directory layout, `mdblog.js` bundle, and BeerCSS CDN setup.
+- **[📝 Comprehensive Frontmatter & index.md Guide](./frontmatter-guide.md)**: Supported fields, hierarchical navigation trees, and site title/icon branding.
 - **[📚 mdBlog Overview](./overview.md)**: Learn about the motivation, the data pipeline and the security principles.
 - **[🧪 Hands-on Guide & Island Demo](./guide.md)**: See interactive components (_islands_) running in real time.
 - **[⚙️ Architecture & Features](./development-plan.md)**: Understand how the frontmatter, recursive sub-pages and the PWA work.

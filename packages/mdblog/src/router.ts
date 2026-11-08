@@ -6,6 +6,7 @@ import {
   isLoading,
   loadArticles,
   parseTimeMs,
+  siteTitle,
   viewMode,
 } from "./state.ts";
 import { mdFetch, } from "./plugin/adapters/client.ts";
@@ -145,7 +146,7 @@ export async function navigateTo(path: string,): Promise<void> {
     parseTimeMs.value = Math.max(0.1, Number((t1 - t0).toFixed(1,),),);
 
     currentDoc.value = doc;
-    document.title = `${doc.title} - mdBlog`;
+    document.title = `${doc.title} - ${siteTitle.value}`;
 
     // Schedule selective island hydration
     setTimeout(() => {
@@ -212,7 +213,7 @@ export function initRouter(): void {
       // may not: fall back to the home route instead of a filename, so the
       // sidebar highlights something that actually exists.
       currentPath.value = doc.url || "#/";
-      document.title = `${doc.title} - mdBlog`;
+      document.title = `${doc.title} - ${siteTitle.value}`;
       preRenderedScript.remove();
       setTimeout(() => {
         hydrateIslands();

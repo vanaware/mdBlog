@@ -616,4 +616,54 @@ Plain text here.`;
       "footer must hold exactly one element",
     );
   });
+
+  it("configures the global blog title and icon in Navbar exclusively from index.md frontmatter", async () => {
+    const { siteIcon, siteTitle, loadArticles, } = await import(
+      "../src/state.ts"
+    );
+    const navbarSrc = await Deno.readTextFile(
+      `${srcDir}/components/Navbar.ts`,
+    );
+
+    // Navbar dynamically renders the siteTitle and siteIcon signals
+    assert(
+      navbarSrc.includes("siteTitle.value",),
+      "Navbar must bind the title to siteTitle.value signal",
+    );
+    assert(
+      navbarSrc.includes("siteIcon.value",),
+      "Navbar must bind the icon to siteIcon.value signal",
+    );
+
+    // Verify index.md has siteTitle and siteIcon
+    const indexRaw = await Deno.readTextFile(`${publicDir}/articles/index.md`,);
+    const { frontmatter: indexFm, } = parseFrontmatter(indexRaw,);
+    assert(
+      typeof indexFm.siteTitle === "string" || typeof indexFm.title === "string",
+      "index.md must have siteTitle or title configured",
+    );
+
+    // Ensure loadArticles populates the signals from index.md
+    await loadArticles();
+    assert(
+      siteTitle.value.length > 0,
+      "siteTitle must be populated after loadArticles",
+    );
+    assert(
+      siteIcon.value.length > 0,
+      "siteIcon must be populated after loadArticles",
+    );
+
+    // Verify other articles (like overview.md or guide.md) do NOT override siteTitle or siteIcon even if present
+    const overviewRaw = await Deno.readTextFile(
+      `${publicDir}/articles/overview.md`,
+    );
+    const { frontmatter: overviewFm, } = parseFrontmatter(overviewRaw,);
+    // Even if someone injects siteTitle in a child article, only index.md is used
+    assertEquals(
+      overviewFm.siteTitle,
+      undefined,
+      "child articles must not declare global siteTitle",
+    );
+  });
 });
