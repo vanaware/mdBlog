@@ -639,7 +639,8 @@ Plain text here.`;
     const indexRaw = await Deno.readTextFile(`${publicDir}/articles/index.md`,);
     const { frontmatter: indexFm, } = parseFrontmatter(indexRaw,);
     assert(
-      typeof indexFm.siteTitle === "string" || typeof indexFm.title === "string",
+      typeof indexFm.siteTitle === "string" ||
+        typeof indexFm.title === "string",
       "index.md must have siteTitle or title configured",
     );
 
